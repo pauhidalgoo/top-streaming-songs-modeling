@@ -48,3 +48,7 @@ Si teniu problemes a la hora de fer commits, push i tal, comproveu que tingueu e
 Si al pujar us surt un error de que el fitxer és massa gran, busqueu-ho a internet jsjs. Us farà baixar com una extensió de Git per fitxers que pesen molt. No crec que passi perquè treballem amb RData.
 
 Al gitignore afegiu els arxius que NO voleu que us pugi. Podeu especificar els que acabin amb .pdf, per exemple.
+
+Si quan aneu a fer push us salta un error en el terminal de Git, sol dir quin és el motiu. El més típic és que no estiguin sincronitzats els vostres canvis amb els del github, és a dir, us falta fer un push abans. La majoria de cops, serà capaç de resoldre'l sol si no hi ha conflictes. Si n'hi hi ha és més liat, o sigui que vigileu. Una bona praxi és fer branques: les pots crear des de Github, i llavors des de Rstudio, en el lloc on fas commit, a dalt a l'esquerra pots canviar. Et poses a la teva branca, fas commit i tal normal sense por i quan acabes fas push. Des de la web de Github et sortirà segurament Your recently pushed branches, i podràs fer un pull request per posar els teus canvis a la main. Si hi ha conflictes, segurament els podràs resoldre des d'allà (més fàcil que des de R).
+
+Per a més informació, podeu mirar a la web de Github <a href="https://docs.github.com/es/pull-requests">aquí</a>.
