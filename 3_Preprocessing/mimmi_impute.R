@@ -105,8 +105,10 @@ dimpute<-MiMMi(dd)
 
 #table of imputation values used
 dimpute$imputation
-
-data[,numeric_cols] <- dimpute$CompleteData
+a <- dimpute$completeData
+b <- a[,-15]
+data[,numeric_cols] <- b
 data_mimmi_imputed <- data
+
 save(data_mimmi_imputed, file = "data_mimmi_imputed.RData")
 
