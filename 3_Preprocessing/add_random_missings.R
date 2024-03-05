@@ -1,6 +1,4 @@
-setwd("C:/Users/Cai Selvas Sala/GIA_UPC/2nC/2nQ/PMAAD")
-
-load("data.RData")
+load("./data.RData")
 
 # Variables per afegir NA
 names_vars_add_na <- c("danceability", "speechiness", "duration")
@@ -40,4 +38,4 @@ for ( col in names_vars_add_na ) {
 }
 
 # Guardar la nova base de dades
-save(data, file = "data_na_added.RData")
+save(data, file = "./data_na_added.RData")
