@@ -22,3 +22,5 @@ View(dataset)
 
 #Revisar los datos imputados (esto te mostrará las imputaciones para las primeras variables con datos faltantes)
 summary(imputed_data)
+
+save(imputed_data, file="./3_Preprocessing/data_mice_imputed.RData")
