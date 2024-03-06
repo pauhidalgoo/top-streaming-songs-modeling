@@ -16,9 +16,8 @@ library(psych)
 ```
 
 ```{r, echo=FALSE}
-setwd("/Users/annacasanovaspoirier/Desktop")
-dataset <- read.csv("spotify_new.csv", header=T, sep=",", na.strings="NA",comment.char="#",check.names = FALSE)
-dataset <- na.omit(dataset)
+load("./3_Preprocessing/data_na_added.RData")
+dataset <- na.omit(data)
 ```
 
 Per fer el anàlisi bivariant inicial, s'han analitzat parells de diferents tipus de variables per observar si hi ha relacions entre variables:

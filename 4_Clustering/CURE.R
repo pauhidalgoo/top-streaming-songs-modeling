@@ -1,19 +1,22 @@
 library(dplyr)
 
-k <- 3
-r <- 0.2
-metodo <- "gower"
+k <- 6
+r <- 0.1
+metodo <- "euclidean"
 
-load("C:/Users/Usuario/Documents/Universitat/4rt Quatri/PMAAD/Preprocessing/data_na_added.RData")
+load("./3_Preprocessing/data_knn_imputed.RData")
 
-variables <- c("track_popularity", "album_type", "artist_num", "artist_followers", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duartion", "streams", "year_release", "year_week", "month_week", "rank_group", "nationality", "gender", "is_group")
-data <- data[,varibles]
+variables <- c("track_popularity","album_popularity", "artist_popularity", "artist_num","energy","loudness","speechiness","acousticness", "danceability","liveness","valence","tempo", "duration","streams")
+
+data <- data_knn_imputed[,variables]
 n <- ceiling(0.3 * nrow(data))
+data <- as.data.frame(scale(data))
 
 ids <- sample(1:nrow(data), replace = FALSE, size = n)
 dataNoMuestra <- data[-ids, ]
 data <- data[ids, ]
 dataMuestra <- data
+
 
 hclust <- hclust(dist(data, method = metodo), method = "single")
 subsets <- cutree(hclust, k)
@@ -73,3 +76,4 @@ dataNoMuestra
 
 table(dataMuestra$cluster)
 table(dataNoMuestra$cluster)
+
