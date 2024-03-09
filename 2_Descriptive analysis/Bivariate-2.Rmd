@@ -1,0 +1,152 @@
+---
+title: "Anàlisi Descriptiu Bivariant"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+date: "2024-02-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(psych)
+```
+
+```{r, echo=FALSE}
+load("./3_Preprocessing/data_na_added.RData")
+dataset <- na.omit(data)
+```
+
+Per fer el anàlisi bivariant inicial, s'han analitzat parells de diferents tipus de variables per observar si hi ha relacions entre variables:
+
+
+```{r, echo=FALSE}
+numeric_cols <- c("track_popularity","album_popularity","energy","loudness","speechiness","acousticness")
+categoric_cols <- c("album_type","pop","hip_hop")
+
+#les altres numèriques
+#,"artist_num", "artist_followers","artist_popularity","danceability","liveness","valence","tempo", "duration","streams"
+
+#les altres categòriques
+#,"electro", "rock","christmas","cinema","latino","collab","explicit","key","mode","time_signature","Is_Group","Gender","rank_group"
+
+dataset[, 1] <- NULL
+```
+
+ 
+ 
+ 
+ 
+
+### 1. Una numèrica i una categòrica
+Per veure la influència d'una variable categòrica a una numèrica, fem un anàlisi descriptiu de la variable numèrica per cada categoria de la categòrica i també ho vistualitzam amb barplots i boxplots: 
+ 
+```{r,echo=FALSE, out.width="50%", comment=NA}
+
+for (i in 1:length(categoric_cols)){
+  for (j in 1:length(numeric_cols)) {
+    # create the graph
+    print(paste(numeric_cols[j], "and", categoric_cols[1]))
+    
+    graph1 <- ggplot(data = dataset, aes(x =!!sym(categoric_cols[i]), y = !!sym(numeric_cols[j]), fill = !!sym(categoric_cols[i]))) +
+      geom_bar(stat = "summary", fun = "mean")
+    graph2 <- ggplot(data = dataset, aes(x = !!sym(categoric_cols[i]), y = !!sym(numeric_cols[j]), fill = !!sym(categoric_cols[i]))) +
+  geom_boxplot()
+    
+    # print the graph
+    print(graph1)
+    print(graph2)
+    
+    numeric_var <- dataset[[numeric_cols[j]]]
+    categoric_var <- dataset[[categoric_cols[i]]]
+    describe_result <- describeBy(numeric_var, group = categoric_var)
+    print(describe_result)
+  }
+}
+
+```
+
+### 2. Dues variables numèriques
+Per veure la relació entre les variables numèriques, primer farem una matriu de covariances i després per a cada parell de variables observarem el seu scatter plot: 
+
+```{r,echo=FALSE, out.width="33.333%", comment=NA}
+print('Matriu de correlació: ')
+# Instalar paquetes si no están presentes
+if (!require("corrplot")) {
+  install.packages("corrplot")
+}
+if (!require("ggcorrplot")) {
+  install.packages("ggcorrplot")
+}
+
+library(corrplot)
+library(ggcorrplot)
+
+cor_matrix <- cor(dataset[numeric_cols])
+
+corrplot(cor_matrix, method = "circle")
+
+ggcorrplot(cor_matrix, hc.order = TRUE, type = "lower",
+           lab = TRUE, lab_size = 3)
+
+```
+
+```{r,echo=FALSE, out.width="33.333%", comment=NA}
+for (i in 1:length(numeric_cols)){
+  for (j in 1:length(numeric_cols)) {
+    if (i != j){
+      print(paste(numeric_cols[i], "and", numeric_cols[j]))
+      graph3 <- ggplot(data = dataset) + 
+        geom_point(mapping = aes(x = !!sym(numeric_cols[i]), y = !!sym(numeric_cols[j])), alpha = 1 / 30)
+      print(graph3)
+    }
+  }
+}
+```
+
+
+### 3. Dues variables categòriques
+Finalment, es fa un chisquared test per a cada parell de variables categòriques, i també gràfics de barres:
+
+```{r,echo=FALSE, out.width="50%", comment=NA}
+
+library(ggmosaic)
+
+# Recorriendo pares de columnas categóricas
+for (i in 1:length(categoric_cols)){
+  for (j in 1:length(categoric_cols)) {
+    if (i != j){
+      print(paste(categoric_cols[i], "and", categoric_cols[j]))
+      
+      # Grafico de barras
+      graph4 <- ggplot(data = dataset, aes(x = !!sym(categoric_cols[i]), fill = !!sym(categoric_cols[j]))) +
+        geom_bar(position = "dodge")
+      print(graph4)
+      
+      # Grafico de mosaico
+      graph5 <- ggplot(data = dataset) +
+        geom_mosaic(aes(x = product(!!sym(categoric_cols[i]), !!sym(categoric_cols[j])), fill = !!sym(categoric_cols[i])))
+      print(graph5)
+      
+      # Tabla de frecuencia
+      table_freq <- table(dataset[[categoric_cols[i]]], dataset[[categoric_cols[j]]])
+      print(table_freq)
+      
+      cat_var1 <- dataset[[categoric_cols[i]]]
+      cat_var2 <- dataset[[categoric_cols[j]]]
+      chisq_result <- chisq.test(table(cat_var1, cat_var2), correct = FALSE)
+      
+      print(paste("Chi-square test for", categoric_cols[i], "and", categoric_cols[j]))
+      print(chisq_result)
+    }
+  }
+}
+
+```
+
+```{r,echo=FALSE, out.width="100%", comment=NA}
+
+```
