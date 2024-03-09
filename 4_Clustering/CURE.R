@@ -6,11 +6,30 @@ metodo <- "euclidean"
 
 load("./3_Preprocessing/data_knn_imputed.RData")
 
-variables <- c("track_popularity","album_popularity", "artist_popularity", "artist_num","energy","loudness","speechiness","acousticness", "danceability","liveness","valence","tempo", "duration","streams")
 
-data <- data_knn_imputed[,variables]
+# Definir variables numèriques i categòriques
+variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
+                         "artist_num", "energy", "loudness", "speechiness", "acousticness", 
+                         "danceability", "liveness", "valence", "tempo", "duration", "streams")
+variables_categoricas <- c("pop", "hip_hop", "electro", "christmas", "cinema", "latino", "collab", "explicit", "major_mode")
+
+
+# Separar les variables
+data_numericas <- data.frame(scale(data_knn_imputed[variables_numericas]))
+
+data_categoricas <- data_knn_imputed[variables_categoricas]
+
+# Codificació one-hot amb model.matrix
+data_categorica_one_hot <- model.matrix(~ . - 1, data = data_categoricas)
+
+# Convertir a dataframe
+data_categorica_one_hot_df <- as.data.frame(data_categorica_one_hot)
+
+# Combinar les dades en un dataset
+data <- cbind(data_numericas, data_categorica_one_hot_df)
+
+
 n <- ceiling(0.3 * nrow(data))
-data <- as.data.frame(scale(data))
 
 ids <- sample(1:nrow(data), replace = FALSE, size = n)
 dataNoMuestra <- data[-ids, ]
