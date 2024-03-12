@@ -15,12 +15,12 @@ columnas_sin_streams_trackpopularity <- columnas_numericas %>%
 
 head(columnas_numericas)
 
-imputed_data <- mice(columnas_sin_streams_trackpopularity, method = 'pmm', m = 5, maxit = 5, seed = 43)
+data_mice_imputed <- mice(columnas_sin_streams_trackpopularity, method = 'pmm', m = 5, maxit = 5, seed = 43)
 
 #method: norm, rf
 View(dataset)
 
 #Revisar los datos imputados (esto te mostrará las imputaciones para las primeras variables con datos faltantes)
-summary(imputed_data)
+summary(data_mice_imputed)
 
-save(imputed_data, file="./3_Preprocessing/data_mice_imputed.RData")
+save(data_mice_imputed, file="./3_Preprocessing/data_mice_imputed.RData")

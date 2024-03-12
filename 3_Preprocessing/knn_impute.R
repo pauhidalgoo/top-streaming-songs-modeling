@@ -1,6 +1,6 @@
 
 # Importar dataset
-load("C:/Users/Usuario/Documents/Universitat/4rt Quatri/PMAAD/Preprocessing/data_na_added.RData")
+load("./3_Preprocessing/data_na_added.RData")
 
 
 ################################################################################
@@ -18,6 +18,7 @@ for ( col in colnames(data) ) {
 
 library(class)
 
+sum(is.na(data))
 numeric_cols <- c("track_popularity","album_popularity", "artist_popularity", "artist_num","energy","loudness","speechiness","acousticness", "danceability","liveness","valence","tempo", "duration","streams")
 dd<- data[,numeric_cols]
 uncompleteVar<-function(vector){any(is.na(vector))}
@@ -51,6 +52,7 @@ for (k in uncompleteVars){
 
 data[,numeric_cols] <- dd
 #Creates a document with the resulting dataset
+data_knn_imputed <- data
 sum(is.na(data_knn_imputed))
 data_knn_imputed <- data
-save(data_knn_imputed, file = "data_knn_imputed.RData")
+save(data_knn_imputed, file = "./3_Preprocessing/data_knn_imputed.RData")

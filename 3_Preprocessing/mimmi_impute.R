@@ -92,7 +92,7 @@ MiMMi <- function(data, priork=-1)
 
 
 ### Checking
-load("C:/Users/Usuario/Documents/Universitat/4rt Quatri/PMAAD/Preprocessing/data_na_added.RData")
+load("./3_Preprocessing/data_na_added.RData")
 numeric_cols <- c("track_popularity","album_popularity", "artist_popularity", "artist_num","energy","loudness","speechiness","acousticness", "danceability","liveness","valence","tempo", "duration","streams")
 
 dd <- data[,numeric_cols]
@@ -110,5 +110,5 @@ b <- a[,-15]
 data[,numeric_cols] <- b
 data_mimmi_imputed <- data
 
-save(data_mimmi_imputed, file = "data_mimmi_imputed.RData")
+save(data_mimmi_imputed, file = "./3_Preprocessing/data_mimmi_imputed.RData")
 
