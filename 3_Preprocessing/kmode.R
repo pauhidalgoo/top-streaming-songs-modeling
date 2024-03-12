@@ -19,8 +19,10 @@ library(klaR) #cargamos el paquete
 set.seed(2004)
 
 variables <- c("track_popularity", "album_type", "artist_num", "artist_followers", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "nationality", "gender", "is_group")
-variabless <- c("pop", "gender")
-data_reduida <- data[,variables]
+
+variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group")
+data_reduida <- na.omit(data[,variables_cat])
+
 
 for (nom_columna in names(data_reduida)) {
   # Verifica si la columna es de tipo lógico
@@ -30,11 +32,18 @@ for (nom_columna in names(data_reduida)) {
   }
 }
 str(data_reduida)
-
+sum(is.na(data_reduida))
 # Verificamos los datos
 head(data_reduida)
 
-# ------------------------------------------------------------------------------
+for (col in names(data_reduida)) {
+  # Cuenta el número de NA en la columna
+  na_count <- sum(is.na(data_reduida[[col]]))
+  if (na_count > 0) {
+    # Imprime el nombre de la columna y la cantidad de NA
+    cat(col, "tiene", na_count, "NA(s)\n")
+  }
+}# ------------------------------------------------------------------------------
 # Ejecutamos el algoritmo de clustering K-Modes
 cl <- klaR::kmodes(data_reduida, 5) # 2 hace referencia al nÃºmero de clusters
 
