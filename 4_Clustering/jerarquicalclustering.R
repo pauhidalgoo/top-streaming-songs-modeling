@@ -1,6 +1,7 @@
 ######HIERARCHICAL CLUSTERING######
 
 load("./3_Preprocessing/data_knn_imputed.RData")
+data <- data_knn_imputed
 
 #CATEGÒRIQUES I NUMÈRIQUES
 

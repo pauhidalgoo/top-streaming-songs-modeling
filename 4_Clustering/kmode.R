@@ -45,7 +45,7 @@ for (col in names(data_reduida)) {
   }
 }# ------------------------------------------------------------------------------
 # Ejecutamos el algoritmo de clustering K-Modes
-cl <- klaR::kmodes(data_reduida, 5) # 2 hace referencia al nÃºmero de clusters
+cl <- klaR::kmodes(data_reduida, 2) # 2 hace referencia al nÃºmero de clusters
 
 # Verificamos los resultados
 print(cl)
@@ -53,6 +53,22 @@ print(cl)
 # ------------------------------------------------------------------------------
 # Visualizamos los clusters obtenidos 
 plot(jitter(datos$edad, datos$ingresos), col = cl$cluster)
+
+
+library(cluster)
+
+sil_width <- vector("list", length = 10)
+distancias <- daisy(data_reduida, metric = "gower")  # daisy del paquete cluster soporta distancias para datos categóricos
+
+# Calcular el coeficiente de silueta para k entre 2 y 10
+for (k in 2:10) {
+  resultado_kmodes <- kmodes(data_reduida, k, iter.max = 10, weighted = TRUE)
+  silhouetteResult <- silhouette(resultado_kmodes$cluster, distancias, weighted = TRUE)
+  sil_width[[k]] <- mean(silhouetteResult[, "sil_width"])
+}
+print(sil_width)
+
+
 # ==============================================================================
 #PROTOTYPES!
 
@@ -68,8 +84,8 @@ library(clustMixType)
 # Puedes ajustar este parámetro según tus necesidades.
 
 variables <- c("nationality", "track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
-data_reduida <- na.omit(data[,variables])
-result <- kproto(x = data_reduida, k = 5, lambda = 0.5, iter.max = 10, nstart = 5)
+data_reduida2 <- na.omit(data[,variables])
+result <- kproto(x = data_reduida2, k = 5, lambda = 0.5, iter.max = 10, nstart = 5)
 
 # Ver los resultados del agrupamiento.
 print(result)
