@@ -1,7 +1,8 @@
 library(dplyr)
 
-k <- 6
-r <- 0.1
+k <- 4
+r <- 0.15
+
 metodo <- "euclidean"
 
 load("./3_Preprocessing/data_knn_imputed.RData")
@@ -38,7 +39,16 @@ data <- data[ids, ]
 dataMuestra <- data
 
 
-hclust <- hclust(dist(data, method = metodo), method = "single")
+
+hclust <- hclust(dist(data, method = metodo), method = "ward.D2")
+
+plot(hclust)
+# dissimMatrix <- daisy(data[,colsNoMiss], metric = "gower", stand=TRUE)
+# distMatrix<-dissimMatrix^2
+# hclust <- hclust(dist(data, method = metodo), method = "ward.D2")
+
+
+
 subsets <- cutree(hclust, k)
 dataMuestra$cluster <- subsets
 
