@@ -23,6 +23,10 @@ set.seed(04102022)
 data("multishapes")
 datos <- multishapes[, 1:2]
 
+load("./3_Preprocessing/data_knn_imputed.RData")
+datos <- data.frame(scale(data_knn_imputed[variables_numericas]))
+
+
 ### Printamos la imagen que hemos obtenido de los datos a clasificar
 ggplot2::ggplot(datos, aes(x = x, y = y)) + 
   ggplot2::geom_point(color='#3333FF')
@@ -59,7 +63,7 @@ fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE
 ### y no se incluye en ningÃƒÂºn grupo/clÃƒÂºster.
 
 ### Aplicamos el algoritmo de dbscan para classificar los datos
-dbscan_res <- dbscan::dbscan(datos, eps = 0.15, minPts = 5)
+dbscan_res <- dbscan::dbscan(datos, eps = 0, minPts = 3)
 
 ### Graficamos el dbscan obtenido 
 fviz_cluster(object = dbscan_res, data = datos, geom = "point", ellipse = FALSE,
@@ -135,7 +139,7 @@ kNNdistplot(datos, k = 5, minPts = min_pts)
 abline(h = 0.15, lty = 2, col = "red")
 
 ### Mirando el grÃƒÂ¡fico elbow vemos que el epsilon es 0.15
-epsilon <- 0.15
+epsilon <- 0.01
 
 # -----------------------------------------------------------------------------
 ### Volvemos a ejecutar el DBSCAN con los parÃƒÂ¡metros ÃƒÂ³ptimos
