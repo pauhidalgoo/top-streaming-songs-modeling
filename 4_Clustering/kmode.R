@@ -9,10 +9,11 @@ data <- data_knn_imputed
 #             This file contains all KMODE algorithm to use when ours databases contains
 #.            mixture databases
 # ==============================================================================
-# Instalamos los paquetes necesarios
+# Instal·lar els paquets necessaris
+install.packages("klaR")
 
-install.packages("klaR") #instalamos el paquete
-library(klaR) #cargamos el paquete
+#Carregar el paquet
+library(klaR)
 
 # ------------------------------------------------------------------------------
 # Cargamos los datos
