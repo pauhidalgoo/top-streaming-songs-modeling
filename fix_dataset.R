@@ -10,3 +10,4 @@ data$city[data$city == ''] <- NA
 data$nationality[data$nationality == 'England' || data$nationality == 'Scotland', 'nationality'] <- 'United Kingdom'
 data[which(is.na(data$city) && data$nationality == 'United Kingdom')] <- 'London'
 
+save(data, file='./3_Preprocessing/data_knn_imputed.RData')
