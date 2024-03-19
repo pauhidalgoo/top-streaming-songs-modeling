@@ -18,11 +18,9 @@ library(klaR) #cargamos el paquete
 # Cargamos los datos
 set.seed(2004)
 
-#variables <- c("track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
-
 variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group", "nationality")
 #falta ciutat!
-#data_reduida <- na.omit(data[,variables_cat])
+data_reduida <- na.omit(data[,variables_cat])
 
 
 for (nom_columna in names(data_reduida)) {
@@ -55,3 +53,30 @@ print(cl)
 # Visualizamos los clusters obtenidos 
 plot(jitter(datos$edad, datos$ingresos), col = cl$cluster)
 # ==============================================================================
+#PROTOTYPES!
+
+install.packages("clustMixType")
+library(clustMixType)
+
+# Suponiendo que df es tu dataframe y ya está cargado.
+
+# Realizar el agrupamiento con K-Prototypes.
+# kproto() realiza el agrupamiento. 
+# Debes especificar el número de clusters (k) y el conjunto de datos.
+# lambda es el parámetro que equilibra la importancia entre los tipos de variables.
+# Puedes ajustar este parámetro según tus necesidades.
+
+variables <- c("nationality", "track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
+data_reduida <- na.omit(data[,variables])
+result <- kproto(x = data_reduida, k = 5, lambda = 0.5, iter.max = 10, nstart = 5)
+
+# Ver los resultados del agrupamiento.
+print(result)
+
+# Para obtener los clusters asignados a cada observación:
+clusters <- result$cluster
+print(clusters)
+
+# Para ver los centros de los clusters:
+centers <- result$centers
+print(centers)
