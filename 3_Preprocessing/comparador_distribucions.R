@@ -2,14 +2,14 @@
 
 library(ggplot2)
 
-load("./3_Preprocessing/data_knn_imputed.RData")
-load("./3_Preprocessing/data_mimmi_imputed.RData")
-load("./3_Preprocessing/data_na_added.RData")
-load("./3_Preprocessing/data_mice_imputed.RData")
+data_knn_imputed <- load("./3_Preprocessing/data_knn_imputed.RData")
+data_mimmi_imputed <- load("./3_Preprocessing/data_mimmi_imputed.RData")
+data_na_added <- load("./3_Preprocessing/data_na_added.RData")
+data_mice_imputed <- load("./3_Preprocessing/data_mice_imputed.RData")
 
 vars <- c("speechiness", "danceability", "duration")   # variables imputadas por el algoritmo de imputación
 
-dd <- na.omit(data)
+dd <- na.omit(data_na_added)
 lista_df <- list(data_knn_imputed, data_mimmi_imputed, data_mice_imputed, dd)
 
 imputations <- c("KNN", "MIMMI", "Original")
