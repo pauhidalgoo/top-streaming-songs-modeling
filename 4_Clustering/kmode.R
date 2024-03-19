@@ -1,5 +1,5 @@
 load("./3_Preprocessing/data_knn_imputed.RData")
-
+data <- data_knn_imputed
 # ==============================================================================
 # [PMAAD] - KMODE Algoirthm
 # 
@@ -18,10 +18,11 @@ library(klaR) #cargamos el paquete
 # Cargamos los datos
 set.seed(2004)
 
-variables <- c("track_popularity", "album_type", "artist_num", "artist_followers", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "nationality", "gender", "is_group")
+#variables <- c("track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
 
-variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group")
-data_reduida <- na.omit(data[,variables])
+variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group", "nationality")
+#falta ciutat!
+#data_reduida <- na.omit(data[,variables_cat])
 
 
 for (nom_columna in names(data_reduida)) {
