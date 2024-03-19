@@ -21,7 +21,7 @@ set.seed(2004)
 variables <- c("track_popularity", "album_type", "artist_num", "artist_followers", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "nationality", "gender", "is_group")
 
 variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group")
-data_reduida <- na.omit(data[,variables_cat])
+data_reduida <- na.omit(data[,variables])
 
 
 for (nom_columna in names(data_reduida)) {
