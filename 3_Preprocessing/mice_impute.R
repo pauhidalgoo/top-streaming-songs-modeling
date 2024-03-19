@@ -23,4 +23,5 @@ View(dataset)
 #Revisar los datos imputados (esto te mostrará las imputaciones para las primeras variables con datos faltantes)
 summary(data_mice_imputed)
 
+data <- data_mice_imputed
 save(data_mice_imputed, file="./3_Preprocessing/data_mice_imputed.RData")

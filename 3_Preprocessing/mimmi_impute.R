@@ -108,7 +108,7 @@ dimpute$imputation
 a <- dimpute$completeData
 b <- a[,-15]
 data[,numeric_cols] <- b
-data_mimmi_imputed <- data
 
-save(data_mimmi_imputed, file = "./3_Preprocessing/data_mimmi_imputed.RData")
+
+save(data, file = "./3_Preprocessing/data_mimmi_imputed.RData")
 

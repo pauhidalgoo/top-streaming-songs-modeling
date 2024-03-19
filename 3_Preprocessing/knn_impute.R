@@ -54,5 +54,5 @@ data[,numeric_cols] <- dd
 #Creates a document with the resulting dataset
 data_knn_imputed <- data
 sum(is.na(data_knn_imputed))
-data_knn_imputed <- data
-save(data_knn_imputed, file = "./3_Preprocessing/data_knn_imputed.RData")
+
+save(data, file = "./3_Preprocessing/data_knn_imputed.RData")
