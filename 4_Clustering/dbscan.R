@@ -1,7 +1,7 @@
 # ==============================================================================
 # [IDEAI] -  Advanced clustering algorithm 
 # 
-# Author(s):    Dante Conti and Sergi RamÃƒÂ­rez, IDEAI  (c)
+# Author(s):    Dante Conti and Sergi RamÃƒÂrez, IDEAI  (c)
 # Date:         10th March 2023
 # Description: 
 #             Este script trata los algoritmos de clasificaciÃƒÂ³n por densidad 
@@ -19,11 +19,12 @@ library(dbscan)
 set.seed(04102022)
 
 # ==============================================================================
-### Creamos la base de datos que vamos a utilizar para detectar los grupos
-data("multishapes")
-datos <- multishapes[, 1:2]
+
 
 load("./3_Preprocessing/data_knn_imputed.RData")
+variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
+                         "artist_num", "energy", "loudness", "speechiness", "acousticness", 
+                         "danceability", "liveness", "valence", "tempo", "duration", "streams")
 datos <- data.frame(scale(data_knn_imputed[variables_numericas]))
 
 
@@ -63,11 +64,11 @@ fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE
 ### y no se incluye en ningÃƒÂºn grupo/clÃƒÂºster.
 
 ### Aplicamos el algoritmo de dbscan para classificar los datos
-dbscan_res <- dbscan::dbscan(datos, eps = 0, minPts = 3)
+dbscan_res <- dbscan::dbscan(datos, eps = 2, minPts = 75)
 
 ### Graficamos el dbscan obtenido 
-fviz_cluster(object = dbscan_res, data = datos, geom = "point", ellipse = FALSE,
-             show.clust.cent = FALSE, pallete = "jco") +
+fviz_cluster(object = dbscan_res, data = datos, geom = "point", ellipse = TRUE,
+             show.clust.cent = TRUE, pallete = "jco") +
   theme_bw() +
   theme(legend.position = "none")
 
@@ -99,8 +100,8 @@ min_pts <- round(nrow(datos) * porcentaje)
 min_pts
 # Realizamos los cortes de 2 y 10 que se mencionan anteriormente como validaciÃ³n
 # adicional, pero lineas 98 y 99 pueden comentarse.
-min_pts <- ifelse(min_pts <= 1, 2, min_pts)
-min_pts <- ifelse(min_pts >= 10, 10, min_pts)
+#min_pts <- ifelse(min_pts <= 1, 2, min_pts)
+#min_pts <- ifelse(min_pts >= 10, 10, min_pts)
 
 # ---------------------------------------------------------------------------------------------------
 # NormalizaciÃƒÂ³n de los datos (SIEMPRE HAY QUE HACERLO)
@@ -135,15 +136,15 @@ datos_norm <- data.frame(lapply(datos, scales::rescale))
 ### Esto se hace trazando una recta horizontal desde el mayor cambio y viendo
 ### su valor en el eje Y
 ### GrÃƒÂ¡ficamos los epsilons ordenados
-kNNdistplot(datos, k = 5, minPts = min_pts)
-abline(h = 0.15, lty = 2, col = "red")
+kNNdistplot(datos_norm, k = 5, minPts = min_pts)
+abline(h = 0.4, lty = 2, col = "red")
 
 ### Mirando el grÃƒÂ¡fico elbow vemos que el epsilon es 0.15
-epsilon <- 0.01
+epsilon <- 0.4
 
 # -----------------------------------------------------------------------------
 ### Volvemos a ejecutar el DBSCAN con los parÃƒÂ¡metros ÃƒÂ³ptimos
-res <- dbscan(datos, eps = epsilon, minPts = min_pts) 
+res <- dbscan(datos_norm, eps = epsilon, minPts = min_pts) 
 ### Aqui podeis graficar los resultados como se hizo en lineas precedentes
 ### AÃƒÂ±ado la columna clÃƒÂºster a mis datos.
 datos$cluster <- res$cluster
@@ -155,7 +156,7 @@ datos_limpios <- dplyr::filter(datos, cluster != 0)
 outliers <- dplyr::filter(datos, cluster == 0) 
 
 ### Graficamos el dbscan obtenido. Es el mismo grÃ¡fico anterior pero en PCA 
-fviz_cluster(object = res, data = datos, geom = "point", ellipse = FALSE,
+fviz_cluster(object = res, data = datos, geom = "point", ellipse = TRUE,
              show.clust.cent = FALSE, pallete = "jco") +
   theme_bw() +
   theme(legend.position = "none")
@@ -181,10 +182,10 @@ library(foreach)
 
 ### Definimos los valores que se van a probar para eps y minPts para conformar un
 ### Grid Search
-eps_values <- seq(0.1, 1.0, by = 0.1)
-minPts_values <- seq(5, 20, by = 5)
+eps_values <- seq(0.1, 2.0, by = 0.2)
+minPts_values <- seq(10, 40, by = 5)
 
-### Crear una cuadrÃƒÂ­cula de bÃƒÂºsqueda de los valores de eps y minPts
+### Crear una cuadrÃƒÂcula de bÃƒÂºsqueda de los valores de eps y minPts
 grid <- expand.grid(eps = eps_values, minPts = minPts_values)
 
 ### Establecemos el nÃƒÂºmero de nÃƒÂºcleos que se van a usar para realizar la optimizaciÃƒÂ³n en paralelo
@@ -226,7 +227,7 @@ eps_values <- seq(0.1, 1, by = 0.1)
 optics_results <- lapply(eps_values, function(e) optics(datos[, -3], eps = e, minPts = 5))
 
 #### Obtener los agrupamientos para cada valor de eps
-clusters <- lapply(optics_results, function(x) extractDBSCAN(x, eps = x$eps))
+clusters <- lapply(optics_results, function(x) extractDBSCAN(x, eps = x$eps))http://127.0.0.1:28647/graphics/6140a8ae-b6b4-4568-9dd9-5f75c657c04a.png
 
 #### Calcular la medida de silhouette promedio para cada valor de eps
 silhouette_avg <- sapply(clusters, function(x) mean(cluster::silhouette(x$cluster, dist(datos[, -3]))))
