@@ -13,7 +13,7 @@ library(fpc)
 library(pracma)
 library(factoextra)
 library(dbscan)
-
+library(dplyr)
 # =============================================================================
 ### Generamos una semilla para poder ejecutar los datos
 set.seed(04102022)
@@ -25,22 +25,73 @@ load("./3_Preprocessing/data_knn_imputed.RData")
 variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
                          "artist_num", "energy", "loudness", "speechiness", "acousticness", 
                          "danceability", "liveness", "valence", "tempo", "duration", "streams")
-datos <- data.frame(scale(data_knn_imputed[variables_numericas]))
+datos <- data[variables_numericas]
 
+datos_norm <- data.frame(lapply(datos, scales::rescale))
 
+pca <- prcomp(datos_norm, scale = TRUE)
+iden = 0
+varianza <- pca$sdev^2
+total_varianza <- sum(varianza)
+perc_varianza <- 100*varianza/total_varianza
+perc_var1 <- round(perc_varianza[1], 2)
+perc_var2 <- round(perc_varianza[2], 2)
+label_x <- paste("1r component (", perc_var1, "%)")
+label_y <- paste("2n component (", perc_var2, "%)")
+
+df_psi <- data.frame(PC1 = pca$x[, 1], PC2 = pca$x[, 2], color = iden)
 ### Printamos la imagen que hemos obtenido de los datos a clasificar
-ggplot2::ggplot(datos, aes(x = x, y = y)) + 
-  ggplot2::geom_point(color='#3333FF')
+p <- ggplot(df_psi, aes(x = PC1, y = PC2)) +
+  geom_vline(aes(xintercept = 0), color = "black", linewidth = 0.75) +
+  geom_hline(aes(yintercept = 0), color = "black", linewidth = 0.75) +
+  theme_minimal() +
+  theme(axis.line = element_line(color = "black"),
+        panel.grid.major = element_line(linetype = "dashed", color = rgb(0, 0, 0, 100, maxColorValue = 255)),
+        legend.position = "none") +
+  geom_point(aes(color =color), alpha = 0.35) +
+  labs(x = label_x,y = label_y,
+       title = "Projecció de totes les dades sobre els 2 primers Components Principals")
+print(p)
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpca.png", width=8,height=6, dpi=300)
 
+fviz_pca_var(pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+)
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents.png", width=8,height=6, dpi=300)
+
+fviz_pca_var(pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             axes = c(3,4),
+             repel = TRUE     # Avoid text overlapping
+)
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents34.png", width=8,height=6, dpi=300)
 # ==============================================================================
 # KMEANS: 
 ### GrÃƒÂ¡ficamos los datos a travÃƒÂ©s de un k-means para visualizar como quedarian los 
 ### grupos cuando utilizamos unos algoritmos de agrupaciÃƒÂ³n a partir de la inercia
-km_clusters <- kmeans(x = datos, centers = 5, nstart = 50)
+km_clusters <- kmeans(x = datos_norm, centers = 5, nstart = 50)
 fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco") +
   theme_bw() +
   theme(legend.position = "none")
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans.png", width=8,height=6, dpi=300)
+
+km_clusters <- kmeans(x = datos_norm, centers = 5, nstart = 50)
+fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE,
+             show.clust.cent = FALSE, pallete = "jco", axes  =  c ( 3 , 4 )) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans34.png", width=8,height=6, dpi=300)
+
+#data$cluster <- km_clusters$cluster
+
+# save(data, file = "./4_Preprocessing/kmeansclustering.RData")
 
 ### Como podemos ver, Kmeans ha hecho una muy mala clusterizaciÃƒÂ³n, puesto que:
 ###  - No ha conseguido clusterizar segÃƒÂºn las formas complejas del modelo.
@@ -64,13 +115,17 @@ fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE
 ### y no se incluye en ningÃƒÂºn grupo/clÃƒÂºster.
 
 ### Aplicamos el algoritmo de dbscan para classificar los datos
-dbscan_res <- dbscan::dbscan(datos, eps = 2, minPts = 75)
+dbscan_res <- dbscan::dbscan(datos_norm, eps = 0.15, minPts = 20)
 
 ### Graficamos el dbscan obtenido 
-fviz_cluster(object = dbscan_res, data = datos, geom = "point", ellipse = TRUE,
-             show.clust.cent = TRUE, pallete = "jco") +
+fviz_cluster(object = dbscan_res, data = datos_norm, geom = "point", ellipse = FALSE,
+             show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
   theme(legend.position = "none")
+
+length(unique(dbscan_res$cluster))
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/baddbscan.png", width=8,height=6, dpi=300)
 
 ### Para escoger los valores de eps i minPts, necesitaremos optimizar el proceso. Para ello, 
 ### realizaremos la siguiente tÃƒÂ©cnica de optimizaciÃƒÂ³n. 
@@ -93,7 +148,7 @@ fviz_cluster(object = dbscan_res, data = datos, geom = "point", ellipse = TRUE,
 ### - un poco mÃ¡s dependiendo del tamaÃ±o de la base de datos
 
 #### CÃƒÂ¡lculo de min_pts
-porcentaje <- 0.0025 
+porcentaje <- 0.0025
 
 # CÃƒÂ¡lculo de min_pts. 
 min_pts <- round(nrow(datos) * porcentaje) 
@@ -113,154 +168,88 @@ datos_norm <- data.frame(lapply(datos, scales::rescale))
 # -----------------------------------------------------------------------------
 # Calculo de la Epsilon (eps)
 ### Realizamos el cÃƒÂ¡lculo de las distancias mas cercanas en una matriz de puntos
-#### distanciasVecinas <- dbscan::kNNdist(datos, k = min_pts)
+distanciasVecinas <- dbscan::kNNdist(datos_norm, k = min_pts)
 
 ### Ordenamos los puntos de menos a mayor y lo guardamos en un vector.
 ### Cuando realicemos el grÃƒÂ¡fico elbow, serÃƒÂ¡ nuestro eje de las Y
-#### Y <- distanciasVecinas[order(distanciasVecinas)]
+Y <- distanciasVecinas[order(distanciasVecinas)]
 
 ### Calculamos el ÃƒÂ­ndice del eje de la X
-#### X <- c(0:(length(Y) - 1))
+X <- c(0:(length(Y) - 1))
 
 ### A continuaciÃƒÂ³n calculamos las pendientes
-#### pendientes <- c()
-#### for (i in 1:length(X)) {
-####	pendientes[i] <- (Y[i + 1] - Y[i])/(X[i+1] - X[i])
-#### }
+slopes <- diff(Y) / diff(X)
 
-#### m <- which.max(pendientes)
-#### primer <- gdata::first(which(pendientes >= m))
-#### epsilon <- Y[primer]
+# Find the point with the maximum difference in slope
+max_diff_index <- which.max(diff(slopes))
+
+primer <- gdata::first(which(slopes >= slopes[max_diff_index]))
+epsilon <- Y[primer]
 ###NOTa, ejecutar lineas 131 y 132 para decidir el corte en el mÃ¡ximo
 ### cambio de la pendiente, como podeÃ­s apreciar ocurre alrededor de 0.15
 ### Esto se hace trazando una recta horizontal desde el mayor cambio y viendo
 ### su valor en el eje Y
 ### GrÃƒÂ¡ficamos los epsilons ordenados
-kNNdistplot(datos_norm, k = 5, minPts = min_pts)
-abline(h = 0.4, lty = 2, col = "red")
+epsilon
 
+kNNdistplot(datos_norm, k = 22, minPts = min_pts)
+abline(h = epsilon, lty = 2, col = "blue")
+abline(h = 0.55, lty = 2, col = "red")
 ### Mirando el grÃƒÂ¡fico elbow vemos que el epsilon es 0.15
-epsilon <- 0.4
+epsilon <- 0.55
 
 # -----------------------------------------------------------------------------
 ### Volvemos a ejecutar el DBSCAN con los parÃƒÂ¡metros ÃƒÂ³ptimos
 res <- dbscan(datos_norm, eps = epsilon, minPts = min_pts) 
 ### Aqui podeis graficar los resultados como se hizo en lineas precedentes
+
+### Graficamos el dbscan obtenido 
+fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
+             show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+length(unique(res$cluster))
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanauto.png", width=8,height=6, dpi=300)
+
+res <- dbscan(datos_norm, eps = 0.47, minPts = 70) 
+### Aqui podeis graficar los resultados como se hizo en lineas precedentes
+
+### Graficamos el dbscan obtenido 
+fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
+             show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+length(unique(res$cluster))
+
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforca.png", width=8,height=6, dpi=300)
+
+fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
+             show.clust.cent = FALSE, axes = c(3,4), pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+  theme_bw() +
+  theme(legend.position = "none")
+ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforcaalt34.png", width=8,height=6, dpi=300)
+
 ### AÃƒÂ±ado la columna clÃƒÂºster a mis datos.
-datos$cluster <- res$cluster
+data$cluster <- res$cluster
 
 ### Guardo datos limpios.
-datos_limpios <- dplyr::filter(datos, cluster != 0)
+datos_limpios <- dplyr::filter(data, cluster != 0)
 
 ### Guardo outliers.
-outliers <- dplyr::filter(datos, cluster == 0) 
+outliers <- dplyr::filter(data, cluster == 0) 
 
 ### Graficamos el dbscan obtenido. Es el mismo grÃ¡fico anterior pero en PCA 
-fviz_cluster(object = res, data = datos, geom = "point", ellipse = TRUE,
+fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = TRUE,
              show.clust.cent = FALSE, pallete = "jco") +
   theme_bw() +
   theme(legend.position = "none")
 
 ### Otra manera de visualizar los clusters obtenidos
-hullplot(datos, res$cluster, main = paste0("Convex cluster Hulls, eps = ", epsilon))
+hullplot(datos_norm, res$cluster, main = paste0("Convex cluster Hulls, eps = ", epsilon))
 
 # =============================================================================
-# OPTICS
 
-### Ejecutamos el algoritmo OPTICS con un radio de vecindad de 0.5 y un nÃƒÂºmero mÃƒÂ­nimo de puntos de 5
-optics <- dbscan::optics(datos, eps = 0.5, minPts = 5)
-#### optics <- optics::optics(data, eps = 0.5, minPts = 5)
-
-# -----------------------------------------------------------------------------
-### Creamos un grÃƒÂ¡fico que muestra la distancia alcanzable de cada punto
-plot(optics, reachability = TRUE)
-
-# -----------------------------------------------------------------------------
-### Optimizamos la bÃƒÂºsqueda de parÃƒÂ¡metros para epsilon y minPts en Optics
-library(doParallel)
-library(foreach)
-
-### Definimos los valores que se van a probar para eps y minPts para conformar un
-### Grid Search
-eps_values <- seq(0.1, 2.0, by = 0.2)
-minPts_values <- seq(10, 40, by = 5)
-
-### Crear una cuadrÃƒÂcula de bÃƒÂºsqueda de los valores de eps y minPts
-grid <- expand.grid(eps = eps_values, minPts = minPts_values)
-
-### Establecemos el nÃƒÂºmero de nÃƒÂºcleos que se van a usar para realizar la optimizaciÃƒÂ³n en paralelo
-cores <- detectCores()
-registerDoParallel(cores = cores)
-
-### Creamos una funciÃƒÂ³n para ejecutar OPTICS con una combinaciÃƒÂ³n de parÃƒÂ¡metros y calcular el coeficiente de silueta. 
-### Esta funciÃ³n puede adaptarse por si se desea aplicar una grid search similar en DBSCAN
-run_optics <- function(data, eps, minPts) {
-  optics <- dbscan::optics(data, eps = eps, minPts = minPts)
-  res <- dbscan::extractDBSCAN(optics, eps_cl = eps)
-  sil <- cluster::silhouette(res$cluster, dist(data))
-  return(ifelse(is.na(sil), sil, mean(sil[, 3])))
-}
-### Con esta funciÃƒÂ³n nos permitirÃƒÂ¡ luego paralelizar le proceso
-
-### Ejecutar la cuadrÃƒÂ­cula de bÃƒÂºsqueda en paralelo para la funciÃƒÂ³n dada
-results <- foreach(i = 1:nrow(grid), .combine = rbind) %dopar% {
-  eps <- grid$eps[i]
-  minPts <- grid$minPts[i]
-  score <- run_optics(datos[, -3], eps, minPts)
-  c(eps, minPts, score)
-}
-
-results <- results[, c(1:3)]
-
-### Seleccionamos la combinaciÃƒÂ³n de parÃƒÂ¡metros que produjo el mejor resultado
-best_params <- grid[which.max(results[, 3]), ]
-best_params
-### Creamos el modelo con los mejores parÃƒÂ¡metros
-optics <- dbscan::optics(datos, eps = best_params$eps, minPts = best_params$minPts)
-## Aqui debeis rescatar los resultados del cluster pero debias decidir donde cortar
-## el reachability plot
-# -----------------------------------------------------------------------------
-### Metodo de la silueta
-
-#### Ejecutar OPTICS para diferentes valores de eps
-eps_values <- seq(0.1, 1, by = 0.1)
-optics_results <- lapply(eps_values, function(e) optics(datos[, -3], eps = e, minPts = 5))
-
-#### Obtener los agrupamientos para cada valor de eps
-clusters <- lapply(optics_results, function(x) extractDBSCAN(x, eps = x$eps))http://127.0.0.1:28647/graphics/6140a8ae-b6b4-4568-9dd9-5f75c657c04a.png
-
-#### Calcular la medida de silhouette promedio para cada valor de eps
-silhouette_avg <- sapply(clusters, function(x) mean(cluster::silhouette(x$cluster, dist(datos[, -3]))))
-
-# Graficar la medida de silhouette promedio en funciÃƒÂ³n de eps
-plot(eps_values, silhouette_avg, type = "b", pch = 20, main = "Silhouette Plot")
-
-# Agregar una lÃƒÂ­nea vertical en el valor ÃƒÂ³ptimo de eps, el que maximiza la silhoutte
-## o podeis escoger un valor arbitrario para cortar el reachability plot y probar
-## diferentes configuraciones que os daran diferentes cantidades de clusters.
-opt_eps <- eps_values[which.max(silhouette_avg)]
-# Fijaros que del grÃ¡fico anterior se aconseja cortar en 0.10 (ya que maximiza)
-# la silhoutte
-abline(v = opt_eps, lty = 2, col = "red")
-
-
-# -----------------------------------------------------------------------------------
-### extract a DBSCAN clustering by cutting the reachability plot at eps_cl
-### La elecciÃ³n del eps_cl puede obtenerse segun lo explicado anteriormente
-### o podeis "jugar con el obtener diferentes configuraciones de cluster como
-### se hace con los dendogramas de clustering jerarquico.
-opt_eps
-res <- dbscan::extractDBSCAN(optics, eps_cl = opt_eps)
-
-### black is noise
-plot(res)  
-
-### Visualizamos el grÃƒÂ¡fico con los grupos creados
-dbscan::hullplot(datos, res)
-res$cluster
-table(res$cluster)
-## No olvideis guardar los resultados del clustering como se hizo con DBSCAN
-### Aqui se han formado 3 clusters, uno de ellos es NOISE o posibles OUTLIERS.
-### Conviene cortar el reachability plot con otros valores diferentes de 0.10
-### para obtener mÃ¡s clustering. Queda de EJERCICIO para CASA.
-# ==============================================================================
+# save(data, file = "./4_Preprocessing/dbscan_clustering.RData")
