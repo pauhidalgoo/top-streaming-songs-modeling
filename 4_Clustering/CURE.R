@@ -6,8 +6,6 @@ r <- 0.15
 metodo <- "euclidean"
 
 load("./3_Preprocessing/data_knn_imputed.RData")
-write.csv(data_knn_imputed, "data_knn_imputed.csv", row.names = FALSE)
-
 
 # Definir variables numèriques i categòriques
 variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
