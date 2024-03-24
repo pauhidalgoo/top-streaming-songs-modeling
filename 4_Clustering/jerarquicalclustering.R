@@ -43,7 +43,7 @@ dend <- as.dendrogram(h1)
 dend <- color_branches(dend, k=4)
 plot(dend, main='Hierarchical Clustering')
 
-clusteres <- cutree(h1, k=2)
+clusteres <- cutree(h1, k=4)
 data$cluster_hier <- clusteres
 
 
