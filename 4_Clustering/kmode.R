@@ -60,3 +60,19 @@ print(clusters)
 # Para ver los centros de los clusters:
 centers <- result$centers
 print(centers)
+
+# Para visualizar los clústers
+library(factoextra)
+
+variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
+                         "artist_num", "energy", "loudness", "speechiness", "acousticness", 
+                         "danceability", "liveness", "valence", "tempo", "duration", "streams")
+datos <- data[variables_numericas]
+
+object = list(data = datos, cluster = result$cluster)
+
+fviz_cluster(object = object, data = datos_norm, geom = "point", ellipse = TRUE,
+             show.clust.cent = TRUE, palette = "npg", axes=c(5,6),outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+  theme_bw() +
+  theme(legend.position = "none")
+
