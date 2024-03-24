@@ -9,7 +9,7 @@ library(klaR)
 set.seed(2004)
 
 variables_cat <- c("album_type","pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "key", "major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city")
-#falta ciutat!
+
 data_cat <- data[,variables_cat]
 
 for (nom_columna in names(data_cat)) {
@@ -32,8 +32,6 @@ print(cl)
 
 # ------------------------------------------------------------------------------
 # Visualizamos los clusters obtenidos 
-
-
 
 # ==============================================================================
 #PROTOTYPES!
