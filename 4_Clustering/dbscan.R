@@ -65,7 +65,7 @@ ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents.png", width=8
 fviz_pca_var(pca,
              col.var = "contrib", # Color by contributions to the PC
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             axes = c(3,4),
+             axes = c(5,6),
              repel = TRUE     # Avoid text overlapping
 )
 ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents34.png", width=8,height=6, dpi=300)
@@ -77,7 +77,8 @@ km_clusters <- kmeans(x = datos_norm, centers = 5, nstart = 50)
 fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco") +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("K-MEANS cluster")
 
 ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans.png", width=8,height=6, dpi=300)
 
@@ -85,7 +86,8 @@ km_clusters <- kmeans(x = datos_norm, centers = 5, nstart = 50)
 fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco", axes  =  c ( 3 , 4 )) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("K-MEANS cluster")
 
 ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans34.png", width=8,height=6, dpi=300)
 
@@ -121,7 +123,8 @@ dbscan_res <- dbscan::dbscan(datos_norm, eps = 0.15, minPts = 20)
 fviz_cluster(object = dbscan_res, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("DBSCAN cluster")
 
 length(unique(dbscan_res$cluster))
 
@@ -207,7 +210,8 @@ res <- dbscan(datos_norm, eps = epsilon, minPts = min_pts)
 fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("DBSCAN cluster")
 
 length(unique(res$cluster))
 
@@ -220,7 +224,8 @@ res <- dbscan(datos_norm, eps = 0.47, minPts = 70)
 fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("DBSCAN cluster")
 
 length(unique(res$cluster))
 
@@ -229,7 +234,8 @@ ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforca.png", width=8,height=
 fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, axes = c(3,4), pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("DBSCAN cluster")
 ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforcaalt34.png", width=8,height=6, dpi=300)
 
 ### AÃƒÂ±ado la columna clÃƒÂºster a mis datos.

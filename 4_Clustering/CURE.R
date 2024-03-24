@@ -4,20 +4,23 @@ k <- 4
 r <- 0.15
 
 metodo <- "euclidean"
-
-load("./3_Preprocessing/data_knn_imputed.RData")
+set.seed(04102022)
+load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
 # Definir variables numèriques i categòriques
 variables_numericas <- c("track_popularity", "album_popularity", "artist_popularity", 
                          "artist_num", "energy", "loudness", "speechiness", "acousticness", 
                          "danceability", "liveness", "valence", "tempo", "duration", "streams")
-variables_categoricas <- c("pop", "hip_hop", "electro", "christmas", "cinema", "latino", "collab", "explicit", "major_mode")
+
+
+variables_categoricas <- c("pop", "hip_hop", "electro", "christmas", "cinema", "latino", "collab", "explicit", "major_mode", "is_group", "gender", "rank_group")
 
 
 # Separar les variables
-data_numericas <- data.frame(scale(data_knn_imputed[variables_numericas]))
 
-data_categoricas <- data_knn_imputed[variables_categoricas]
+data_numericas <- data.frame(scale(data[variables_numericas]))
+
+data_categoricas <- data[variables_categoricas]
 
 # Codificació one-hot amb model.matrix
 data_categorica_one_hot <- model.matrix(~ . - 1, data = data_categoricas)
@@ -27,7 +30,7 @@ data_categorica_one_hot_df <- as.data.frame(data_categorica_one_hot)
 
 # Combinar les dades en un dataset
 data <- cbind(data_numericas, data_categorica_one_hot_df)
-
+datainit <- data
 
 n <- ceiling(0.3 * nrow(data))
 
@@ -44,7 +47,6 @@ plot(hclust)
 # dissimMatrix <- daisy(data[,colsNoMiss], metric = "gower", stand=TRUE)
 # distMatrix<-dissimMatrix^2
 # hclust <- hclust(dist(data, method = metodo), method = "ward.D2")
-
 
 
 subsets <- cutree(hclust, k)
@@ -86,7 +88,11 @@ centroidesRepresentativos <- dplyr::bind_rows(merged_representatives)
 NuevosCentroides <- centroidesRepresentativos %>%
   group_by(cluster) %>%
   summarise_all(mean) %>% data.frame()
-
+names(NuevosCentroides)[names(NuevosCentroides) == "gendernon.binary"] <- "gendernon-binary"
+names(NuevosCentroides)[names(NuevosCentroides) == "rank_group1.10"] <- "rank_group1-10"
+names(NuevosCentroides)[names(NuevosCentroides) == "rank_group11.20"] <- "rank_group11-20"
+names(NuevosCentroides)[names(NuevosCentroides) == "rank_group21.30"] <- "rank_group21-30"
+names(NuevosCentroides)[names(NuevosCentroides) == "rank_group31.40"] <- "rank_group31-40"
 clusterPertenece <- c()
 for (i in 1:nrow(dataNoMuestra)) {
   bbdd <- dataNoMuestra[i, ]
@@ -104,4 +110,27 @@ dataNoMuestra
 
 table(dataMuestra$cluster)
 table(dataNoMuestra$cluster)
+
+# Visualitzem
+clusterPertenece <- c()
+data <- datainit
+for (i in 1:nrow(data)) {
+  bbdd <- data[i, ]
+  bbdd$cluster <- 0
+  agregado <- rbind(bbdd, NuevosCentroides)
+  distanciaCorr <- as.matrix(dist(agregado[, -1], method = metodo))[1, -1]
+  quienEsMenor <- as.numeric(which.min(distanciaCorr))
+  clusterPertenece <- c(clusterPertenece, agregado[quienEsMenor + 1, "cluster"])   
+}
+
+data <- data[,variables_numericas]
+object = list(data = data, cluster = clusterPertenece)
+
+
+fviz_cluster(object = object, data = data, geom = "point", ellipse = TRUE,
+             show.clust.cent = FALSE, palette = "npg", axes=c(1,2),outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  ggtitle("CURE cluster")
+ggsave("C:/Users/Usuario/Pictures/PMAAD/CURE/cure.png", width=8,height=6, dpi=300)
 

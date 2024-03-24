@@ -72,7 +72,8 @@ datos <- data[variables_numericas]
 object = list(data = datos, cluster = result$cluster)
 
 fviz_cluster(object = object, data = datos_norm, geom = "point", ellipse = TRUE,
-             show.clust.cent = TRUE, palette = "npg", axes=c(5,6),outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
+             show.clust.cent = FALSE, palette = "npg", axes=c(5,6),outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  ggtitle("KMODE cluster")
 

@@ -83,7 +83,8 @@ object = list(data = datos_norm, cluster = res$cluster)
 fviz_cluster(object = object, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, palette = "lancet", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("OPTICS cluster")
 
 length(unique(res$cluster))
 
