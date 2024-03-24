@@ -2,9 +2,6 @@
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
-#CLUSTERING
-#després d'executar l'script 'preprocessing_revisat'
-
 var_num <- data[,c("track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
 
 ### ESTANDARDITZAR DADES
@@ -26,11 +23,22 @@ categorical_vars <- data[, sapply(data, is.factor)]
 categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
 
 actives <- data.frame(categorical_vars, var_num_cols)
+vars <- subset(actives, select = -c(week_index, day_release))
 
-dissimMatrix <- daisy(actives, metric = "gower", stand=TRUE)
+dissimMatrix <- daisy(vars, metric = "gower", stand=TRUE)
 
 distMatrix<-dissimMatrix^2
 
 h1 <- hclust(distMatrix,method="ward.D2")  # NOTICE THE COST
 
 plot(h1)
+rect.hclust(h1, k=4, border="red") 
+
+# k triada: 4
+# dendograma amb colors
+#install.packages("dendextend")
+
+library(dendextend)
+dend <- as.dendrogram(h1)
+dend <- color_branches(dend, k=4)
+plot(dend, main='Hierarchical Clustering')
