@@ -3,10 +3,10 @@
 # escoltades mensualment a Spotify entre 2017 i 2021.
 # ==============================================================================
 # Carreguem les llibreries necessàries
+library(proxy)
 library(dtw)
 library(tidyverse)
 library(reshape2)
-library(proxy)
 library(dtwclust)
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
@@ -27,7 +27,6 @@ datos <- reshape2::dcast(data, track_name ~ year_month, value.var = "streams", f
 # Establim track_name com els noms de les files i l'eliminem de les variables
 rownames(datos) <- datos$track_name
 datos[, "track_name"] <- NULL
-
 
 # ==============================================================================
 # Calculem la distància DTW
@@ -62,28 +61,14 @@ plot(dend_colored, main = "Dendrograma de Clustering de Cançons")
 # Clustering Particional i Jeràrquic amb dtwclust
 
 # Particional
-pc <- tsclust(datos, type = "partitional", k = 5, 
+pc <- tsclust(datos, type = "partitional", k = 5L, 
               distance = "dtw_basic", centroid = "pam", 
               seed = 3247L, trace = TRUE,
-              args = tsclust_args(dist = list(window.size = 5)))
-plot(pc)
+              args = tsclust_args(dist = list(window.size = 5L)))
+plot(pc, type = "sc")
 
-# Jeràrquic
-hc <- tsclust(datos, type = "hierarchical", k = 5, 
-              distance = "dtw_basic", trace = TRUE,
-              control = hierarchical_control(method = "ward.D2"))
-
-hc <- set_labels(hc, labels = NA)
-plot(hc)
-
-# Convertim el cluster a un objecte d'hclust per poder representar millor el plot
-hclust_obj <- as.hclust(hc)
-
-# Posteriorment ho canviem a dendrograma
-dendrogram_obj <- as.dendrogram(hclust_obj)
-
-# Eliminem les etiquetes horitzontals (noms de les cançons)
-dendrogram_obj <- set_labels(dendrogram_obj, labels = NA)
-
-# Grafiquem el dendrograma final
-plot(dendrogram_obj, main = "Dendrograma del Clustering")
+#hc <- tsclust(datos, type = "h", k = 5L, 
+#              distance = "dtw", 
+#              trace = TRUE,
+#              args = tsclust_args(dist = list(window.size = 5L)))
+#plot(hc, type = "sc")
