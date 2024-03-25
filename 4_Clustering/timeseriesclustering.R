@@ -21,27 +21,13 @@ data <- data %>%
   mutate(year_month = sprintf("%s-%02d", year_week, as.integer(month_week))) %>%
   select(track_name, year_month, streams)
 
-# Sumem els streams per track_name i year_month
-aggregated_data <- data %>%
-  group_by(track_name, year_month) %>%
-  summarise(streams = sum(streams), .groups = 'drop')
-
-# Preparació de les dades abans del pivot
-aggregated_data <- aggregated_data %>%
-  arrange(year_month) # Assegurem que les dades estan ordenades per year_month abans del pivot
-
 # Pivotem per tenir year_month en columnes i track_name en files
-# Assegurem que les columnes estan correctament ordenades per year_month durant el pivot
-datos <- pivot_wider(aggregated_data, names_from = year_month, values_from = streams, values_fill = list(streams = 0))
+datos <- reshape2::dcast(data, track_name ~ year_month, value.var = "streams", fun.aggregate = sum, na.rm = TRUE, fill = 0)
 
-# Convertim a data frame si és necessari i establim track_name com els noms de fila
-# Nota: pivot_wider pot retornar un tibble, així que ho convertim a data.frame
-datos <- as.data.frame(datos)
-
-# Establim track_name com els noms de les files
+# Establim track_name com els noms de les files i l'eliminem de les variables
 rownames(datos) <- datos$track_name
-# Eliminem la columna track_name ja que ara és l'identificador de fila
-datos <- datos[ , !(names(datos) %in% c("track_name"))]
+datos[, "track_name"] <- NULL
+
 
 # ==============================================================================
 # Calculem la distància DTW
@@ -76,16 +62,19 @@ plot(dend_colored, main = "Dendrograma de Clustering de Cançons")
 # Clustering Particional i Jeràrquic amb dtwclust
 
 # Particional
-pc <- tsclust(datos, type = "partitional", k = 20L, 
+pc <- tsclust(datos, type = "partitional", k = 5, 
               distance = "dtw_basic", centroid = "pam", 
               seed = 3247L, trace = TRUE,
-              args = tsclust_args(dist = list(window.size = 20L)))
+              args = tsclust_args(dist = list(window.size = 5)))
 plot(pc)
 
 # Jeràrquic
-hc <- tsclust(datos, type = "hierarchical", k = 20L, 
+hc <- tsclust(datos, type = "hierarchical", k = 5, 
               distance = "dtw_basic", trace = TRUE,
               control = hierarchical_control(method = "ward.D2"))
+
+hc <- set_labels(hc, labels = NA)
+plot(hc)
 
 # Convertim el cluster a un objecte d'hclust per poder representar millor el plot
 hclust_obj <- as.hclust(hc)
