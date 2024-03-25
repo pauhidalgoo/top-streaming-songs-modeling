@@ -1,10 +1,8 @@
 # ==============================================================================
-# Adaptación del script para agrupación mensual de datos de Spotify sin errores
-# 
-# Descripción: Clustering de series temporales para las canciones más
-# escuchadas mensualmente en Spotify entre 2017 y 2021, corrigiendo errores.
+# Descripció: Clustering de sèries temporals per a les cançons més
+# escoltades mensualment a Spotify entre 2017 i 2021.
 # ==============================================================================
-# Cargamos las librerías necesarias
+# Carreguem les llibreries necessàries
 library(dtw)
 library(tidyverse)
 library(reshape2)
@@ -14,68 +12,68 @@ library(dtwclust)
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
 # ==============================================================================
-# Preparación de los datos
+# Preparació de les dades
 
-# Transformamos year_week y month_week a una única columna de texto para el mes y año,
-# asegurando que los meses menores que 10 incluyan un 0 adelante.
+# Transformem year_week i month_week en una única columna de text per al mes i any,
+# assegurant que els mesos menors que 10 incloguin un 0 davant.
+
 data <- data %>% 
   mutate(year_month = sprintf("%s-%02d", year_week, as.integer(month_week))) %>%
   select(track_name, year_month, streams)
 
-
-# Sumamos los streams por track_name y year_month
+# Sumem els streams per track_name i year_month
 aggregated_data <- data %>%
   group_by(track_name, year_month) %>%
   summarise(streams = sum(streams), .groups = 'drop')
 
-# Preparación de los datos antes del pivot
+# Preparació de les dades abans del pivot
 aggregated_data <- aggregated_data %>%
-  arrange(year_month) # Aseguramos que los datos estén ordenados por year_month antes del pivot
+  arrange(year_month) # Assegurem que les dades estan ordenades per year_month abans del pivot
 
-# Pivotamos para tener year_month en columnas y track_name en filas
-# Aseguramos que las columnas estén correctamente ordenadas por year_month durante el pivot
+# Pivotem per tenir year_month en columnes i track_name en files
+# Assegurem que les columnes estan correctament ordenades per year_month durant el pivot
 datos <- pivot_wider(aggregated_data, names_from = year_month, values_from = streams, values_fill = list(streams = 0))
 
-# Convertimos a data frame si es necesario y establecemos track_name como los nombres de fila
-# Nota: pivot_wider puede devolver un tibble, así que lo convertimos a data.frame
+# Convertim a data frame si és necessari i establim track_name com els noms de fila
+# Nota: pivot_wider pot retornar un tibble, així que ho convertim a data.frame
 datos <- as.data.frame(datos)
 
-# Establecemos track_name como los nombres de las filas
+# Establim track_name com els noms de les files
 rownames(datos) <- datos$track_name
-# Eliminamos la columna track_name ya que ahora es el identificador de fila
+# Eliminem la columna track_name ja que ara és l'identificador de fila
 datos <- datos[ , !(names(datos) %in% c("track_name"))]
 
 # ==============================================================================
-# Calculamos la distancia DTW
+# Calculem la distància DTW
 distMatrix <- proxy::dist(datos, method = "DTW")
 
-# Generamos el clustering
+# Generem el clustering
 hcc <- hclust(distMatrix, method = "ward.D2")
-plot(hcc, hang = -1, cex = 0.6, labels = FALSE) # Ajustamos las etiquetas y las omitimos
+plot(hcc, hang = -1, cex = 0.6, labels = FALSE) # Ajustem les etiquetes i les ometem
 
-# Realizamos el corte en un número deseado de clases
-k <- 5 # Ajusta este valor según el análisis deseado
+# Realitzem la tallada en un nombre desitjat de classes
+k <- 5
 clusters <- cutree(hcc, k = k)
 
-# Print cluster tables
+# Imprimim les taules de clusters
 table(clusters)
 
 # ==============================================================================
-# Clusterización con dendrograma coloreado
+# Clusterització amb dendrograma colorat
 library(dendextend)
 
-# Convertimos hcc a dendrograma para colorear los clusters
+# Convertim hcc a dendrograma per colorar els clusters
 dend <- as.dendrogram(hcc)
 dend_colored <- color_branches(dend, k = k)
 
-# Eliminamos etiquetas
-dend_colored <- set_labels(dend_colored, labels=NA)
+# Eliminem etiquetes
+dend_colored <- set_labels(dend_colored, labels = NA)
 
-# Ploteamos el dendrograma coloreado sin etiquetas
-plot(dend_colored, main = "Dendrograma de Clustering de Canciones")
+# Plotejem el dendrograma colorat sense etiquetes
+plot(dend_colored, main = "Dendrograma de Clustering de Cançons")
 
 # ==============================================================================
-# Clustering Particional y Jerárquico con dtwclust
+# Clustering Particional i Jeràrquic amb dtwclust
 
 # Particional
 pc <- tsclust(datos, type = "partitional", k = 20L, 
@@ -84,21 +82,19 @@ pc <- tsclust(datos, type = "partitional", k = 20L,
               args = tsclust_args(dist = list(window.size = 20L)))
 plot(pc)
 
-# Hierarchical
+# Jeràrquic
 hc <- tsclust(datos, type = "hierarchical", k = 20L, 
               distance = "dtw_basic", trace = TRUE,
               control = hierarchical_control(method = "ward.D2"))
 
-# Asumimos que 'hc' es un objeto resultante de tsclust
-# Convertimos a un objeto hclust
+# Convertim el cluster a un objecte d'hclust per poder representar millor el plot
 hclust_obj <- as.hclust(hc)
 
-# Luego, convertimos el objeto hclust a un dendrograma
+# Posteriorment ho canviem a dendrograma
 dendrogram_obj <- as.dendrogram(hclust_obj)
 
-# Removemos las etiquetas de los nodos
+# Eliminem les etiquetes horitzontals (noms de les cançons)
 dendrogram_obj <- set_labels(dendrogram_obj, labels = NA)
 
-# Ahora, graficamos el dendrograma sin etiquetas de nodos pero con las alturas
+# Grafiquem el dendrograma final
 plot(dendrogram_obj, main = "Dendrograma del Clustering")
-
