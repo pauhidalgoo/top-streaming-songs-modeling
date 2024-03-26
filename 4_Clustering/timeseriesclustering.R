@@ -3,20 +3,22 @@
 # escoltades mensualment a Spotify entre 2017 i 2021.
 # ==============================================================================
 # Carreguem les llibreries necessàries
+library(dplyr)
+library(tidyr)
 library(proxy)
 library(dtw)
 library(tidyverse)
 library(reshape2)
 library(dtwclust)
 
+# Carreguem les dades
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Preparació de les dades
 
 # Transformem year_week i month_week en una única columna de text per al mes i any,
-# assegurant que els mesos menors que 10 incloguin un 0 davant.
-
+# assegurant que els mesos menors que 10 incloguin un 0 davant
 data <- data %>% 
   mutate(year_month = sprintf("%s-%02d", year_week, as.integer(month_week))) %>%
   select(track_name, year_month, streams)
@@ -29,46 +31,119 @@ rownames(datos) <- datos$track_name
 datos[, "track_name"] <- NULL
 
 # ==============================================================================
-# Calculem la distància DTW
+# Calculem la distància DTW amb proxy
+# Tarda molt, només necessari per escollir k inicial
+# Posteriorment es pot passar directament al clustering jeràrquic fet amb dtw::tsclust (utilitza dtw_basic però obté mateixos resultats)
 distMatrix <- proxy::dist(datos, method = "DTW")
 
 # Generem el clustering
-hcc <- hclust(distMatrix, method = "ward.D2")
-plot(hcc, hang = -1, cex = 0.6, labels = FALSE) # Ajustem les etiquetes i les ometem
+hc_o <- hclust(distMatrix, method = "ward.D2")
+plot(hc_p, hang = -1, cex = 0.6, labels = FALSE) # Ajustem les etiquetes i les ometem
 
 # Realitzem la tallada en un nombre desitjat de classes
 k <- 5
-clusters <- cutree(hcc, k = k)
+clusters_original <- cutree(hc_o, k = k)
 
 # Imprimim les taules de clusters
-table(clusters)
+table(clusters_original)
 
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Clusterització amb dendrograma colorat
 library(dendextend)
 
 # Convertim hcc a dendrograma per colorar els clusters
-dend <- as.dendrogram(hcc)
+dend <- as.dendrogram(hc_o)
 dend_colored <- color_branches(dend, k = k)
 
 # Eliminem etiquetes
 dend_colored <- set_labels(dend_colored, labels = NA)
 
 # Plotejem el dendrograma colorat sense etiquetes
-plot(dend_colored, main = "Dendrograma de Clustering de Cançons")
+plot(dend_colored, main = "Dendrograma de clustering de cançons")
 
 # ==============================================================================
-# Clustering Particional i Jeràrquic amb dtwclust
+# Clustering amb DTW TSCLUST
 
-# Particional
-pc <- tsclust(datos, type = "partitional", k = 5L, 
-              distance = "dtw_basic", centroid = "pam", 
-              seed = 3247L, trace = TRUE,
-              args = tsclust_args(dist = list(window.size = 5L)))
-plot(pc, type = "sc")
+k <- 5
 
-#hc <- tsclust(datos, type = "h", k = 5L, 
-#              distance = "dtw", 
-#              trace = TRUE,
-#              args = tsclust_args(dist = list(window.size = 5L)))
-#plot(hc, type = "sc")
+# Jeràrquic
+hc_ts <- dtw::tsclust(datos, type = "hierarchical", k = k, 
+              distance = "dtw_basic", 
+              trace = TRUE,
+              control = hierarchical_control(method = "ward.D2"))
+plot(hc_ts, type = "sc")
+plot(hc_ts, type = 'centroids')
+
+clusters_ts <- hc_ts@cluster
+table(clusters_ts)
+
+# ------------------------------------------------------------------------------
+# Comparar el clustering original amb el nou
+
+identical(clusters_original, clusters_ts)
+
+# ------------------------------------------------------------------------------
+
+# Gráfics de línies amb els streams de cada clúster per mes i amb les mitjanes
+
+datos_cluster <- datos
+datos_cluster$cluster <- clusters_ts
+
+datos_with_id <- tibble::rownames_to_column(datos_cluster, var = "track_name")
+
+datos_long = pivot_longer(datos_with_id, cols = -c(track_name, cluster), names_to = "mes", values_to = "valor")
+
+medias_cluster = datos_long %>%
+  group_by(mes, cluster) %>%
+  summarize(valorMedio = mean(valor), .groups = 'drop')
+
+p1 <- ggplot() +
+  geom_line(data = datos_long, aes(x = mes, y = valor, group = track_name, color = as.factor(cluster)), linewidth = 0.5, alpha = 0.5) +
+  geom_line(data = medias_cluster, aes(x = mes, y = valorMedio, group = cluster), linewidth = 1.5, linetype = "dashed", color = "black") +
+  theme_minimal() +
+  labs(title = "Evolució de streams per mes amb mitjanes de clúster", x = "Mes", y = "Valor", color = "Cluster") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), legend.position = "right") +
+  facet_wrap(~cluster, scales = "free_y", ncol = 1)  # Usa facet_wrap para dividir por cluster
+
+p1
+
+# ------------------------------------------------------------------------------
+# Calcular la durada mitjana de les cançons de cada clúster en el top 40 (valor de streams != 0)
+
+datos_filtrats <- datos_long %>%
+  filter(valor != 0)
+
+# Contar els mesos actius per cada cançó en cada clúster
+count_actius <- datos_filtrats %>%
+  group_by(track_name, cluster) %>%
+  summarise(mesos_actius = n_distinct(mes), .groups = 'drop')
+
+# Calcular la mitjana de mesos actius per cluster
+mitjana_mesos_actius_per_cluster <- count_actius %>%
+  group_by(cluster) %>%
+  summarise(mitjana_mesos_actius = mean(mesos_actius), .groups = 'drop')
+
+# Mostrar els resultats de les mitjanes
+print(mitjana_mesos_actius_per_cluster)
+
+# Barplot amb les mitjanes de mesos actius per cluster
+p2 <- ggplot(mitjana_mesos_actius_per_cluster, aes(x = as.factor(cluster), y = mitjana_mesos_actius)) +
+  geom_col(fill = "#1DB954") +
+  theme_minimal() +
+  labs(title = "Mitjana de mesos actius en cada cluster",
+       x = "Cluster",
+       y = "Mitjana de mesos actius") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+
+p2
+
+# Boxplot amb les distribucions de mesos actius per cluster
+p3 <- ggplot(conteos_activos, aes(x = as.factor(cluster), y = meses_activos)) +
+  geom_boxplot(fill = "#1DB954") +
+  theme_minimal() +
+  labs(title = "Boxplot del nombre de mesos actius per cançó en cada cluster",
+       x = "Cluster",
+       y = "Nombre de mesos actius") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+
+p3
