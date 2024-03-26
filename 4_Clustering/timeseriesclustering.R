@@ -31,9 +31,11 @@ rownames(datos) <- datos$track_name
 datos[, "track_name"] <- NULL
 
 # ==============================================================================
+# Hierarchical clústering amb distància DTW de proxy i funció hclust amb ward d2
+
 # Calculem la distància DTW amb proxy
 # Tarda molt, només necessari per escollir k inicial
-# Posteriorment es pot passar directament al clustering jeràrquic fet amb dtw::tsclust (utilitza dtw_basic però obté mateixos resultats)
+# Posteriorment es pot passar directament al clustering jeràrquic fet amb tsclust (utilitza dtw_basic però obté mateixos resultats)
 distMatrix <- proxy::dist(datos, method = "DTW")
 
 # Generem el clustering
@@ -67,7 +69,7 @@ plot(dend_colored, main = "Dendrograma de clustering de cançons")
 k <- 5
 
 # Jeràrquic
-hc_ts <- dtw::tsclust(datos, type = "hierarchical", k = k, 
+hc_ts <- tsclust(datos, type = "hierarchical", k = k, 
               distance = "dtw_basic", 
               trace = TRUE,
               control = hierarchical_control(method = "ward.D2"))
@@ -98,10 +100,10 @@ medias_cluster = datos_long %>%
   summarize(valorMedio = mean(valor), .groups = 'drop')
 
 p1 <- ggplot() +
-  geom_line(data = datos_long, aes(x = mes, y = valor, group = track_name, color = as.factor(cluster)), linewidth = 0.5, alpha = 0.5) +
-  geom_line(data = medias_cluster, aes(x = mes, y = valorMedio, group = cluster), linewidth = 1.5, linetype = "dashed", color = "black") +
+  geom_line(data = datos_long, aes(x = mes, y = valor, group = track_name, color = as.factor(cluster)), linewidth = 0.5) +
+  geom_line(data = medias_cluster, aes(x = mes, y = valorMedio, group = cluster), linewidth = 1.5, linetype = "dashed", color = "#404040") +
   theme_minimal() +
-  labs(title = "Evolució de streams per mes amb mitjanes de clúster", x = "Mes", y = "Valor", color = "Cluster") +
+  labs(title = "Evolució de streams mensuals per clúster amb mitjanes", x = "Mes", y = "Valor", color = "Cluster") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10), legend.position = "right") +
   facet_wrap(~cluster, scales = "free_y", ncol = 1)  # Usa facet_wrap para dividir por cluster
 
@@ -109,6 +111,7 @@ p1
 
 # ------------------------------------------------------------------------------
 # Calcular la durada mitjana de les cançons de cada clúster en el top 40 (valor de streams != 0)
+# Es farà un barplot i un boxplot
 
 datos_filtrats <- datos_long %>%
   filter(valor != 0)
@@ -138,7 +141,7 @@ p2 <- ggplot(mitjana_mesos_actius_per_cluster, aes(x = as.factor(cluster), y = m
 p2
 
 # Boxplot amb les distribucions de mesos actius per cluster
-p3 <- ggplot(conteos_activos, aes(x = as.factor(cluster), y = meses_activos)) +
+p3 <- ggplot(count_actius, aes(x = as.factor(cluster), y = mesos_actius)) +
   geom_boxplot(fill = "#1DB954") +
   theme_minimal() +
   labs(title = "Boxplot del nombre de mesos actius per cançó en cada cluster",
@@ -147,3 +150,28 @@ p3 <- ggplot(conteos_activos, aes(x = as.factor(cluster), y = meses_activos)) +
   theme(axis.text.x = element_text(angle = 0, hjust = 1))
 
 p3
+
+# ------------------------------------------------------------------------------
+# Gráfic de línes amb la mitjana de streams per mes i per clúster
+
+# Preparació de dades
+datos_long_month <- datos_long
+datos_long_month$month <- as.numeric(sub("^\\d{4}-", "", datos_long$mes))
+
+# Calculem les mitjanes mensuals
+mitjanes_mensuals <- datos_long_month %>%
+  group_by(cluster, month) %>%
+  summarize(mitjana_streams = mean(valor), .groups = 'drop')
+
+# Gráfic de línies
+p4 <- ggplot(mitjanes_mensuals, aes(x = month, y = mitjana_streams, group = cluster, color = as.factor(cluster))) +
+  geom_line(aes(color = as.factor(cluster)), linewidth = 0.8) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Mitjana de streams per mes i per cluster",
+       x = "Mes",
+       y = "Mitjana de streams") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(breaks = 1:12, labels = c('Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'))
+
+p4
