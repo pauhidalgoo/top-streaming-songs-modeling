@@ -44,8 +44,7 @@ for ( col in names_vars_add_na ) {
 	cat(col, "-->", sum(is.na(data[col])), ";", na_variable, "%.\n")
 }
 
-data_unique_missings <- data # Dataset amb un únic valor per cada NA (s'eliminaran totes les altres instàncies de les variables amb NA)
-
+# Dataset amb un únic valor per cada NA (s'eliminaran totes les altres instàncies de les variables amb NA)
 data_unique_missings <- data[-indexs_to_remove, names_vars_add_na]
 
 # Test de Little per comprovar que s'hagin afegit correctament els NA
@@ -55,7 +54,6 @@ if (!requireNamespace("naniar", quietly = TRUE)) {
 
 library(naniar)
 
-# Falta agrupar per track_id
 result_mcar_test <- naniar::mcar_test(data_unique_missings)
 
 result_mcar_test
