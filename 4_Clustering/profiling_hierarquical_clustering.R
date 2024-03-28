@@ -1,24 +1,13 @@
-#read data only if required
-setwd("C:/Users/Cai Selvas Sala/GIA_UPC/2nC/1rQ/ME/Project")
+#PROFILING HIERARCHICAL CLUSTERING
 
-# Només descomentar-ne un:
-load('data_k3_s.RData') # K-Means s
-load('data_h4_s.RData') # Hierarchical 4 s
-load('data_h2_s.RData') # Hierarchical 2 s
+load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
-data <- data_k3
+# Cal executar després d'haver creat els clusters en l'script del HIERARCHICAL CLUSTERING
 
-data$clusterK3 <- as.factor(data_k3$clusterK3)
-data$clusterH4 <- as.factor(data_h4$clusterH4)
-data$clusterH2 <- as.factor(data_h2$clusterH2)
+data$cluster_hier <- as.factor(data$cluster_hier)
 
-levels(data$clusterK3) <- c('C1', 'C2', 'C3')
-levels(data$clusterH4) <- c('C1', 'C2', 'C3', 'C4')
-levels(data$clusterH2) <- c('C1', 'C2')
+levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4')
 
-# Descomentar només 1
-#class_colors <- c("#1db954", "#ff7b24")
-#class_colors <- c("#1db954", "#ff7b24", "#df75ff")
 class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff")
 
 #Calcula els valor test de la variable Xnum per totes les modalitats del factor P
@@ -57,45 +46,45 @@ ValorTestXquali <- function(C ,Xquali){
 }
 
 #dades contain the dataset
-# descomentar-ne només una
-#dades <- subset(data, select = c(clusterK3, track_popularity, album_popularity, artist_num, artist_followers, artist_popularity, danceability, energy, speechiness, acousticness, loudness, valence, liveness, tempo, duration, streams, album_type, pop, hip_hop, rock, electro, christmas, cinema, latino, collab, explicit, key, mode, year_release, month_release, day_release, weekday_release, year_week, month_week, time_signature, week_index, rank_group))
-dades <- subset(data, select = c(clusterH4, track_popularity, album_popularity, artist_num, artist_followers, artist_popularity, danceability, energy, speechiness, acousticness, loudness, valence, liveness, tempo, duration, streams, album_type, pop, hip_hop, rock, electro, christmas, cinema, latino, collab, explicit, key, mode, year_release, month_release, day_release, weekday_release, year_week, month_week, time_signature, week_index, rank_group))
-#dades <- subset(data, select = c(clusterH2, track_popularity, album_popularity, artist_num, artist_followers, artist_popularity, danceability, energy, speechiness, acousticness, loudness, valence, liveness, tempo, duration, streams, album_type, pop, hip_hop, rock, electro, christmas, cinema, latino, collab, explicit, key, mode, year_release, month_release, day_release, weekday_release, year_week, month_week, time_signature, week_index, rank_group))
 
-num_cols_dades <- ncol(dades)
-num_rows_dades <- nrow(dades)
-indexs_numerical_cols <- which(sapply(dades, is.numeric))
-index_categorical_cols <- which(!sapply(dades, is.numeric))
+var_num <- data[,c("cluster_hier","track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
+categorical_vars <- data[, sapply(data, is.factor)]
+categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
+
+actives <- data.frame(categorical_vars, numeriques_normalitzades)
+data_profiling <- subset(actives, select = -c(week_index, day_release))
+
+num_cols_dades <- ncol(data_profiling)
+num_rows_dades <- nrow(data_profiling)
+indexs_numerical_cols <- which(sapply(data_profiling, is.numeric))
+index_categorical_cols <- which(!sapply(data_profiling, is.numeric))
 
 #C must contain the class variable
-# Només descomentar-ne una
-#C <- dades$clusterK3
-C <- dades$clusterH4
-#C <- dades$clusterH2
+C <- data_profiling$cluster_hier
 
 nameC <- "classe"
 
 num_classes <- length(levels(factor(C)))
 
-pvalk <- matrix(data=0, nrow=num_classes, ncol=num_cols_dades, dimnames=list(levels(C), names(dades)))
+pvalk <- matrix(data=0, nrow=num_classes, ncol=num_cols_dades, dimnames=list(levels(C), names(data_profiling)))
 
 # ESTADÍSTIQUES NUMÈRIQUES
 for (k in indexs_numerical_cols){
-  print(paste("Anàlisi per classes de la variable numèrica:", names(dades)[k]))
+  print(paste("Anàlisi per classes de la variable numèrica:", names(data_profiling)[k]))
   print("Estadístics per groups:")
-  for(s in levels(as.factor(dades$C))) {
-    print(summary(dades[dades$C == s, k]))
+  for(s in levels(as.factor(data_profiling$C))) {
+    print(summary(data_profiling[data_profiling$C == s, k]))
   }
   
   # ANOVA and Kruskal-Wallis tests
-  o <- oneway.test(dades[, k] ~ C)
+  o <- oneway.test(data_profiling[, k] ~ C)
   print(paste("p-value ANOVA:", o$p.value))
-  kw <- kruskal.test(dades[, k] ~ C)
+  kw <- kruskal.test(data_profiling[, k] ~ C)
   print(paste("p-value Kruskal-Wallis:", kw$p.value))
   
   # ValorTestXnum function
   # Esta parte del código depende de la implementación de la función ValorTestXnum
-  pvalk[, k] <- ValorTestXnum(dades[, k], C)
+  pvalk[, k] <- ValorTestXnum(data_profiling[, k], C)
   print("p-values ValorsTest: ")
   print(pvalk[, k])
   cat('------------------------------------------------------------------------------------------------------\n')
@@ -103,14 +92,14 @@ for (k in indexs_numerical_cols){
 
 # ESTADÍSTIQUES CATEGÒRIQUES
 for (k in index_categorical_cols){
-  print(paste("Variable", names(dades)[k]))
-  print(append("Modalitats=", levels(as.factor(dades[, k]))))
+  print(paste("Variable", names(data_profiling)[k]))
+  print(append("Modalitats=", levels(as.factor(data_profiling[, k]))))
   cat('\n')
   print("Test Chi quadrat: ")
-  print(chisq.test(dades[, k], as.factor(C)))
+  print(chisq.test(data_profiling[, k], as.factor(C)))
   
   print("valorsTest:")
-  print(ValorTestXquali(C, dades[, k]))
+  print(ValorTestXquali(C, data_profiling[, k]))
   cat('------------------------------------------------------------------------------------------------------\n')
 }
 
@@ -119,43 +108,47 @@ library(ggplot2)
 # PLOTS NUMÈRIQUES
 for(k in indexs_numerical_cols){
   # Boxplot
-  p <- ggplot(data = dades, aes_string(x = "C", y = names(dades)[k])) +
+  p <- ggplot(data = data_profiling, aes_string(x = "C", y = names(data_profiling)[k])) +
     geom_boxplot(color = 'black', fill = class_colors) +
-    ggtitle(paste("Boxplot de la variable", names(dades)[k], "per", nameC)) +
+    ggtitle(paste("Boxplot de la variable", names(data_profiling)[k], "per", nameC)) +
     theme(plot.title = element_text(hjust = 0.5)) +
     xlab("Classe")
   
   print(p)
   
-  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(dades)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+#  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
   
   # Barplot of means
-  means <- tapply(dades[, k], C, mean)
+  means <- tapply(data_profiling[, k], C, mean)
   p <- ggplot(data = data.frame(Category = names(means), Mean = means), aes(x = Category, y = Mean)) +
     geom_bar(stat = "identity", fill = class_colors) +
-    geom_hline(aes(yintercept = mean(dades[, k], na.rm = TRUE)), linetype = "dashed", linewidth = 1) +
+    geom_hline(aes(yintercept = mean(data_profiling[, k], na.rm = TRUE)), linetype = "dashed", linewidth = 1) +
     scale_fill_manual(values = class_colors) +
-    ggtitle(paste("Mitjana de", names(dades)[k], "per", nameC)) +
+    ggtitle(paste("Mitjana de", names(data_profiling)[k], "per", nameC)) +
     theme(plot.title = element_text(hjust = 0.5)) +
     ylab("Mitjana") +
     xlab("Classe")
   
   print(p)
   
-  ggsave(plot = p, filename = paste('Num_BarPlot_', names(dades)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+  ggsave(plot = p, filename = paste('Num_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
 }
+library(RColorBrewer)
+library(viridis)
+
+colors_250 <- viridis::viridis(250, option = "C")
 
 # PLOTS CATEGÒRIQUES
 for(k in index_categorical_cols){
-  if(class(dades[, k]) == "Date"){
-    print(summary(dades[, k]))
-    print(sd(dades[, k]))
+  if(class(data_profiling[, k]) == "Date"){
+    print(summary(data_profiling[, k]))
+    print(sd(data_profiling[, k]))
     #decide breaks: weeks, months, quarters...
-    hist(dades[, k], breaks="weeks")
+    hist(data_profiling[, k], breaks="weeks")
   }else{
     ## Este script se utiliza para crear los dataframes que utilizan los gráficos de las cualitativas ##
     ##       (distinguiendo las frecuencias y proporciones de cada modalidad por clase)
-    table_mod_freq <- table(dades[, k], C)
+    table_mod_freq <- table(data_profiling[, k], C)
     table_props_modalitatClasse <- prop.table(table_mod_freq, 1)
     props_modalitatClasse <- as.data.frame(table_props_modalitatClasse)
     freqs_modalitatClasse <- as.data.frame(table_mod_freq)
@@ -165,21 +158,18 @@ for(k in index_categorical_cols){
     names(qualis_freq_props_df) <- c("Modalitat", "Classe", "Freq", "PropMod" )
     
     
-    dades[, k] <- as.factor(dades[, k])
+    data_profiling[, k] <- as.factor(data_profiling[, k])
     
     marg <- table(as.factor(C))/num_rows_dades
     
-    if (length(levels(dades[, k])) > 12){
-      modality_colors <- c("#1db954", "#ff7b24", "#e6194B", "#ffb05f", "#4363d8", "#8b329c", "#46f0b9", "#f032e6",
-                           "#bcf60c", "#fabebe", "#008080", "#e6beff", "#9A6324", "#fffac8", "#800000", "#aaffc3",
-                           "#808000", "#ffd8b1", "#000075", "#808080", "#67b4ff", "#000000", "#a9a9a9", "#000080",
-                           "#30005a", "#aa6e28", "#fff000", "#205633", "#00ff00", "#2fffff", "#0082c8", "#964B1f")
-    }else{
+    if (length(levels(data_profiling[, k])) > 12){
+      modality_colors <- viridis::viridis(length(levels(data_profiling[, k])))
+    } else {
       modality_colors <- c("#191414", "#1db954", "#3229da", "#c325cf", "#cf2a25", "#d46c06", "#205633", "#444444", "#67b1ff", "#8b329c" ,"#cf2555", "#d4ab06")
     }
     
     ## SNAKE Plot ##
-    title_snake <- paste("Proporció de assignació a cada classe\nper cada modalitat de", names(dades)[k])
+    title_snake <- paste("Proporció de assignació a cada classe\nper cada modalitat de", names(data_profiling)[k])
     snake_plot <- ggplot(data=qualis_freq_props_df, aes(x=Classe, y =PropMod, group=Modalitat)) +
       geom_line(aes(color=Modalitat), linewidth=0.7) +
       scale_color_manual(values=modality_colors) +
@@ -190,10 +180,10 @@ for(k in index_categorical_cols){
     
     print(snake_plot)
     
-    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(dades)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
     
     ## BARPLOTS Múltiples ##
-    title_barplot <- paste("Quantitat de instàncies de", names(dades)[k])
+    title_barplot <- paste("Quantitat de instàncies de", names(data_profiling)[k])
     title_barplot <- paste(title_barplot, "per classe")
     
     barplot <- ggplot(data=qualis_freq_props_df , aes(Classe, y=Freq, fill=Modalitat)) +
@@ -204,8 +194,7 @@ for(k in index_categorical_cols){
       theme(plot.title = element_text(hjust = 0.5))
     
     print(barplot)
-    
-    ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(dades)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+   ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   }
 }#endfor
 
