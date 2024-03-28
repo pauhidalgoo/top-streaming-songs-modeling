@@ -40,7 +40,7 @@ distMatrix <- proxy::dist(datos, method = "DTW")
 
 # Generem el clustering
 hc_o <- hclust(distMatrix, method = "ward.D2")
-plot(hc_p, hang = -1, cex = 0.6, labels = FALSE) # Ajustem les etiquetes i les ometem
+plot(hc_o, hang = -1, cex = 0.6, labels = FALSE) # Ajustem les etiquetes i les ometem
 
 # Realitzem la tallada en un nombre desitjat de classes
 k <- 5
@@ -109,6 +109,8 @@ p1 <- ggplot() +
 
 p1
 
+ggsave(plot = p1, filename = paste('streams_cada_mes_per_cluster_amb_mitjana', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
 # ------------------------------------------------------------------------------
 # Calcular la durada mitjana de les cançons de cada clúster en el top 40 (valor de streams != 0)
 # Es farà un barplot i un boxplot
@@ -140,6 +142,8 @@ p2 <- ggplot(mitjana_mesos_actius_per_cluster, aes(x = as.factor(cluster), y = m
 
 p2
 
+ggsave(plot = p2, filename = paste('barplot_mitjanes_mesos_actius', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
 # Boxplot amb les distribucions de mesos actius per cluster
 p3 <- ggplot(count_actius, aes(x = as.factor(cluster), y = mesos_actius)) +
   geom_boxplot(fill = "#1DB954") +
@@ -150,6 +154,8 @@ p3 <- ggplot(count_actius, aes(x = as.factor(cluster), y = mesos_actius)) +
   theme(axis.text.x = element_text(angle = 0, hjust = 1))
 
 p3
+
+ggsave(plot = p3, filename = paste('boxplot_mesos_actius', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
 
 # ------------------------------------------------------------------------------
 # Gráfic de línes amb la mitjana de streams per mes i per clúster
@@ -170,8 +176,15 @@ p4 <- ggplot(mitjanes_mensuals, aes(x = month, y = mitjana_streams, group = clus
   theme_minimal() +
   labs(title = "Mitjana de streams per mes i per cluster",
        x = "Mes",
-       y = "Mitjana de streams") +
+       y = "Mitjana de streams",
+       color = "Cluster") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_x_continuous(breaks = 1:12, labels = c('Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'))
 
 p4
+
+ggsave(plot = p4, filename = paste('evol_streams_per_mes_i_cluster', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
+
+# ------------------------------------------------------------------------------
+
