@@ -132,5 +132,5 @@ fviz_cluster(object = object, data = data, geom = "point", ellipse = TRUE,
   theme_bw() +
   theme(legend.position = "none") +
   ggtitle("CURE cluster")
-ggsave("C:/Users/Usuario/Pictures/PMAAD/CURE/cure.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/CURE/cure.png", width=8,height=6, dpi=300)
 

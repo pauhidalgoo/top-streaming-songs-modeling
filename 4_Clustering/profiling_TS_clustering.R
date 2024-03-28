@@ -42,11 +42,12 @@ for (cat_var in c("explicit", "gender", "is_group", "nationality", "album_type",
 }
 
 # Perfil de clústers per a variables numèriques: Mitjana de cada clúster
-for (num_var in c("duration")) {
+for (num_var in c("duration", "artist_num", "danceability", "energy")) {
   num_profiles <- data %>%
     group_by(cluster) %>%
     summarise(mean = mean(.data[[num_var]], na.rm = TRUE)) %>%
     ungroup()
   
+  print(num_var)
   print(num_profiles)
 }
