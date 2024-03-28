@@ -3,7 +3,7 @@
 # Afegim la informació del clúster a 'data'
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
-
+# Cal executar després d'haver creat els clusters en l'script de clustering de time series
 data$cluster <- clusters[match(data$track_name, unique(data$track_name))]
 
 # Ara creem un nou conjunt de dades amb una entrada per cada cançó única
