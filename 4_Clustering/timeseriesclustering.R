@@ -55,7 +55,10 @@ library(dendextend)
 
 # Convertim hcc a dendrograma per colorar els clusters
 dend <- as.dendrogram(hc_o)
-dend_colored <- color_branches(dend, k = k)
+
+colors_ordered <- c("#00bf7d", "#e76bf3", "#00b0f6", "#f8766d", "#a3a500" )
+
+dend_colored <- color_branches(dend, k = k, col = colors_ordered)
 
 # Eliminem etiquetes
 dend_colored <- set_labels(dend_colored, labels = NA)
@@ -162,15 +165,15 @@ ggsave(plot = p3, filename = paste('boxplot_mesos_actius', '.png', sep = ""), bg
 
 # Preparació de dades
 datos_long_month <- datos_long
-datos_long_month$month <- as.numeric(sub("^\\d{4}-", "", datos_long$mes))
+datos_long_month$mes <- as.numeric(sub("^\\d{4}-", "", datos_long_month$mes))
 
 # Calculem les mitjanes mensuals
 mitjanes_mensuals <- datos_long_month %>%
-  group_by(cluster, month) %>%
+  group_by(cluster, mes) %>%
   summarize(mitjana_streams = mean(valor), .groups = 'drop')
 
 # Gráfic de línies
-p4 <- ggplot(mitjanes_mensuals, aes(x = month, y = mitjana_streams, group = cluster, color = as.factor(cluster))) +
+p4 <- ggplot(mitjanes_mensuals, aes(x = mes, y = mitjana_streams, group = cluster, color = as.factor(cluster))) +
   geom_line(aes(color = as.factor(cluster)), linewidth = 0.8) +
   geom_point() +
   theme_minimal() +
@@ -185,6 +188,40 @@ p4
 
 ggsave(plot = p4, filename = paste('evol_streams_per_mes_i_cluster', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
 
-
 # ------------------------------------------------------------------------------
+# Barplot amb la mitjana de streams per cançó en els diferents clústers
+
+# Calcular la mitjana de streams per cançó en cada clúster
+mitjanes_streams_per_canço <- datos_long %>%
+  group_by(track_name, cluster) %>%
+  summarise(mitjana_streams = mean(valor, na.rm = TRUE), .groups = 'drop')
+
+p5 <- ggplot(mitjanes_streams_per_canço, aes(x = as.factor(cluster), y = mitjana_streams, fill = as.factor(cluster))) +
+  geom_col(fill = "#1DB954") +
+  theme_minimal() +
+  labs(title = "Barplot amb la mitjana de streams per cançó en els diferents clústers",
+       x = "Clúster",
+       y = "Mitjana de streams") +
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p5
+
+ggsave(plot = p5, filename = "barplot_mitjana_streams_per_canço_per_cluster.png", bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
+# Boxplot amb les distribucions de streams per cançó en els diferents clústers
+p6 <- ggplot(mitjanes_streams_per_canço, aes(x = as.factor(cluster), y = mitjana_streams, fill = as.factor(cluster))) +
+  geom_boxplot(fill = "#1DB954") +
+  theme_minimal() +
+  labs(title = "Boxplot amb les distribucions de streams per cançó en els diferents clústers",
+       x = "Clúster",
+       y = "Streams") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p6
+
+ggsave(plot = p6, filename = "boxplot_distribucio_streams_per_canço_per_cluster.png", bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
+
+
 
