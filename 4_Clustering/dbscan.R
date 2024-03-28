@@ -60,15 +60,15 @@ fviz_pca_var(pca,
              repel = TRUE     # Avoid text overlapping
 )
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering//DBSCAN/dbscanpcacomponents.png", width=8,height=6, dpi=300)
 
 fviz_pca_var(pca,
              col.var = "contrib", # Color by contributions to the PC
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             axes = c(5,6),
+             axes = c(3,4),
              repel = TRUE     # Avoid text overlapping
 )
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanpcacomponents34.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/dbscanpcacomponents34.png", width=8,height=6, dpi=300)
 # ==============================================================================
 # KMEANS: 
 ### GrÃƒÂ¡ficamos los datos a travÃƒÂ©s de un k-means para visualizar como quedarian los 
@@ -80,7 +80,7 @@ fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE
   theme(legend.position = "none")+
   ggtitle("K-MEANS cluster")
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/kmeans.png", width=8,height=6, dpi=300)
 
 km_clusters <- kmeans(x = datos_norm, centers = 5, nstart = 50)
 fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE,
@@ -89,7 +89,7 @@ fviz_cluster(object = km_clusters, data = datos, geom = "point", ellipse = FALSE
   theme(legend.position = "none")+
   ggtitle("K-MEANS cluster")
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/kmeans34.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/kmeans34.png", width=8,height=6, dpi=300)
 
 #data$cluster <- km_clusters$cluster
 
@@ -128,7 +128,7 @@ fviz_cluster(object = dbscan_res, data = datos_norm, geom = "point", ellipse = F
 
 length(unique(dbscan_res$cluster))
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/baddbscan.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/baddbscan.png", width=8,height=6, dpi=300)
 
 ### Para escoger los valores de eps i minPts, necesitaremos optimizar el proceso. Para ello, 
 ### realizaremos la siguiente tÃƒÂ©cnica de optimizaciÃƒÂ³n. 
@@ -215,7 +215,7 @@ fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
 
 length(unique(res$cluster))
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanauto.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/dbscanauto.png", width=8,height=6, dpi=300)
 
 res <- dbscan(datos_norm, eps = 0.47, minPts = 70) 
 ### Aqui podeis graficar los resultados como se hizo en lineas precedentes
@@ -229,14 +229,14 @@ fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
 
 length(unique(res$cluster))
 
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforca.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/dbscanforca.png", width=8,height=6, dpi=300)
 
 fviz_cluster(object = res, data = datos_norm, geom = "point", ellipse = FALSE,
              show.clust.cent = FALSE, axes = c(3,4), pallete = "jco", outlier.color = rgb(0,0,0,10, maxColorValue = 255)) +
   theme_bw() +
   theme(legend.position = "none")+
   ggtitle("DBSCAN cluster")
-ggsave("C:/Users/Usuario/Pictures/PMAAD/DBSCAN/dbscanforcaalt34.png", width=8,height=6, dpi=300)
+ggsave("./Media/Clustering/DBSCAN/dbscanforcaalt34.png", width=8,height=6, dpi=300)
 
 ### AÃƒÂ±ado la columna clÃƒÂºster a mis datos.
 data$cluster <- res$cluster
