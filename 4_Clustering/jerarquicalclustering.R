@@ -45,6 +45,7 @@ clusteres <- cutree(h1, k=5)
 data$cluster_hier <- clusteres
 table(data$cluster_hier)
 
+save(data, file = "./4_Clustering/jerarquic_cluster.RData")
 
 ###########PCA###########
 library(ggplot2)
