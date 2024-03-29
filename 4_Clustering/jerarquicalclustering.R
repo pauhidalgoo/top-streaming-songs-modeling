@@ -46,6 +46,7 @@ plot(dend, main='Hierarchical Clustering')
 clusteres <- cutree(h1, k=4)
 data$cluster_hier <- clusteres
 
+save(data, file = "./4_Clustering/jerarquic_cluster.RData")
 
 ###########PCA###########
 library(ggplot2)
