@@ -9,7 +9,7 @@ min_max_normalization <- function(x){
   return((x - min(x)) / (max(x) - min(x)))
 }
 
-numeriques_normalitzades <- lapply(var_num, min_max_normalization)
+numeriques_normalitzades <- as.data.frame(lapply(var_num, min_max_normalization))
 
 #variables <- c("nationality", "track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
 
@@ -18,11 +18,11 @@ numeriques_normalitzades <- lapply(var_num, min_max_normalization)
 
 library(cluster)
 
-var_num_cols <- numeriques_normalitzades
+#var_num_cols <- numeriques_normalitzades
 categorical_vars <- data[, sapply(data, is.factor)]
 categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
 
-actives <- data.frame(categorical_vars, var_num_cols)
+actives <- data.frame(categorical_vars, numeriques_normalitzades)
 vars <- subset(actives, select = -c(week_index, day_release))
 
 dissimMatrix <- daisy(vars, metric = "gower", stand=TRUE)
@@ -46,8 +46,11 @@ plot(dend, main='Hierarchical Clustering')
 clusteres <- cutree(h1, k=4)
 data$cluster_hier <- clusteres
 
+save(data, file = "./4_Clustering/jerarquic_cluster.RData")
 
 ###########PCA###########
+library(ggplot2)
+library(factoextra)
 
 datos_norm <- as.data.frame(numeriques_normalitzades)
 
@@ -100,6 +103,15 @@ df_psi$PC3 <- pca$x[, 3]
 df_psi$PC4 <- pca$x[, 4]
 
 fviz_cluster(list(data = df_psi[, c("PC3", "PC4")], cluster = df_psi$cluster), 
+             geom = "point", ellipse = TRUE, show.clust.cent = FALSE, 
+             palette = "jco") + theme_bw() + theme(legend.position = "none")
+
+# Añadir las columnas de la 5ª y 6ª dimensiones del PCA al dataframe df_psi
+df_psi$PC2 <- pca$x[, 2]
+df_psi$PC3 <- pca$x[, 3]
+
+# Ahora puedes usar fviz_cluster para visualizar la 5ª y 6ª componentes principales
+fviz_cluster(list(data = df_psi[, c("PC2", "PC3")], cluster = df_psi$cluster), 
              geom = "point", ellipse = TRUE, show.clust.cent = FALSE, 
              palette = "jco") + theme_bw() + theme(legend.position = "none")
 

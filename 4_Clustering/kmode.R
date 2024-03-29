@@ -77,3 +77,11 @@ fviz_cluster(object = object, data = datos_norm, geom = "point", ellipse = TRUE,
   theme(legend.position = "none") +
   ggtitle("KMODE cluster")
 
+
+fviz_pca_var(pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             axes = c(5,6),
+             repel = TRUE     # Avoid text overlapping
+)
+
