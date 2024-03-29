@@ -6,9 +6,9 @@ load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
 data$cluster_hier <- as.factor(data$cluster_hier)
 
-levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4')
+levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4','C5')
 
-class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff")
+class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff", "#FF0000")
 
 #Calcula els valor test de la variable Xnum per totes les modalitats del factor P
 ValorTestXnum <- function(Xnum, C){
@@ -47,21 +47,27 @@ ValorTestXquali <- function(C ,Xquali){
 
 #dades contain the dataset
 
-var_num <- data[,c("cluster_hier","track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
-categorical_vars <- data[, sapply(data, is.factor)]
-categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
+var_num <- data[,c("track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
+min_max_normalization <- function(x){
+  return((x - min(x)) / (max(x) - min(x)))
+}
 
-actives <- data.frame(categorical_vars, numeriques_normalitzades)
-data_profiling <- subset(actives, select = -c(week_index, day_release))
+numeriques_normalitzades <- as.data.frame(lapply(var_num, min_max_normalization))
+numeriques_normalitzades$cluster_hier <- as.factor(data$cluster_hier)
+
+categorical_vars <- c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")
+for (var in categorical_vars) {
+  data[[var]] <- as.factor(data[[var]])
+}
+categorical_vars <- data[,c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")]
+
+data_profiling <- data.frame(categorical_vars, numeriques_normalitzades)
+#data_profiling <- actives
 
 num_cols_dades <- ncol(data_profiling)
 num_rows_dades <- nrow(data_profiling)
 indexs_numerical_cols <- which(sapply(data_profiling, is.numeric))
 index_categorical_cols <- which(!sapply(data_profiling, is.numeric))
-
-index_binary_cols <- which(sapply(data_profiling, function(x) length(unique(x)) == 2))
-data_binary_cols <- data_profiling[, index_binary_cols]
-index_cat_bin_cols = c(index_categorical_cols, index_binary_cols)
 
 #C must contain the class variable
 C <- data_profiling$cluster_hier
@@ -95,7 +101,7 @@ for (k in indexs_numerical_cols){
 }
 
 # ESTADÍSTIQUES CATEGÒRIQUES
-for (k in index_cat_bin_cols){
+for (k in index_categorical_cols){
   print(paste("Variable", names(data_profiling)[k]))
   print(append("Modalitats=", levels(as.factor(data_profiling[, k]))))
   cat('\n')
@@ -143,7 +149,7 @@ library(viridis)
 colors_250 <- viridis::viridis(250, option = "C")
 
 # PLOTS CATEGÒRIQUES
-for(k in index_cat_bin_cols){
+for(k in index_categorical_cols){
   if(class(data_profiling[, k]) == "Date"){
     print(summary(data_profiling[, k]))
     print(sd(data_profiling[, k]))
