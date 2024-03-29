@@ -59,6 +59,10 @@ num_rows_dades <- nrow(data_profiling)
 indexs_numerical_cols <- which(sapply(data_profiling, is.numeric))
 index_categorical_cols <- which(!sapply(data_profiling, is.numeric))
 
+index_binary_cols <- which(sapply(data_profiling, function(x) length(unique(x)) == 2))
+data_binary_cols <- data_profiling[, index_binary_cols]
+index_cat_bin_cols = c(index_categorical_cols, index_binary_cols)
+
 #C must contain the class variable
 C <- data_profiling$cluster_hier
 
@@ -91,7 +95,7 @@ for (k in indexs_numerical_cols){
 }
 
 # ESTADÍSTIQUES CATEGÒRIQUES
-for (k in index_categorical_cols){
+for (k in index_cat_bin_cols){
   print(paste("Variable", names(data_profiling)[k]))
   print(append("Modalitats=", levels(as.factor(data_profiling[, k]))))
   cat('\n')
@@ -116,7 +120,7 @@ for(k in indexs_numerical_cols){
   
   print(p)
   
-#  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   
   # Barplot of means
   means <- tapply(data_profiling[, k], C, mean)
@@ -139,7 +143,7 @@ library(viridis)
 colors_250 <- viridis::viridis(250, option = "C")
 
 # PLOTS CATEGÒRIQUES
-for(k in index_categorical_cols){
+for(k in index_cat_bin_cols){
   if(class(data_profiling[, k]) == "Date"){
     print(summary(data_profiling[, k]))
     print(sd(data_profiling[, k]))
@@ -180,7 +184,7 @@ for(k in index_categorical_cols){
     
     print(snake_plot)
     
-    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
+    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
     
     ## BARPLOTS Múltiples ##
     title_barplot <- paste("Quantitat de instàncies de", names(data_profiling)[k])
@@ -194,7 +198,7 @@ for(k in index_categorical_cols){
       theme(plot.title = element_text(hjust = 0.5))
     
     print(barplot)
-   ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
+   ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   }
 }#endfor
 

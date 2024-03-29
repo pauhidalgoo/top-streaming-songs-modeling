@@ -19,32 +19,31 @@ numeriques_normalitzades <- as.data.frame(lapply(var_num, min_max_normalization)
 library(cluster)
 
 #var_num_cols <- numeriques_normalitzades
-categorical_vars <- data[, sapply(data, is.factor)]
-categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
+categorical_vars <- data[, c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")]
 
 actives <- data.frame(categorical_vars, numeriques_normalitzades)
-vars <- subset(actives, select = -c(week_index, day_release))
 
-dissimMatrix <- daisy(vars, metric = "gower", stand=TRUE)
+dissimMatrix <- daisy(actives, metric = "gower", stand=TRUE)
 
 distMatrix<-dissimMatrix^2
 
 h1 <- hclust(distMatrix,method="ward.D2")  # NOTICE THE COST
 
 plot(h1)
-rect.hclust(h1, k=4, border="red") 
+rect.hclust(h1, k=5, border="red") 
 
-# k triada: 4
+# k triada: 5
 # dendograma amb colors
 #install.packages("dendextend")
 
 library(dendextend)
 dend <- as.dendrogram(h1)
-dend <- color_branches(dend, k=4)
+dend <- color_branches(dend, k=5)
 plot(dend, main='Hierarchical Clustering')
 
-clusteres <- cutree(h1, k=4)
+clusteres <- cutree(h1, k=5)
 data$cluster_hier <- clusteres
+table(data$cluster_hier)
 
 
 ###########PCA###########
@@ -106,8 +105,8 @@ fviz_cluster(list(data = df_psi[, c("PC3", "PC4")], cluster = df_psi$cluster),
              palette = "jco") + theme_bw() + theme(legend.position = "none")
 
 # Añadir las columnas de la 5ª y 6ª dimensiones del PCA al dataframe df_psi
-df_psi$PC2 <- pca$x[, 2]
-df_psi$PC3 <- pca$x[, 3]
+df_psi$PC2 <- pca$x[, 5]
+df_psi$PC3 <- pca$x[, 6]
 
 # Ahora puedes usar fviz_cluster para visualizar la 5ª y 6ª componentes principales
 fviz_cluster(list(data = df_psi[, c("PC2", "PC3")], cluster = df_psi$cluster), 
