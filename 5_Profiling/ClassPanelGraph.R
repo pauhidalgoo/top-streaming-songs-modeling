@@ -207,7 +207,6 @@ plots_num <- lapply(numeric_cols, TLP_num, data=data)
 plots <- c(plots_num, plots_cat)
 TLP <- ggarrange(plotlist = plots, ncol = 6, nrow=5)
 ggsave("./Media/TLP/TLP.png", TLP, dpi = 300, width = 1000, units ="px")
-ggsave()
 
 
 
