@@ -1,24 +1,23 @@
 ######HIERARCHICAL CLUSTERING######
 
+# Carreguem el dataset
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
+# Variables numèriques que s'utilitzaran
 var_num <- data[,c("track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
 
-### ESTANDARDITZAR DADES
+# ESTANDARDITZAR VARIABLES NUMÈRIQUES
 min_max_normalization <- function(x){
   return((x - min(x)) / (max(x) - min(x)))
 }
 
 numeriques_normalitzades <- as.data.frame(lapply(var_num, min_max_normalization))
 
-#variables <- c("nationality", "track_popularity", "album_type", "artist_num", "pop", "hip_hop", "rock", "electro", "latino", "christmas", "cinema", "collab", "explicit", "danceability", "energy", "key", "major_mode", "time_signature", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams", "year_release", "year_week", "month_week", "rank_group", "gender", "is_group")
 
-######HIERARCHICAL CLUSTERING######
 #CATEGÒRIQUES I NUMÈRIQUES
 
 library(cluster)
 
-#var_num_cols <- numeriques_normalitzades
 categorical_vars <- data[, c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")]
 
 actives <- data.frame(categorical_vars, numeriques_normalitzades)
@@ -32,7 +31,8 @@ h1 <- hclust(distMatrix,method="ward.D2")  # NOTICE THE COST
 plot(h1)
 rect.hclust(h1, k=5, border="red") 
 
-# k triada: 5
+# k TRIADA: 5
+
 # dendograma amb colors
 #install.packages("dendextend")
 
@@ -46,6 +46,7 @@ data$cluster_hier <- clusteres
 table(data$cluster_hier)
 
 save(data, file = "./4_Clustering/jerarquic_cluster.RData")
+
 
 ###########PCA###########
 library(ggplot2)
@@ -102,15 +103,6 @@ df_psi$PC3 <- pca$x[, 3]
 df_psi$PC4 <- pca$x[, 4]
 
 fviz_cluster(list(data = df_psi[, c("PC3", "PC4")], cluster = df_psi$cluster), 
-             geom = "point", ellipse = TRUE, show.clust.cent = FALSE, 
-             palette = "jco") + theme_bw() + theme(legend.position = "none")
-
-# Añadir las columnas de la 5ª y 6ª dimensiones del PCA al dataframe df_psi
-df_psi$PC2 <- pca$x[, 5]
-df_psi$PC3 <- pca$x[, 6]
-
-# Ahora puedes usar fviz_cluster para visualizar la 5ª y 6ª componentes principales
-fviz_cluster(list(data = df_psi[, c("PC2", "PC3")], cluster = df_psi$cluster), 
              geom = "point", ellipse = TRUE, show.clust.cent = FALSE, 
              palette = "jco") + theme_bw() + theme(legend.position = "none")
 
