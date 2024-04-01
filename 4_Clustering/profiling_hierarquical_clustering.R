@@ -1,5 +1,6 @@
-#PROFILING HIERARCHICAL CLUSTERING
+# PROFILING HIERARCHICAL CLUSTERING
 
+#Carreguem el dataset
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
 # Cal executar després d'haver creat els clusters en l'script del HIERARCHICAL CLUSTERING
@@ -9,6 +10,7 @@ data$cluster_hier <- as.factor(data$cluster_hier)
 levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4','C5')
 
 class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff", "#FF0000")
+
 
 #Calcula els valor test de la variable Xnum per totes les modalitats del factor P
 ValorTestXnum <- function(Xnum, C){
@@ -45,7 +47,6 @@ ValorTestXquali <- function(C ,Xquali){
   # pval --> La matriz de p-valores.
 }
 
-#dades contain the dataset
 
 var_num <- data[,c("track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
 min_max_normalization <- function(x){
@@ -62,7 +63,6 @@ for (var in categorical_vars) {
 categorical_vars <- data[,c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")]
 
 data_profiling <- data.frame(categorical_vars, numeriques_normalitzades)
-#data_profiling <- actives
 
 num_cols_dades <- ncol(data_profiling)
 num_rows_dades <- nrow(data_profiling)
@@ -143,6 +143,7 @@ for(k in indexs_numerical_cols){
   
   ggsave(plot = p, filename = paste('Num_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
 }
+
 library(RColorBrewer)
 library(viridis)
 
@@ -203,10 +204,40 @@ for(k in index_categorical_cols){
       ggtitle(title_barplot) +
       theme(plot.title = element_text(hjust = 0.5))
     
+    etiquetas_para_incluir <- qualis_freq_props_df[qualis_freq_props_df$Freq > 400, ]
+    
+    barplot <- barplot + geom_text(data = etiquetas_para_incluir, aes(label=Modalitat, y=0, group=Modalitat), position=position_dodge(width=0.9), angle=90, hjust=1, vjust=0.5, color="black", size=3)
     print(barplot)
    ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   }
 }#endfor
+
+
+# TAULA CATEGÒRIQUES AMB FREQÜÈNCIES > 400
+for(k in index_categorical_cols){
+  if(class(data_profiling[, k]) == "Date"){
+    print(summary(data_profiling[, k]))
+    print(sd(data_profiling[, k]))
+    #decide breaks: weeks, months, quarters...
+    hist(data_profiling[, k], breaks="weeks")
+  }else{
+    ## Este script se utiliza para crear los dataframes que utilizan los gráficos de las cualitativas ##
+    table_mod_freq <- table(data_profiling[, k], C)
+    table_props_modalitatClasse <- prop.table(table_mod_freq, 1)
+    props_modalitatClasse <- as.data.frame(table_props_modalitatClasse)
+    freqs_modalitatClasse <- as.data.frame(table_mod_freq)
+    
+    freqs_modalitatClasse[,"prop"] <- props_modalitatClasse[,"Freq"]
+    qualis_freq_props_df <- freqs_modalitatClasse
+    names(qualis_freq_props_df) <- c("Modalitat", "Classe", "Freq", "PropMod" )
+    
+    # Crear una tabla resumen para modalidades con más de 400 instancias
+    resumen_400plus <- subset(qualis_freq_props_df, Freq > 400)
+    print(paste("Resumen para", names(data_profiling)[k]))
+    print(resumen_400plus)
+    
+  }
+}
 
 #descriptors de les classes més significatius. Afegir info qualits
 for (c in 1:length(levels(as.factor(C)))) {
