@@ -1,0 +1,22 @@
+\section{Anàlisi descriptiva bàsica (sense processar)}
+
+Abans de realitzar qualsevol tipus de preprocessat, s’ha dut a terme un anàlisi exploratori de dades (EDA) inicial per tal de conèixer les dades amb les que treballem. Mencionar que no s’ha partit d’un dataset raw, sinó d’un ja va tractat per treballar-hi en el passat. Per aquest motiu, d’entrada es comentaran alguns dels principals canvis que es van dur a terme , donant així més context sobre aquestes dades en cas de desconèixer els passos seguits en l’assignatura anterior.
+
+\subsection{Anàlisi realitzat en el passat}
+Es va realitzar un anàlisi unvariant i bivariant, entre d'altres, que van permetre extreure algunes conclusions. D'aquestes, es va realitzar tant una selecció de instàncies (instance selection) com una de variables (feature selection). 
+
+\subsection{Anàlisi univariant}
+
+L’anàlisi univariant descriptiu ha donat, com era d’esperar, els mateixos resultats que ja s’havien observat. No s’observa cap comportament que es pugui considerar estrany o que s’hagi de tractar d’entrada. En les variables noves, aquest anàlisi tampoc mostra problemes (tot i que n’hi ha hagut, més endavant quan s’expliqui l’ús de APIs per adquirir nova informació s’explicarà).
+
+% TODO
+
+\subsection{Anàlisi bivariant}
+
+% PETA EL TEMPS DE COMPILACIÓ, QUAN ENTREGUEM AFEGIM I COMPILEM EN LOCAL
+
+En conclusió, amb aquest anàlisi bivariant no hem observat realment cap comportament estrany. En alguns casos, es podria arribar a considerar algun punt com a outlier bivariant, però aquest fet es deu més a que tenim dades bastant esparses. A més, hem observat que la majoria de les variables numèriques a penes tenen correlació entre elles, i les categòriques tampoc en tenen molta.
+
+És important comentar que no s’han tractat outliers, encara que n’hi hagi (especialment en variables com artist followers o streams). L’argumentació per no eliminar-los, convertir-los en dades mancants i imputar-los o tractar-los d’alguna altra forma és principalment que es tracten de dades reals. No es pot no tenir en compte un artista que tot i tenir pocs seguidors hagi estat capaç de crear un hit, per exemple, ja que és un cas que va ocòrrer així en la realitat. Aquestes dades provenen de la API de Spotify directament, que està ben treballada i en principi no hauria de contenir dades errònies (ni se n’han detectat en aquest EDA inicial) i per tant no considerarem cap valor com a extrany.
+
+Aquest anàlisi univariant i bivariant han permés definir quins eren els passos a dur a terme durant el preprocessat, que es comentaran a continuació.

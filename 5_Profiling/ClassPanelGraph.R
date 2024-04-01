@@ -6,63 +6,46 @@ library(ggpubr)
 
 load("./4_Clustering/jerarquic_cluster.RData")
 
+# VAR REDUCED
+REDUCED = TRUE 
+# FIN REDUCED
 
-
-
-#Creation of testing variables
-x <- runif(1000)
-y <- rexp(1000)
-cat <- sample.int(3,1000,prob=c(0.6,0.3, 0.1), replace=TRUE)
-class <- ifelse(x>0.5, 1, 2)
-
-
-data <- data.frame(x,y, cat, class)
-
-data[,"cat2"] <- data["class"]
-
-data[,"cat"] <- as.factor(data[,"cat"])
-data[,"class"] <- as.factor(data[,"class"])
-data[,"cat2"] <- as.factor(data[,"cat2"])
-
-
-
-#Función de classPanelGraph
-classPanelGraph <- function(var){
-  if (is.factor(data[,var])){
-    ggplot(data=data,aes(x=data[,var]))+
-      geom_bar()+
-      facet_grid(class ~ .)+ ylab( "") + xlab(var)
-    
+ClassPanelGraph <- function(var, data) {
+  if (is.numeric(data[,var])){
+    plot <- ggplot(data=data, aes(x=data[,var]))+
+      geom_histogram(fill="gray", color="black")+
+      facet_grid(cluster_hier ~ .)+ ylab("") + xlab(var)
   } else {
-    ggplot(data=data, aes(x=data[,var]))+
-      geom_histogram()+
-      facet_grid(class ~ .)+ ylab("") + xlab(var) +
-        theme(panel.background = element_rect(fil=class~.))
+
+    plot <- ggplot(data=data,aes(x=data[,var]))+
+      geom_bar(fill="gray", color="black")+
+      facet_grid(cluster_hier ~ .)+ ylab( "") + xlab(var)
   }
-}  
-
-plots <- lapply(names(data), classPanelGraph)
-
-ggarrange(plotlist=plots,ncol=5)
+  return(plot)
+}
 
 
 
+# VECTORES CLASS PANEL GRAPH
+ CPG_variables <- list("artist_num","artist_followers","artist_popularity","danceability","energy","loudness","speechiness","acousticness","valence","streams","album_type","pop","hip_hop","electro","latino","collab","explicit","major_mode","rank_group","gender","is_group") 
+# FIN CPGVECTORES
+
+plots <- lapply(CPG_variables, ClassPanelGraph, data = data)
+CPG <- ggarrange(plotlist=plots, ncol=6,nrow=as.integer(length(plots)/6)+1)
+#print(CPG)
 
 
-
-var_green_red_vecs <- list("electro", c("TRUE"), c("FALSE"))
-
-
-cat_plot
-
-
+if (REDUCED){
+  ggsave("./Media/TLP/CPG_reduced.png", CPG, dpi = 600, width = 20, height = 20, units ="in")
+} else {
+  ggsave("./Media/TLP/CPG.png", CPG, dpi = 600, width = 20, height = 20, units ="in")
+}
 
 
 
 #Test de coloreado
-var = "hip_hop"
 
-TLP_categoric <- function(var_green_red_vecs, data){
+TLP_categoric <- function(var_green_red_vecs, data, umbral){
   var<- var_green_red_vecs[[1]]
   green_vec <- var_green_red_vecs[[2]]
   red_vec <- var_green_red_vecs[[3]]
@@ -76,7 +59,7 @@ TLP_categoric <- function(var_green_red_vecs, data){
   }
   
   
-  color_mode <- function(clase, data, modes_cluster, green_vec, red_vec, color_vec){
+  color_mode <- function(clase, data, modes_cluster, green_vec, red_vec, color_vec, umbral){
     using_mode <- levels(data[,var])[modes_cluster[clase]]#se accede al nivel correspondiente a la moda del cluster
     
     if (using_mode %in% green_vec){
@@ -86,29 +69,31 @@ TLP_categoric <- function(var_green_red_vecs, data){
     } else {
       color_ <- 3  #yellow
     }
+    x <- as.vector(table(data[data["cluster_hier"]==clase,var]))
     
-    if (length(unique(data[,var]))==2){
-      if (abs(diff(table(data[data[,"cluster_hier"]==clase,var])))<400){
-        color_ <- 3 #yellow
-      }
+    m1 <- max(x)
+    i <- which(x==max(x), arr.ind = TRUE)
+    x <- x[-i]
+    m2 <- max(x)
+    
+    if (m1-m2<umbral){
+      color_ <- 3 #yellow
     }
     
     ifelse(data[,"cluster_hier"] == clase, color_, color_vec)
   }
   
   modes_cluster <- tapply(data_cpy[,var], data_cpy[,"cluster_hier"], Mode)
-  abs(-3)
-  
   
   color_vec <- integer(nrow(data_cpy))
   
   for (clase in unique(data_cpy[,"cluster_hier"])) {
-    color_vec <- color_mode(clase, data=data_cpy, green_vec = green_vec, red_vec = red_vec, modes_cluster=modes_cluster, color_vec=color_vec)
+    color_vec <- color_mode(clase, data=data_cpy, green_vec = green_vec, red_vec = red_vec, modes_cluster=modes_cluster, color_vec=color_vec, umbral=umbral)
   }
   
   color_vec <- as.factor(color_vec)
   
-  scale_ <- c("red", "green", "yellow")
+  scale_ <- c("#c6182c", "#1ed760", "#ffed33")
   names(scale_) <- c(1,2,3)
   
   cat_plot <- ggplot(data=data_cpy,aes(x=data_cpy[,var], fill = color_vec))+
@@ -151,7 +136,7 @@ TLP_num <- function(var_lims, data){
   
   color_vec <- as.factor(color_vec)
   
-  scale_ <- c("red", "green", "yellow")
+  scale_ <- c("#c6182c", "#1ed760", "#ffed33")
   names(scale_) <- c(1,2,3)
   
   panel<-ggplot(data=data, aes(x=data[,var], fill=color_vec))+
@@ -159,7 +144,7 @@ TLP_num <- function(var_lims, data){
     facet_grid(cluster_hier ~ .)+ ylab("") + xlab(var) +
     scale_fill_manual(values = scale_) +
     theme(legend.position = "none")
-
+  panel
   return(panel)
 }
 
@@ -173,52 +158,44 @@ TLP <- function(var_vecs, data){
   return(result)
 }
 
-numeric_cols <- list(   list("track_popularity","76","50"),
-                        list("album_popularity","72","25"),
-                        list("artist_followers","60000000","30000000"),
-                        list("artist_popularity","90","80"),
-                        list("danceability","0.85","0.65"),
-                        list("energy","0.8","0.6"),
-                        list("loudness","-4.5","-7"),
-                        list("speechiness","0.11","0.05"),
-                        list("acousticness","0.5","0.2"),
-                        list("liveness","0.2","0.1"),
-                        list("valence","0.6","0.3"),
-                        list("tempo","140","90"),
-                        list("duration","220","180"),
-                        list("streams","20000000","10000000"))
+#VECTORES NUMERICOS Y CATEGORICOS
+ numeric_cols <- list(list("artist_num",2.5,1.5),
+   list("artist_followers",70000000.0,30000000.0),
+   list("artist_popularity",90.0,78.0),
+   list("danceability",0.85,0.65),
+   list("energy",0.8,0.6),
+   list("loudness",-4.5,-7.0),
+   list("speechiness",0.11,0.05),
+   list("acousticness",0.5,0.2),
+   list("valence",0.6,0.3),
+   list("streams",20000000.0,10000000.0))
 
-categoric_cols <- list(   list("album_type",c("single"),c("album")),
-                          list("artist_num",c("1"),c("3","4","5","6","7")),
-                          list("pop",c("TRUE"),c("FALSE")),
-                          list("hip_hop",c("TRUE"),c("FALSE")),
-                          list("rock",c("TRUE"),c("FALSE")),
-                          list("electro",c("TRUE"),c("FALSE")),
-                          list("christmas",c("TRUE"),c("FALSE")),
-                          list("cinema",c("TRUE"),c("FALSE")),
-                          list("latino",c("TRUE"),c("FALSE")),
-                          list("collab",c("TRUE"),c("FALSE")),
-                          list("explicit",c("TRUE"),c("FALSE")),
-                          list("major_mode",c("TRUE"),c("FALSE")))
+categoric_cols <- list(list("album_type",c("single"),c("album")),
+   list("pop",c("TRUE"),c("FALSE")),
+   list("hip_hop",c("TRUE"),c("FALSE")),
+   list("electro",c("TRUE"),c("FALSE")),
+   list("latino",c("TRUE"),c("FALSE")),
+   list("collab",c("TRUE"),c("FALSE")),
+   list("explicit",c("TRUE"),c("FALSE")),
+   list("major_mode",c("TRUE"),c("FALSE")),
+   list("rank_group",c("1-10"),c("31-40")),
+   list("gender",c("female"),c("male")),
+   list("is_group",c("TRUE"),c("FALSE")))
+
+ 
+ # FIN VECTORES
+ 
 
 
-plots_cat <- lapply(categoric_cols, TLP_categoric, data=data)
+plots_cat <- lapply(categoric_cols, TLP_categoric, data=data, umbral=300)
 plots_num <- lapply(numeric_cols, TLP_num, data=data)
 plots <- c(plots_num, plots_cat)
-TLP <- ggarrange(plotlist = plots, ncol = 6, nrow=5)
-ggsave("./Media/TLP/TLP.png", TLP, dpi = 300, width = 1000, units ="px")
+TLP <- ggarrange(plotlist = plots, ncol = 6, nrow=as.integer(length(plots)/6)+1)
 
-
-
-
-
-
-
-
-
-
-
-
-
+if (REDUCED){
+  ggsave("./Media/TLP/TLP_reduced.png", TLP, dpi = 600, width = 20, height = 20, units ="in")
+} else {
+  ggsave("./Media/TLP/TLP.png", TLP, dpi = 600, width = 20, height = 20, units ="in")
+}
 
 

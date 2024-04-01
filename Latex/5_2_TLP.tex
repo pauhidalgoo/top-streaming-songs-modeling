@@ -1,0 +1,158 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
+\usepackage[catalan]{babel}
+\usepackage{amssymb} %Para usar símbolos matemáticos
+%\usepackage{amsmath} %Para usar entornos matemáticos
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{fancyhdr} % Required for making headers and footers
+
+%Composición
+\usepackage[
+  top=2cm,
+  bottom=2cm,
+  left=3.25cm,
+  right=3.25cm,
+  headheight=50pt, % as per the warning by fancyhdr
+  includehead,includefoot,
+  heightrounded, % to avoid spurious underfull messages
+]{geometry}
+\usepackage{setspace}
+\renewcommand{\baselinestretch}{1.4}
+\setlength{\parindent}{0pt} % Change the identation in new paragraphs (default = 20pt)
+\setlength{\parskip}{1.5em} % Change added space in new paragraph (default = 0em)
+
+%Paquet per afegir codi maco
+\usepackage{caption}
+\DeclareCaptionFont{orange}{\color{orange}}
+\captionsetup{labelfont=orange} 
+
+\usepackage[usenames,dvipsnames,table,xcdraw]{xcolor}
+\usepackage{listings}
+\lstdefinestyle{sql}{
+        basicstyle=\ttfamily,
+        keywordstyle=\color{red},
+        stringstyle=\color{Mahogany},
+        commentstyle=\color{PineGreen},
+        breaklines=true,
+        showstringspaces=false,
+        numbers=left,
+        backgroundcolor=\color{gray!20},
+        numberstyle=\tiny\color{gray},
+        stepnumber=1,
+        numbersep=10pt}
+\lstset{language=R,
+        basicstyle=\ttfamily,
+        keywordstyle=\color{blue},
+        stringstyle=\color{Mahogany},
+        commentstyle=\color{PineGreen},
+        breaklines=true,
+        showstringspaces=false,
+        numbers=left,
+        backgroundcolor=\color{gray!20},
+        numberstyle=\tiny\color{gray},
+        stepnumber=1,
+        numbersep=10pt}
+        \usepackage[usenames,dvipsnames]{xcolor}
+
+%Citas y referencias
+\usepackage{hyperref}
+\hypersetup{urlcolor=cyan}
+
+\usepackage[style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+%comentaris multilinea
+\usepackage{comment}
+
+%Imágenes
+\usepackage{graphicx}
+\graphicspath{ {./} }
+\usepackage[justification=centering]{caption}
+
+%Cabeceras
+\usepackage{fancyhdr}
+\fancypagestyle{logos}
+{
+    \fancyhf{}
+    \fancyhead[L]{\includegraphics[scale=0.04]{Images/upc.png}}    
+    \fancyhead[R]{\includegraphics[scale=0.04]{Images/fib.png}}
+}
+
+%Inicio del documento
+
+
+\begin{document}
+
+\section{Traffic Light Panel }
+
+Un cop analitzats els resultats del profiling clàssic, hem aprofitat la interpretabilitat dels \textit{Traffic Light Panel}s (TLPs), amb tal de poder mostrar les importpàncies i els papers que juguen les variables en cadescuna de les diferents 5 clases generades al clustering jeràrquic (tal i com s'ha explicat a la secció \ref{section:clustering_jerarquic3}) a una persona que no estigui familiaritzada amb el àmbit de la estadística, com podria ser la persona que ens hagi encarregat aquesta tasca. A més, aquesta facil interpretabilitat també ens podria aportar alguna que altre conclusió que s'ens hagi pogut escapar al profiling clàsic.
+
+\subsection{Class Panel Graph}
+
+Amb tal de construir aquesta gràfica, el primer pas és construir un \textit{Class Panel Graph} (CPG), en el que podrem apreciar les diferents distribucions per cada variable dins dels diferents clusters. Degut a la gran quantitat de variables dins del nostre dataset (46 en total), com a la seva naturaleza, no té sentit incloure totes elles dins del CLP, ja que ens quedaría un CLP gigant i amb variables com \textit{artist\_name} (variable amb 301 modalitats diferents), fent així que el CLP perdi la seva gran fortaleza: la interpretabilitat.
+
+Així doncs, vam decidir deixar fora les següents variables categòriques:
+
+\begin{itemize}
+    \item Les variables que simbolitzin el temps, degut tant a la gran quantitat de modalitats que porten, com al fet que hi han 6 variables temporals, complicant encara més la interpretabilitat del CPG. Dins d'aquesta categoria entran: \textit{year\_release}, \textit{month\_release}, \textit{day\_release}, \textit{weekday\_release}, \textit{year\_week}, \textit{month\_week} i \textit{week\_index}.
+    
+    \item Totes aquelles variables categòriques que representin id's o noms, ja que dificularíen la interpretabilitat del CPG i no aportaríen quasi informació util, creuant 5 classes amb més de 5 modalitats. Aquest grup inclou \textit{track\_id}, \textit{track\_name},\textit{ album\_name}, \textit{albumm\_label} i \textit{artist\_name}.
+
+    \item Les variables de geolocalització, ja que no porem classificarles amb 3 colors al TLP: \textit{nationality} i\textit{city}
+
+    \item La variable \textit{key}, per el gran numero de modalitats que té i la dificultat de classificarla amb 3 colors al TLP.
+\end{itemize}
+
+Finalment, ens quedarien totes les variables numériques junt amb les variables que indican el genre d'una canço, \textit{ablum\_type}, \textit{collab}, \textit{explicit}, \textit{major\_mode}, \textit{rank\_group}, \textit{gender} i \textit{is\_group}. 
+
+La grafica de la figura \ref{} es el CPG amb les variables ja explicades. Com es pot comprovar, en el que a les variables numèriques respecta, artist\_followers, artist\_popularity i artist\_num tenen una clara diferència entre les clases. Energy també sembla que jugui un paper important, a pesar de no haver sigut de gran importancia mirant els boxplots al profiling clasic.  Valence també sembla tindre una variancia significant en el cinqué cluster respecte a la resta, indicant que les cançons dins d'aaquest grup tindran una major mesura de ``felicitat''. Finalment, indicar que tempo també té una distribució diferent al 5é cluster, poseent una distribució binomial, molt diferent a la resta de distribucions de la resta de clusters. En les variables streams i speechiness, a diferencia de lo comentat en les seccions anteriores, sembla que no hagi tantes diferencies.
+
+Per un altre banda, en les variables categòriques si es veuen diferencies mes aparents. En quant als generes, els clusters 1, 2 i 4 son clarament cançons de \textit{pop}, mentres que els 3 i 5 son predominantment de hip\_hop. També trobem que el genere latino es concentra clarament al 5é grup, i que les cançons explícites venen a agruparse al cluster 3.
+ 
+\subsection{Termòmetre}
+
+Un cop analitzat per sobre el CPG i amb ajuda de les descripcions univariants de les diferents variables (la seva mitjana, moda i els quartils), començem a crear els termometres que ens ajudaràn a crear un TLP facilment interpretalble per qualsevol persona. Tot i que els termometres haurian de crearse amb ajuda d'un expert en el camp de la base de dades, al no compter amb dit expert, vam escollirlos apojannos en tant el 1er i 3er quartil, com en la forma de la distribució de les variables.
+
+Per crear aquests termòmetres, hem separat les variables escollides en el anterior apartat entre aquelles numèriques i categòriques; ja que els termòmetres de les numèriques i categòriques tenen estructures diferentes. 
+
+Un cop separades, per a cada variable numèrica s'han apuntat en una taula d'excel el seu valor màxim i mínim, i els seus dos limits: que separan el color vert del groc (\textbf{b}), i el groc del vermell (\textbf{a}). El color verd s'assignat al conjunt de valors agrupat entre el valor màxim de la variable i la $b$, el vermell al conjunt de dades amb valors de la variable que es trobin entre el mínim i la $a$, i el groc s'assignat a les dades amb valors entre la $a$ i la $b$. En la majoría dels casos, degut a la distribució de les variables, hem apropat molt la $a$ i la $b$ al primer i tercer quartil. 
+
+% PB: FOTOS DE LOS TERMÓMETROS i FOTO DEL TERMÓMETRO DE EJEMPLO CON A i B
+
+En el que a les variables categóriques respecta, hem classificat cadescuna de les seves modalitats amb el color vert o vermell, fent que aquelles no clasificades siguin el color groc. En una altre taula d'excel s'han apuntat les diferentes modalitats que pertanyen al color vert separades per un espai en la columna \textit{green\_vector}, i s'ha fet el mateix per les modalitats vermelles.
+
+Per les variables binàries (els generes de les cançons), hem decidit que el valor \textit{TRUE} sigui el relacionat amb el color verd, i el valor \textit{FALSE} amb el vermell. La variable rank\_group era també sencilla de classificar: de vert la modalitat 1-10 (ja que lo millor per un artista es tindre la seva cançó amunt dels rànkins) i de vermell 30-40, que seguiría el pitjor puesto que es pot tindre a la nostre base de dades. La variable \textit{gender} vam escollir el genre femení com a color vert i el masculí com a vermell, en \textit{album\_type} single va ser la modalitat verde i album la vermella.
+
+Com es pot comprovar, per molt que l'objectiu del termòmetre sigui representar un conjunt de valors de una variable com a ``dolents'' i  un altre com a ``millor'', en la nostre base de dades això no té molt de sentit, ja que que una cançó sigui o no del genre hip\_hop, per exemple, no implica cap sentit de millor o pitjor. Si bé potser coincideix que en variables com \textit{streams} o \textit{popularity}, els valors alts si van relacionats amb la idea de que una canço tindra més exit (que no vol dir que sigui millor, evidentment això es subjectiu), en la majoria de elles, no té sentit relacionar el vert amb bo i el vermell amb dolent; si no que seràn colors que facilitaràn la interpretació, i en la majoría dels casos, el vert representarà valors alts de la variable (numèriques) o valors \textit{TRUE} (categòriques), el vermell el contrari, i el groc un punt mig. 
+
+%PB: FOTO DEL EXCEL CON LAS CATEGÓRICAS
+
+A continuació, hem creat un petit script de python que llegirà aquestes taulas d'excel i les traduirà a una serie de llistas de R, escrivintlas dins del script que utilitzarem per crear un pseudo-TLP.
+
+
+\subsection{pseudo-TLP a partir de termòmetre}
+
+Tenint ja preparats els valors $a$ i $b$ que delimitaràn la region verde de la groga i la groga de la vermella en les variables numériques, i els colors asignats a cada modalitat en les variables categòriques, hem creat un pseudo-TLP. Aquest pseudo-TLP es un CPG on pintem del seu color corresponent cada subplot per cada variable en cada cluster.
+
+En el cas de les variables numèriques, hem escollit el color corresponent de cada subplot utilitzant la mediana. És a dir, calculem la mediana de cada variable dins del primer, segon, tercer, quart i quint cluster. A continuació, mirem on quedaría aquest valor dins del termometre, i s'escull aquest color pel subplot de aquesta variable amb el cluster corresponent. Aquesta técnica es bastant robusta a distribucions amb cuas molt largas o amb outliers molt distants, degut a que aquests fenomens faran que la mitjana no caigui en la zona on més valors tindrem, mentres que la mediana, en canvi, caurà on estiguin la majoria de valors, com es pot veure en la figura \ref{}. Tot i així, aquesta mesura fallarà en cas de aplicarla amb distribucions bimodals, algo que s'hauria de tindre en compte.
+
+Per una altre banda, les variables categòriques han sigut clasificades mitjaçant l'us de la moda. Així doncs, en cas d'una variable binomial com \textit{pop}, al haver'hi més valors \textit{TRUE} que \textit{FALSE} en el cluster 1, el color assignat a aquest cluster amb la variable \textit{pop} serà verd.
+
+Tot i així, aprofitant que en les variables binomials no s'està utilitzant el color groc, hem decidit crear una petita variació del termòmetre explicat a classe, basat en el següent pensament: el fet que hagi més instàncies d'una modalitat que de l'altre, no vol dir que aquesta sigui predominant del tot dins de la clase, ja que es pot donar el cas que hagin 300 \textit{TRUE}s i 289 \textit{FALSE}s, implicant que, realment, no n'hi ha una gran diferència dins d'aquesta variable. Així doncs, hem escollit un umbral, tal que si la diferencia de instancias entre les dues modalitats predominants (les més freqüents) de una variable es menor qu'aquest umbral, el color de la variable en aquest cluster sigui groc. En cas de variables amb més de dos modalitats, no lo hem implementat a tot i que sabem que ara el color groc podra tindre dos significats: o bé pertanyerà a una classe groga o les seves dos modalitats principals es reparteixen de manera prou uniforme.
+
+Havent aplicat ja aquestes regles amb tal d'escollir els diferents colors, ens ha quedat el següent pseudo-TLP: figura \ref{}. Tal i com es pot apreciar, en les variables numèriques tenim certes diferències tant en artist\_num com en artist\_followers, tal i com s'ha vist al profiling clasic. Tot i així, a diferència de lo conluït al profiling anterior, artist\_popularity també té una moda i distribució diferent a aquelles dels clusters 1, 3, 4 i 5 al cluster número 2, implicant artistes una mica menys populars dins d'aquest clusters. Loudness té una petita diferència de moda, ja que la distribució del cluster 5 té una cua esquerra menys corta que la resta de distribucions a les altres clases, implicant cançons una mica més sorolloses. La variable valence també una moda diferent, tot i que la distribució no canvia tant, degut principalment a que la moda es troba just al limit entre els colors verd i groc del seu semàfor (el limit siguint 0.6 i la moda 0.656). Finalment, la resta de variables no tenen cap diferència significant en el que a la moda o distribució respecta. Cal comentar que la variable tempo no té cap diferència de color degut, probablement, a la distribució binomial que té.
+
+Per una altre banda, mirant les variables categòriques, trobem les mateixes conclusions en la variable album\_type, amb més albums als clusters 1 i 3, més singles als clusters 2 i 5, i casi cap diferencia al 4. En el que als genres musicals respecta, pop es concentra en les clases 1, 2 i 4, mentres que hip\_hop es concentra en les clases oposades. Electro coincideix als clusters 2 i 4 amb pop i latino es troba al cluster 5. Rock, christmas i cinema no són predominants en cap cluster, troban-se així, totes de color vermell. La variable collab es concentra en els clusters 2 i 5, mentres que en el 3 existeix un repart proporcional d'ambdues modalitats. Explicit es concentra al cluster 3, major\_mode al 1 i 4 però amb un repart bastant equitatiu, i rank\_group es divideix de manera molt uniforme. Finalment, destacar que les artistes de gener femení es troben al cluster 4 i que is\_grooup es sempre majoritariament \textit{FALSE}.
+
+\subsection{TLP final}
+
+Un cop analitzats els resultats del pseudo-TLP complet i apojan-nos en el treball fet al profiling clasic, tal i com s'explica al article on s'explica detalladament el TLP, s'haurien de treure les variables que no aportin cap informació a les clases en un TLP final, amb tal de fer-lo encara més interpretable del que ja és. Així doncs, hem decidit treure les variables que ni al pseudo-TLP previ (figura \ref{}) ni al profiling clàsic han aportat cap mena de variancia. Aquestes serían: track\_popularity, album\_popularity, liveness, tempo, duration, cinema, rock i cinema.
+
+\subsection{Anàlisi de resultasts}
+- Analitzar resultats de colors
+- Explicar la seva utilitat (entenibilitat per algú que no sigui estadistic)
+- Comparar amb Profiling
+
+\end{document}

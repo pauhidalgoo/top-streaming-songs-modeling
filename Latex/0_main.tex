@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
+\usepackage[catalan]{babel}
+\usepackage{amssymb} %Para usar símbolos matemáticos
+%\usepackage{amsmath} %Para usar entornos matemáticos
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{fancyhdr} % Required for making headers and footers
+
+%Composición
+\usepackage[
+  top=2cm,
+  bottom=2cm,
+  left=3.25cm,
+  right=3.25cm,
+  headheight=50pt, % as per the warning by fancyhdr
+  includehead,includefoot,
+  heightrounded, % to avoid spurious underfull messages
+]{geometry}
+\usepackage{setspace}
+\renewcommand{\baselinestretch}{1.4}
+\setlength{\parindent}{0pt} % Change the identation in new paragraphs (default = 20pt)
+\setlength{\parskip}{1.5em} % Change added space in new paragraph (default = 0em)
+
+%Paquet per afegir codi maco
+\usepackage{caption}
+\DeclareCaptionFont{orange}{\color{orange}}
+\captionsetup{labelfont=orange} 
+
+\usepackage[usenames,dvipsnames,table,xcdraw]{xcolor}
+\usepackage{listings}
+\lstdefinestyle{sql}{
+        basicstyle=\ttfamily,
+        keywordstyle=\color{red},
+        stringstyle=\color{Mahogany},
+        commentstyle=\color{PineGreen},
+        breaklines=true,
+        showstringspaces=false,
+        numbers=left,
+        backgroundcolor=\color{gray!20},
+        numberstyle=\tiny\color{gray},
+        stepnumber=1,
+        numbersep=10pt}
+\lstset{language=R,
+        basicstyle=\ttfamily,
+        keywordstyle=\color{blue},
+        stringstyle=\color{Mahogany},
+        commentstyle=\color{PineGreen},
+        breaklines=true,
+        showstringspaces=false,
+        numbers=left,
+        backgroundcolor=\color{gray!20},
+        numberstyle=\tiny\color{gray},
+        stepnumber=1,
+        numbersep=10pt}
+        \usepackage[usenames,dvipsnames]{xcolor}
+
+%Citas y referencias
+\usepackage{hyperref}
+\hypersetup{urlcolor=cyan}
+
+\usepackage[style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+%comentaris multilinea
+\usepackage{comment}
+
+%Imágenes
+\usepackage{graphicx}
+\graphicspath{ {./} }
+\usepackage[justification=centering]{caption}
+
+%Cabeceras
+\usepackage{fancyhdr}
+\fancypagestyle{logos}
+{
+    \fancyhf{}
+    \fancyhead[L]{\includegraphics[scale=0.04]{Images/upc.png}}    
+    \fancyhead[R]{\includegraphics[scale=0.04]{Images/fib.png}}
+}
+
+%Inicio del documento
+\begin{document}
+
+\begin{titlepage}
+\thispagestyle{logos}
+\vspace*{0cm}
+\centering
+{\bfseries\LARGE Universitat Politècnica de Catalunya \par}
+\vspace{0.5cm}
+{\scshape\Large Facultat d'Informàtica de Barcelona \par}
+\vspace{1cm}
+{\scshape\Huge Anàlisi i modelatge dels top 40 cançons setmanals de Spotify\par}
+\vspace{0.5cm}
+{\scshape\LARGE Entrega del D3 \par}
+\vspace{1cm}
+{\itshape\Large Grau en Intel·ligència Artificial \par}
+{\itshape\Large Preprocessament i Models Avançats d'Anàlisi de Dades\par}
+\vfill
+{\Large Autors: \par}
+{\Large \textbf{Roger Baiges, Pablo Barrenechea, Anna Casanovas, Pau Hidalgo, Abril Risso, Cai Selvas}  \par}
+
+{\Large \today \par}
+\end{titlepage}
+
+\setcounter{page}{2}
+\rhead{\includegraphics[scale=0.25]{Images/Logo UPC BCNTech Negre Transparent.png}}
+\lhead{\textbf{Grau en Intel·ligència Artificial\\[3pt]PMAAD - D3}\vspace{5pt}}
+\pagestyle{fancy}
+
+
+\newpage
+\tableofcontents
+
+\include{1_introduccio}
+
+\include{2_descriptivaraw}
+
+\include{3_preprocessing}
+
+\include{4_clustering}
+
+\include{5_profiling}
+
+\newpage
+
+\end{document}
