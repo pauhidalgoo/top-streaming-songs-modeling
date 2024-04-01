@@ -22,6 +22,12 @@ graph1 <- ggplot(data = dataset, aes(x =hip_hop, y = acousticness, fill = hip_ho
 print(graph1)
 ggsave("./Media/Descriptive/Bivariate_raw/hiphopacoustic.png", width=8,height=6, dpi=300)
 
+graph1 <- ggplot(data = dataset, aes(x =is_group, y = acousticness, fill = is_group)) +
+  geom_bar(stat = "summary", fun = "mean")
+print(graph1)
+ggsave("./Media/Descriptive/Bivariate_raw/groupacoustic.png", width=8,height=6, dpi=300)
+
+
 graph2 <- ggplot(data = dataset, aes(x = latino, y = valence, fill = latino)) +
   geom_boxplot()
 print(graph2)
@@ -37,8 +43,8 @@ graph1 <- ggplot(data = dataset, aes(x =gender, y = streams, fill = gender)) +
 print(graph1)
 ggsave("./Media/Descriptive/Bivariate_raw/genderstreams.png", width=8,height=6, dpi=300)
 
-graph1 <- ggplot(data = dataset, aes(x =gender, y = artist_num, fill = gender)) +
-  geom_bar(stat = "summary", fun = "mean")
+graph1 <- ggplot(data = dataset, aes(x = city, y = streams, fill = city)) +
+  geom_bar(stat = "summary", fun = "sum") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 print(graph1)
 ggsave("./Media/Descriptive/Bivariate_raw/gendernum.png", width=8,height=6, dpi=300)
 
@@ -67,11 +73,26 @@ print(graph3)
 ggsave("./Media/Descriptive/Bivariate_raw/danceabilityvalence.png", width=8,height=6, dpi=300)
 
 
-
-graph4 <- ggplot(data = dataset, aes(x = !!sym(categoric_cols[i]), fill = !!sym(categoric_cols[j]))) +
+library(ggmosaic)
+graph4 <- ggplot(data = dataset, aes(x = pop, fill = gender)) +
   geom_bar(position = "dodge")
 print(graph4)
+ggsave("./Media/Descriptive/Bivariate_raw/popgender.png", width=8,height=6, dpi=300)
+
+graph4 <- ggplot(data = dataset, aes(x = hip_hop, fill = gender)) +
+  geom_bar(position = "dodge")
+print(graph4)
+ggsave("./Media/Descriptive/Bivariate_raw/hiphopgender.png", width=8,height=6, dpi=300)
+
+graph4 <- ggplot(data = dataset, aes(x = is_group, fill = latino)) +
+  geom_bar(position = "dodge")
+print(graph4)
+ggsave("./Media/Descriptive/Bivariate_raw/latinogroup.png", width=8,height=6, dpi=300)
 
 graph5 <- ggplot(data = dataset) +
-  geom_mosaic(aes(x = product(!!sym(categoric_cols[i]), !!sym(categoric_cols[j])), fill = !!sym(categoric_cols[i])))
+  geom_mosaic(aes(x = product(pop, electro), fill = pop))
 print(graph5)
+ggsave("./Media/Descriptive/Bivariate_raw/electropop.png", width=8,height=6, dpi=300)
+
+
+
