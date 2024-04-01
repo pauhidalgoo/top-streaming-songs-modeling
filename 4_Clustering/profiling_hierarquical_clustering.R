@@ -6,9 +6,9 @@ load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
 data$cluster_hier <- as.factor(data$cluster_hier)
 
-levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4')
+levels(data$cluster_hier) <- c('C1', 'C2', 'C3', 'C4','C5')
 
-class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff")
+class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff", "#FF0000")
 
 #Calcula els valor test de la variable Xnum per totes les modalitats del factor P
 ValorTestXnum <- function(Xnum, C){
@@ -47,12 +47,22 @@ ValorTestXquali <- function(C ,Xquali){
 
 #dades contain the dataset
 
-var_num <- data[,c("cluster_hier","track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
-categorical_vars <- data[, sapply(data, is.factor)]
-categorical_vars <- subset(categorical_vars, select = -c(track_id, track_name, album_name, artist_name))
+var_num <- data[,c("track_popularity", "album_popularity", "artist_num", "artist_followers", "artist_popularity", "danceability", "energy", "loudness", "speechiness", "acousticness", "valence", "liveness", "tempo", "duration", "streams")]
+min_max_normalization <- function(x){
+  return((x - min(x)) / (max(x) - min(x)))
+}
 
-actives <- data.frame(categorical_vars, numeriques_normalitzades)
-data_profiling <- subset(actives, select = -c(week_index, day_release))
+numeriques_normalitzades <- as.data.frame(lapply(var_num, min_max_normalization))
+numeriques_normalitzades$cluster_hier <- as.factor(data$cluster_hier)
+
+categorical_vars <- c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")
+for (var in categorical_vars) {
+  data[[var]] <- as.factor(data[[var]])
+}
+categorical_vars <- data[,c("album_type","pop", "hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode", "time_signature", "rank_group","gender", "is_group", "nationality","city", "month_release","weekday_release","year_week","month_week")]
+
+data_profiling <- data.frame(categorical_vars, numeriques_normalitzades)
+#data_profiling <- actives
 
 num_cols_dades <- ncol(data_profiling)
 num_rows_dades <- nrow(data_profiling)
@@ -116,7 +126,7 @@ for(k in indexs_numerical_cols){
   
   print(p)
   
-#  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/Profiling', sep = ""), width = 8, height = 6, dpi = 300)
+  ggsave(plot = p, filename = paste('Num_BoxPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   
   # Barplot of means
   means <- tapply(data_profiling[, k], C, mean)
@@ -180,7 +190,7 @@ for(k in index_categorical_cols){
     
     print(snake_plot)
     
-    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
+    ggsave(plot = snake_plot, filename = paste('Cat_SnakePlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
     
     ## BARPLOTS Múltiples ##
     title_barplot <- paste("Quantitat de instàncies de", names(data_profiling)[k])
@@ -194,7 +204,7 @@ for(k in index_categorical_cols){
       theme(plot.title = element_text(hjust = 0.5))
     
     print(barplot)
-   ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste(getwd(), 'C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
+   ggsave(plot = barplot, filename = paste('Cat_BarPlot_', names(data_profiling)[k], '.png', sep = ""), bg = 'white', path = paste('C:/Users/abril/Desktop/IA/2nASSIGNATURES/2n quatri/PMAAD/imatges_clustering', sep = ""), width = 8, height = 6, dpi = 300)
   }
 }#endfor
 

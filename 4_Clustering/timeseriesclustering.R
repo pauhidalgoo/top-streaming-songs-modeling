@@ -187,51 +187,28 @@ p4
 
 ggsave(plot = p4, filename = paste('evol_streams_per_mes_i_cluster', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
 
+# Mateix plot eliminant els zeros
+
+# Filtrar per considerar només els valors != 0 i després calcular les mitjanes
+mitjanes_mensuals_filtrades <- datos_long_month %>%
+  filter(valor != 0) %>%  # Afegim aquest filtre per excloure els valors 0
+  group_by(cluster, mes) %>%
+  summarize(mitjana_streams = mean(valor), .groups = 'drop')
+
+p4_no_zeros <- ggplot(mitjanes_mensuals_filtrades, aes(x = mes, y = mitjana_streams, group = cluster, color = as.factor(cluster))) +
+  geom_line(aes(color = as.factor(cluster)), linewidth = 0.8) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Mitjana de streams per mes i per cluster (sense zeros)",
+       x = "Mes",
+       y = "Mitjana de streams",
+       color = "Cluster") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_continuous(breaks = 1:12, labels = c('Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'))
+
+p4_no_zeros
+
+ggsave(plot = p4_no_zeros, filename = paste('evol_streams_per_mes_i_cluster_no_0', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
+
 # ------------------------------------------------------------------------------
-# Barplot amb la mitjana de streams per cançó en els diferents clústers
-
-# Calculem la suma total de streams per clúster
-suma_streams_per_cluster <- datos_long %>%
-  group_by(cluster) %>%
-  summarise(total_streams = sum(valor, na.rm = TRUE), .groups = 'drop')
-
-# Calculem el nombre de cançons per clúster
-nombre_cancions_per_cluster <- datos_long %>%
-  group_by(cluster) %>%
-  summarise(nombre_cancions = n_distinct(track_name), .groups = 'drop')
-
-# Calculem la mitjana de streams per clúster
-mitjana_streams_per_cluster <- left_join(suma_streams_per_cluster, nombre_cancions_per_cluster, by = "cluster") %>%
-  mutate(mitjana_streams = total_streams / nombre_cancions)
-
-# Barplot de la mitjana de streams per clúster
-p5 <- ggplot(mitjana_streams_per_cluster, aes(x = as.factor(cluster), y = mitjana_streams, fill = as.factor(cluster))) +
-  geom_col(fill = "#1DB954") +
-  theme_minimal() +
-  labs(title = "Barplot de la mitjana de streams per cançó de cada clúster",
-       x = "Clúster",
-       y = "Mitjana de streams") +
-  theme(axis.text.x = element_text(angle = 0, hjust = 1))
-
-p5
-
-ggsave(plot = p5, filename = "barplot_mitjana_streams_per_canço_per_cluster.png", bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
-
-# Sumem els streams per cada cançó dins de cada clúster
-suma_streams_per_canço_per_cluster <- datos_long %>%
-  group_by(track_name, cluster) %>%
-  summarise(suma_streams = sum(valor, na.rm = TRUE), .groups = 'drop')
-
-# Ara fem el boxplot amb aquestes sumes
-p6 <- ggplot(suma_streams_per_canço_per_cluster, aes(x = as.factor(cluster), y = suma_streams, fill = as.factor(cluster))) +
-  geom_boxplot(fill = "#1DB954") +
-  theme_minimal() +
-  labs(title = "Boxplot del total de streams per cançó en cada clúster",
-       x = "Clúster",
-       y = "Suma de streams") +
-  theme(axis.text.x = element_text(angle = 0, hjust = 1))
-
-p6
-
-ggsave(plot = p6, filename = "boxplot_total_streams_per_canço_per_cluster.png", bg = 'white', path = paste(getwd(), '/Media/Clustering/TimeSeriesClustering', sep = ""), width = 8, height = 6, dpi = 300)
 
