@@ -36,9 +36,9 @@ CPG <- ggarrange(plotlist=plots, ncol=6,nrow=as.integer(length(plots)/6)+1)
 
 
 if (REDUCED){
-  ggsave("./Media/TLP/CPG_reduced.png", CPG, dpi = 600, width = 20, height = 20, units ="in")
+  ggsave("./Media/TLP/CPG_reduced.png", CPG, dpi = 150, width = 14, height = 14, units ="in")
 } else {
-  ggsave("./Media/TLP/CPG.png", CPG, dpi = 600, width = 20, height = 20, units ="in")
+  ggsave("./Media/TLP/CPG.png", CPG, dpi = 150, width = 14, height = 14, units ="in")
 }
 
 
@@ -193,9 +193,9 @@ plots <- c(plots_num, plots_cat)
 TLP <- ggarrange(plotlist = plots, ncol = 6, nrow=as.integer(length(plots)/6)+1)
 
 if (REDUCED){
-  ggsave("./Media/TLP/TLP_reduced.png", TLP, dpi = 600, width = 20, height = 20, units ="in")
+  ggsave("./Media/TLP/TLP_reduced.png", TLP, dpi = 150, width = 14, height = 14, units ="in")
 } else {
-  ggsave("./Media/TLP/TLP.png", TLP, dpi = 600, width = 20, height = 20, units ="in")
+  ggsave("./Media/TLP/TLP.png", TLP, dpi = 150, width = 14, height = 14, units ="in")
 }
 
 

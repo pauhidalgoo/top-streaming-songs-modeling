@@ -1,89 +1,4 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{csquotes}
-\usepackage[catalan]{babel}
-\usepackage{amssymb} %Para usar símbolos matemáticos
-%\usepackage{amsmath} %Para usar entornos matemáticos
-\usepackage{float}
-\usepackage{amsmath}
-\usepackage{fancyhdr} % Required for making headers and footers
-
-%Composición
-\usepackage[
-  top=2cm,
-  bottom=2cm,
-  left=3.25cm,
-  right=3.25cm,
-  headheight=50pt, % as per the warning by fancyhdr
-  includehead,includefoot,
-  heightrounded, % to avoid spurious underfull messages
-]{geometry}
-\usepackage{setspace}
-\renewcommand{\baselinestretch}{1.4}
-\setlength{\parindent}{0pt} % Change the identation in new paragraphs (default = 20pt)
-\setlength{\parskip}{1.5em} % Change added space in new paragraph (default = 0em)
-
-%Paquet per afegir codi maco
-\usepackage{caption}
-\DeclareCaptionFont{orange}{\color{orange}}
-\captionsetup{labelfont=orange} 
-
-\usepackage[usenames,dvipsnames,table,xcdraw]{xcolor}
-\usepackage{listings}
-\lstdefinestyle{sql}{
-        basicstyle=\ttfamily,
-        keywordstyle=\color{red},
-        stringstyle=\color{Mahogany},
-        commentstyle=\color{PineGreen},
-        breaklines=true,
-        showstringspaces=false,
-        numbers=left,
-        backgroundcolor=\color{gray!20},
-        numberstyle=\tiny\color{gray},
-        stepnumber=1,
-        numbersep=10pt}
-\lstset{language=R,
-        basicstyle=\ttfamily,
-        keywordstyle=\color{blue},
-        stringstyle=\color{Mahogany},
-        commentstyle=\color{PineGreen},
-        breaklines=true,
-        showstringspaces=false,
-        numbers=left,
-        backgroundcolor=\color{gray!20},
-        numberstyle=\tiny\color{gray},
-        stepnumber=1,
-        numbersep=10pt}
-        \usepackage[usenames,dvipsnames]{xcolor}
-
-%Citas y referencias
-\usepackage{hyperref}
-\hypersetup{urlcolor=cyan}
-
-\usepackage[style=numeric]{biblatex}
-\addbibresource{references.bib}
-
-%comentaris multilinea
-\usepackage{comment}
-
-%Imágenes
-\usepackage{graphicx}
-\graphicspath{ {./} }
-\usepackage[justification=centering]{caption}
-
-%Cabeceras
-\usepackage{fancyhdr}
-\fancypagestyle{logos}
-{
-    \fancyhf{}
-    \fancyhead[L]{\includegraphics[scale=0.04]{Images/upc.png}}    
-    \fancyhead[R]{\includegraphics[scale=0.04]{Images/fib.png}}
-}
-
-%Inicio del documento
-
-
-\begin{document}
+\newpage
 \section{Profiling}
 
 Un cop hem utilitzat diferents tècniques de clustering per agrupar les nostres dades, escollint els hiperparàmetres, ara toca fer el profiling. El profiling ens servirà per analitzar els clústers formats durant el clustering jeràrquic i veure com s'han dividit les dades. Per realitzar això, utilitzarem una sèrie de tests d'hipòtesi i gràfiques diverses. També s'intentarà fer una comparació dels clústers que s'han format durant aquest quatrimestre als clústers que van sorgir a ME. Això ens permetrà veure si les noves variables que hem afegit a la base de dades han afectat a l'agrupació o no. 
@@ -180,7 +95,7 @@ Artist\_num també veiem que és una variable que està afectant a la creació d
     \end{minipage}%
 \end{figure}
 
-Una variable que ens ha sorprès molt és la variable track\_popularity, ja que l'any passat, els clústers es van dividir molt segons les popularitats de les cançons i dels albums. Tot i que al Barplot veiem que les mitjanes són totes extremadament semblants a la total, al Boxplot es descobreix que els clústers 1 i 4 tenen més variabilitat de les dades i allà és on es troben les cançons amb una mica menys de popularitat. 
+Una variable que ens ha sorprès molt és la variable track\_popularity, ja que l'any passat, els clústers es van dividir molt segons les popularitats de les cançons i dels albums i aquest any tots tenien mitjanes semblants. Tot i que al Barplot veiem que les mitjanes són totes extremadament semblants a la total, al Boxplot es descobreix que els clústers 1 i 4 tenen més variabilitat de les dades i allà és on es troben les cançons amb una mica menys de popularitat. 
 
 \begin{figure}[H]
 \centering
@@ -188,13 +103,13 @@ Una variable que ens ha sorprès molt és la variable track\_popularity, ja que 
         \centering
         \includegraphics[width=0.95\linewidth]{Images/5_Profiling/numeriques/Num_BarPlot_danceability.png}
         \caption{Barplot amb les mitjanes \\ de danceability per clúster}
-        \label{fig:Num_BarPlot_streams}
+        \label{fig:Num_BarPlot_danceability}
     \end{minipage}%
     \begin{minipage}{.49\textwidth}
         \centering
         \includegraphics[width=0.95\linewidth]{Images/5_Profiling/numeriques/Num_BoxPlot_danceability.png}
         \caption{Boxplots de danceability per clúster}
-        \label{fig:Num_BoxPlot_streams}
+        \label{fig:Num_BoxPlot_danceability}
     \end{minipage}%
 \end{figure}
 En el cas de danceability ens trobem que al primer clúster hi ha les cançons menys ballables en general. En canvi, en els clústers 3 i 5 hi ha cançons que són més ballables que la mitjana. 
@@ -231,7 +146,7 @@ En el cas de energy, el clúster 5 conté les cançons que són més energètiqu
     \end{minipage}%
 \end{figure}
 
-A la variable streams ens trobem que la classe 1 té una mitjana relativament alta de streams. També veiem que el cincè clúster és on hi ha les cançons amb una mitjana més baixa de reproduccions. Tot i això, ja veiem als boxplots que aquestes diferència no són extremadament significatives. 
+A la variable streams ens trobem que la classe 1 té una mitjana relativament alta de streams. També veiem que el cinquè clúster és on hi ha les cançons amb una mitjana més baixa de reproduccions. Tot i això, ja veiem als boxplots que aquestes diferència no són extremadament significatives. 
 
 \begin{figure}[H]
 \centering
@@ -357,7 +272,7 @@ A la variable explicit, trobem que la gran majoria de cançons explícites es tr
         \centering
         \includegraphics[width=0.95\linewidth]{Images/5_Profiling/categoriques/cat/Cat_BarPlot_hip_hop.png}
         \caption{Barplot amb els recomptes \\ de hip-hop per clúster}
-        \label{fig:Cat_BarPlot_gender}
+        \label{fig:Cat_BarPlot_hip_hop}
     \end{minipage}%
     \begin{minipage}{.49\textwidth}
         \centering
@@ -484,7 +399,7 @@ Un cop s'han analitzat les variable individuals respecte cada clúster podem ext
 
 % Acústiques, bastanta popularitat i streams, baixa speechiness, pocs artistes, ROCK, NADAL, POp, grups de genere barrejats i sense colabs
 
-\textbf{CLÚSTER 2:} Tenen més quantitat de col·laboracions i per tant, també trobem que el número d'artistes és mes gran que els altres clústers i hi predominen els singles. Trobem cançons amb molta energia, loudness i  valence i veiem que predomina el gènere electro, amb cançons poc parlades. Tendeixen a ser cantades per homes. Es podria dir que en aquest clúster es troben les cançons menys populars.
+\textbf{CLÚSTER 2:} Tenen més quantitat de col·laboracions i per tant, també trobem que el número d'artistes és més gran que els altres clústers i hi predominen els singles. Trobem cançons amb molta energia, loudness i  valence i veiem que predomina el gènere electro, amb cançons poc parlades. Tendeixen a ser cantades per homes. Es podria dir que en aquest clúster es troben les cançons menys populars.
 
 % Moltes colabs, número d'artistes és més gran, i singles. Cançons amb energia, loudness i valence. Genere electro amb cançons poc parlades i per homes. 
 
@@ -496,23 +411,21 @@ Un cop s'han analitzat les variable individuals respecte cada clúster podem ext
 
 % Per dones i no binaries, de electro i pop. Amb molts seguidors i reproducció, sense colaboració. 
 
-\textbf{CLÚSTER 5:} Hi ha moltes col·laboracions, es que comporta que hi hagi cançons amb múltiples artistes, i en general és el clúster amb les cançons que tenen menys streams. Hi trobem la gran majoria de cançons llatines, amb molta energia, ballables, amb molt volum i alt ritme i molt parlades, majoritàriament cantades per homes. A comparació amb el segon clúster, les cançons del cinquè clúster tenen una mitjana de popularitat d'àlbum i d'artista i de seguidors de l'artista més alta.
+\textbf{CLÚSTER 5:} Hi ha moltes col·laboracions, el que comporta que hi hagi cançons amb múltiples artistes, i en general és el clúster amb les cançons que tenen menys streams. Hi trobem la gran majoria de cançons llatines, amb molta energia, ballables, amb molt volum i alt ritme i molt parlades, majoritàriament cantades per homes. A comparació amb el segon clúster, les cançons del cinquè clúster tenen una mitjana de popularitat d'àlbum i d'artista i de seguidors de l'artista més alta.
 
 % Moltes colabs, molts artistes, amb menys streams que els altres. Llatines amb energia, ballables i amb molt volum , alt ritme i molt parlades per homes.  
 
-Una vegada hem descrit i explicat cada un dels clústers, hem plantejat dues aplicacions pràctiques en què les nostres conclusions poden ser útils per a certs clients. Aquestes conclusions són semblants sino pràcticament iguals a les de l'any passat, però afegint les nostres variables noves. . 
+Una vegada hem descrit i explicat cada un dels clústers, hem plantejat dues aplicacions pràctiques en què les nostres conclusions poden ser útils per a certs clients. Aquestes conclusions són semblants sinò pràcticament iguals a les de l'any passat, però afegint les nostres variables noves. 
 
-\textbf{Possible cas pràctic 1}: Les plataformes de streaming busquen sempre augmentar la retenció dels usuaris ofering contingut que s'ajusti als justos de cada persones. Això pot ajudar ja que per exemple una persona que gaudeix més d'escoltar veus femenines de pop, se li afegiràn cançons a les playlist del clúster 1 o del 4. Sabent les característiques específiques ajudarà a millorar l'experiència de cada usuari. 
+\textbf{Possible cas pràctic 1}: Les plataformes de streaming busquen sempre augmentar la retenció dels usuaris ofering contingut que s'ajusti als gustos de cada persones. El clustering fet pot ajudar a fer-ho ja que, per exemple, a una persona que gaudeix més d'escoltar veus femenines de pop, se li afegiran cançons a les playlists del clúster 1 o del 4. Dividir i agrupar les dades ajudarà a millorar l'experiència de cada usuari. 
 
-També pot ajudar a la promoció de nous artistes. Per tenir molts streams, podem imitar les caràcteriques del clúster 1.
+També pot ajudar a la promoció de nous artistes. Per tenir molts streams, podem imitar les característiques del clúster 1.
 
-\textbf{Possible cas pràctic 2}: Aquest clustering ens servirà també per artistes que vulguis assegurar-se entrar a la llista d'èxits. Inspirant-nos en els clústers 2 i 5, els artistes haurien de treure singles amb molta energía, loudness i valence i de gèneres. També amb el clúster 3, pels artístes que es dediquenn al hiphop, hauren de treure singles ballables i amb molt speechiness per tenir més atenció del públic. Les compilacions i àlbums explícits en ajuden a tenir més atenció de l'audiència dins del hiphop. 
+\textbf{Possible cas pràctic 2}: Aquest clustering ens servirà també per artistes que vulguin assegurar-se entrar a la llista d'èxits. Inspirant-nos en els clústers 2 i 5, els artistes haurien de treure singles amb molta energía, loudness i valence i de gèneres. També amb el clúster 3, pels artístes que es dediquen al hiphop, haurien de treure singles ballables i amb molt speechiness per tenir més atenció del públic. Les compilacions i àlbums explícits en ajuden a tenir més atenció de l'audiència dins del hip\_hop. 
 
 En conclusió, hem vist que la majoria de clústers es diferencien especialment pels gèneres de les cançons. Això ho valorem positivament, ja que ens permet veure les característiques de cada gènere i quines condicions han de complir les cançons de cada gènere per poder arribar als top 40 cançons de Spotify. A més, també es poden distingir els clústers per la popularitat de les seves cançons, àlbums o artistes. També s'ha de destacar que les noves variables han influenciat al clustering suficient com per alterar el nombre de classes que s'han fet. En general, creiem que els clústers generats són relativament fàcils d'interpretar i els resultats són coherents amb tot el que s'ha anat veient al llarg de projecte, de manera que podem concloure que el nostre hierarchical clustering ha estat realitzat correctament i la informació que ens ha proporcionat pot ser de gran utilitat en diversos exemples pràctics.
 
 
-
-\end{document}
 
 % key, major_mode, month_week, month_release, pop, rank_group, weekday_release, year_week no diu res important
 

@@ -10,7 +10,7 @@ Després de validar que, efectivament, el \textit{missing data} era aleatori, es
 
 \subsubsection{MIMMI}
 
-MIMMI és un mètode d'imputació descrit en CITAR PAPER KARINA, on s'utilitza un clústering per imputar els valors mancants. Per aquest motiu, el mètode ens demana que escollim una k per triar quants clústers volem. El dendrograma del clústering, usant la mètrica de Gower i el mètode de Ward.D2 era el següent (\ref{fig:Preprocessing_mimmi_dend}):
+MIMMI és un mètode d'imputació descrit en \cite{gibert_2013_mixed}, on s'utilitza un clústering per imputar els valors mancants. Per aquest motiu, el mètode ens demana que escollim una k per triar quants clústers volem. El dendrograma del clústering, usant la mètrica de Gower i el mètode de Ward.D2 era el següent (\ref{fig:Preprocessing_mimmi_dend}):
 
 \begin{figure}[H]
     \centering
@@ -22,7 +22,7 @@ MIMMI és un mètode d'imputació descrit en CITAR PAPER KARINA, on s'utilitza u
 En aquest cas, vam escollir k = 4. Amb aquests clústers, realitzats amb les dades que no contenen missing data, es pot imputar la resta de instàncies simplement observant quin és el clúster que els hi pertoca i realitzant la mitja (o la moda, tot i que en aquest cas només s'han imputat variables numèriques).
 
 \subsubsection{MICE} 
-\textit{Multivariate Imputation by Chained Equations}, més conegut com MICE, és un altre mètode d'imputació. En aquest, es produeixen múltiples imputacions per variable que es combinen per obtenir el resultat final. Els paràmetres que es van usar per utilitzar-lo en la base de dades van ser: \textit{predictive mean matching} com a mètode (pmm), m (número de imputacions múltiples) 5 i màxim 5 iteracions.
+\textit{Multivariate Imputation by Chained Equations} (\cite{stefvanbuuren_2000_multivariate}), més conegut com MICE, és un altre mètode d'imputació. En aquest, es produeixen múltiples imputacions per variable que es combinen per obtenir el resultat final. Els paràmetres que es van usar per utilitzar-lo en la base de dades van ser: \textit{predictive mean matching} com a mètode (pmm), m (número de imputacions múltiples) 5 i màxim 5 iteracions.
 
 R disposa d'un paquet amb aquest mètode, o sigui que la implementació ja estava feta.
 
@@ -37,7 +37,103 @@ Després de les 3 imputacions, la suma total dels valors mancants del dataset er
 
 \subsection{Anàlisi descriptiva post processat}
 
-% Anàlisi, dir quin vam escollir i per què
+Després del preprocessament, no quedaven categories incorrectes ni valors mancants. Degut a això, algunes distribucions canviaven. El primer que farem, però, per poder avaluar els diferents mètodes d'imputació, és comparar les distirbucions en les variables numèriques que han quedat. Per això, observem les diferències en les distribucions després d'imputar (figures \ref{fig:Preprocessing_distribdance}, \ref{fig:Preprocessing_distribduration} i \ref{fig:Preprocessing_distribspeech}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/3_Preprocessing/distrib_imputation_danceability.png}
+    \caption{Distribucions de danceability després de la imputació}
+    \label{fig:Preprocessing_distribdance}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/3_Preprocessing/distrib_imputation_duration.png}
+    \caption{Distribucions de duration després de la imputació}
+    \label{fig:Preprocessing_distribduration}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Images/3_Preprocessing/distrib_imputation_speechiness.png}
+    \caption{Distribucions de speechiness després de la imputació}
+    \label{fig:Preprocessing_distribspeech}
+\end{figure}
+
+A partir d'aquestes distribucions, observem com el MICE i el KNN són els que han donat resultats millors, i que s'apropen més a la distribució real. D'altra banda, el MIMMI té alguns pics en les mitjanes dels clústers que ha fet servir per imputar. Després de valorar les opcions, hem decidit usar les dades imputades usant KNN.
+
+Addicionalment, algunes de les altres distribucions també s'han arreglat. Per exemple, track\_name, aquest cop sí que és la distribució real (ja que en l'anàlisi anterior, algunes cançons contenien missing i s'havia ignorat aquella fila). En aquest cas, queda com la figura figura \ref{fig:UnivariateP_track}. A més, per exemple \textit{gender} ara té la categoria \textit{Unknown}, enlloc de \textit{na} (figura \ref{fig:UnivariateP_gender}).
+
+\begin{figure}[H]
+\centering
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/bar_track_name.png}
+        \caption{Bar plot de \textit{track\_name}}
+        \label{fig:UnivariateP_track}
+    \end{minipage}%
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/bar_gender.png}
+        \caption{Bar plot de \textit{gender}}
+        \label{fig:UnivariateP_gender}
+    \end{minipage}%
+\end{figure}
+
+Degut a la naturalesa de la base de dades, era possible realitzar un altre anàlisi descriptiu de dades: separant per artistes únics (300 instàncies), i separant per cançons úniques (1019). D'aquesta manera, podem saber per exemple realment quants artistes són de cada ciutat o país (enlloc de quants cops apareix un artista d'aquell lloc) (figura \ref{fig:UnivariateP_a_city}). L'ordre de les ciutats ha canviat, situant-se en aquest cas Washington D.C. en el segon lloc per davant de San Juan (capital de Puerto Rico). També hi ha alguna numèrica que canvia, com artist followers que en aquest cas té una distribució més suavitzada (sense els pics que tenia si no tenim en compte artistes únics) (figura \ref{fig:UnivariateP_a_followers}).
+
+\begin{figure}[H]
+\centering
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/Artist/bar_city.png}
+        \caption{Bar plot de \textit{city} per artistes únics}
+        \label{fig:UnivariateP_a_city}
+    \end{minipage}%
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/Artist/hist_artist_followers.png}
+        \caption{Histograma de \textit{artist followers} per artistes únics}
+        \label{fig:UnivariateP_a_followers}
+    \end{minipage}%
+\end{figure}
+
+
+El mateix podem fer separant per cançó única. Moltes de les distribucions segueixen sent iguals, però per exemple collab passa a tenir menys percentatge de valors TRUE (indicant que les col·laboracions tenen tendència a aparèixer durant més setmanes en el top) (figura \ref{fig:UnivariateP_t_collab}). També hi ha un percentatge menor de cançons Pop, com es pot veure a la figura figura \ref{fig:UnivariateP_t_pop}.
+
+\begin{figure}[H]
+\centering
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/Track/pie_collab.png}
+        \caption{Pie chart de \textit{collab} per cançons úniques}
+        \label{fig:UnivariateP_t_collab}
+    \end{minipage}%
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/Track/pie_pop.png}
+        \caption{Pie chart de \textit{pop} per cançons úniques}
+        \label{fig:UnivariateP_t_pop}
+    \end{minipage}%
+\end{figure}
+
+També podem realitzar anàlisi bivariant que no haviem realitzat abans, amb les variables noves i correctes. Per exemple, es poden sumar el total de reproduccions (streams) per país i queda tal que \ref{fig:BivariateP_nationstreams} . Observem el predomini dels Estats Units en la indústria musical, seguit del Regne Unit, Canada i Puerto Rico. A més, podem analitzar també com influeix la nacionalitat en els gèneres, veient per exemple que el gènere latino prové sobretot d'artites de Puerto Rico, Colombia, i en menys mesura Espanya, Panama, Estats Units, República Dominicana i Venezuela (\ref{fig:BivariateP_nationlati}).
+
+\begin{figure}[H]
+\centering
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/nationalitystreams.png}
+        \caption{Bar plot de \textit{nationality} amb \textit{streams}}
+        \label{fig:BivariateP_nationstreams}
+    \end{minipage}%
+    \begin{minipage}{.4\textwidth}
+        \centering
+        \includegraphics[width=0.95\linewidth]{Images/3_Preprocessing/nationalitylatino.png}
+        \caption{Bar plot de \textit{nationality} amb \textit{latino}}
+        \label{fig:BivariateP_nationlati}
+    \end{minipage}%
+\end{figure}
 
 \subsection{Ampliació de la base de dades mitjançants APIs}
 
