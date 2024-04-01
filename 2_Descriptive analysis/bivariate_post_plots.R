@@ -5,3 +5,7 @@ graph1 <- ggplot(data = dataset, aes(x = nationality, y = streams, fill = nation
   geom_bar(stat = "summary", fun = "sum") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 print(graph1)
 ggsave("./Media/Descriptive/Bivariate_post/nationalitystreams.png", width=8,height=6, dpi=300)
+graph1 <- ggplot(data = dataset, aes(x = nationality, y = streams, fill = nationality)) +
+  geom_bar(stat = "summary", fun = "sum") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(graph1)
+ggsave("./Media/Descriptive/Bivariate_post/nationalitystreams.png", width=8,height=6, dpi=300)
