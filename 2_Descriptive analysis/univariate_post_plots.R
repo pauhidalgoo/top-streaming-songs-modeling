@@ -1,5 +1,5 @@
-load("./3_Preprocessing/data_na_added.RData")
-dataset <- na.omit(data)
+load("./2_Descriptive analysis/unique_artists.RData")
+dataset <- as.data.frame(na.omit(unique_artists))
 dataset[,"lyrics"] <- NULL
 library(ggplot2)
 library(dplyr)
@@ -27,10 +27,10 @@ univariate_numeric <- function(X, nom){
     theme_minimal()
   
   print(hist_plot)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/hist_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/hist_",nom,".png"), width=8,height=6, dpi=300)
   
   print(box_plot)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/box_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/box_",nom,".png"), width=8,height=6, dpi=300)
   
   
   summary_stats <- summary(X)
@@ -55,10 +55,10 @@ univariate_date <- function(X,nom){
     theme_minimal()
   
   print(hist_plot)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/hist_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/hist_",nom,".png"), width=8,height=6, dpi=300)
   
   print(box_plot)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/box_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/box_",nom,".png"), width=8,height=6, dpi=300)
   
   
   cat("\n\n")
@@ -133,10 +133,10 @@ univariate_cat <- function(X, nom){
   }
   
   print(bar_plot)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/bar_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/bar_",nom,".png"), width=8,height=6, dpi=300)
   
   print(pie_chart)
-  ggsave(paste0("./Media/Descriptive/Univariate_raw/pie_",nom,".png"), width=8,height=6, dpi=300)
+  ggsave(paste0("./Media/Descriptive/Univariate_artists/pie_",nom,".png"), width=8,height=6, dpi=300)
   
   cat(paste("Nombre de modalitats: ", length(category_df[,"Freqüència"]), '\n\n'))
   cat(paste("Moda: ", sub_category_df[,"Categoria"][1], "\n\n"))
@@ -157,9 +157,15 @@ univariate <- function(X, nom) {
   }
 }
 
-names <- c("track_name", "artist_name", "pop", "hip_hop", "electro", "latino", "danceability", "energy", "liveness", "acousticness", "collab", "explicit", "year_release", "nationality", "city", "gender", "is_group")
+names <- c("streams","artist_popularity", "artist_followers", "nationality", "is_group", "gender", "city")
 
 # Iterate through columns and create univariate plots
 for (i in names) {
   univariate(dataset[, i], i)
 }
+
+# names_artist <- c("streams","artist_popularity", "artist_followers", "nationality", "is_group", "gender", "city")
+
+#names_track <- c()
+
+
