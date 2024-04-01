@@ -1,5 +1,5 @@
 ---
-title: "Anàlisi Descriptiu Bivariant"
+title: "Anàlisi Descriptiu Bivariant Preprocessat"
 output:
   pdf_document: default
   html_document:
@@ -16,24 +16,26 @@ library(psych)
 ```
 
 ```{r, echo=FALSE}
-load("./3_Preprocessing/data_na_added.RData")
+setwd("C:/Users/Usuario/Documents/Universitat/4rt Quatri/PMAAD_git/PMAAD_GIA")
+load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 dataset <- na.omit(data)
 ```
 
-Per fer el anàlisi bivariant inicial, s'han analitzat parells de diferents tipus de variables per observar si hi ha relacions entre variables:
+Per fer el anàlisi bivariant després del preprocessament, s'han analitzat parells de diferents tipus de variables per observar si hi ha relacions entre variables:
 
 
 ```{r, echo=FALSE}
-numeric_cols <- c("track_popularity","album_popularity","energy","loudness","speechiness","acousticness")
-categoric_cols <- c("album_type","pop","hip_hop")
+numeric_cols <- c("track_popularity","album_popularity","artist_popularity", "artist_followers", "artist_num","energy","loudness","speechiness","acousticness", "danceability", "liveness", "valence", "tempo", "duration", "streams")
+categoric_cols <- c("album_type","pop","hip_hop", "electro", "rock","christmas","cinema","latino","collab","explicit","key","major_mode","time_signature","is_group","gender","rank_group", "nationality")
 
 #les altres numèriques
-#,"artist_num", "artist_followers","artist_popularity","danceability","liveness","valence","tempo", "duration","streams"
+#,
 
 #les altres categòriques
 #,"electro", "rock","christmas","cinema","latino","collab","explicit","key","mode","time_signature","Is_Group","Gender","rank_group"
 
 dataset[, 1] <- NULL
+names(dataset)
 ```
 
  

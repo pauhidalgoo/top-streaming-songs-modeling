@@ -20,6 +20,12 @@ data$city[which(is.na(data$city) & data$nationality == 'United States')] <- 'Was
 data$city[which(is.na(data$city) & data$nationality == 'Colombia')] <- 'Medellín'
 data$city[which(is.na(data$city) & data$nationality == 'Puerto Rico')] <- 'San Juan'
 data$city[which(is.na(data$city) & data$nationality == 'Venezuela')] <- 'Caracas'
+data$city[data$city == "The Bronx"] <- 'New York'
+
+
+
+data$gender[data$gender == 'na'] <- NA
+data$is_group[which(is.na(data$is_group))] <-FALSE
 
 data$is_group <- as.logical(data$is_group)
 data$gender <- as.factor(data$gender)
