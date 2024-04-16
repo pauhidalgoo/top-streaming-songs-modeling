@@ -1,11 +1,14 @@
-
 library(FactoMineR)
-
 library(Matrix)
 library(ggplot2)  
 library(factoextra)
 library(ggrepel)
-
+library(FactoClass)
+library(Rcpp)
+library(broom)
+library(pander)
+library(corrplot)
+library(gridExtra)
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 
@@ -16,10 +19,6 @@ PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 ### Lectura de la base de dades ###
 
 #assuming R data (not pages web datafile)
-vec<- 1:42
-exclosos<-c(1,2,3,4,6,7,8,9,10,11,21,22,26,27,27,28,29,30,31,32,33,34,35,37,40,41)
-
-
 
 #subset con las variables que queremos utilizar en el ACM
 data_acm<-subset(data,select=c('track_popularity','album_popularity', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality', 'city', 'gender', 'is_group'))
