@@ -21,12 +21,12 @@ PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 #assuming R data (not pages web datafile)
 
 #subset con las variables que queremos utilizar en el ACM
-data_acm<-subset(data,select=c('track_popularity','album_popularity', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality', 'city', 'gender', 'is_group'))
+data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality', 'city', 'gender', 'is_group'))
 
 
 #Mini bucles para buscar el índice de las variables en nums y cats, para lugo utilizar vector de índices en suplementarias de ACM
-nums<-c("track_popularity","album_popularity", "artist_popularity","danceability", "energy")
-cats<-c("album_type", "pop","hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode","year_release","month_release","day_release","weekday_release","year_week","month_week","rank_group")
+nums<-c("track_popularity","album_popularity", "artist_popularity","danceability", "energy", "streams")
+cats<-c("album_type", "pop","hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode","year_release","month_release","day_release","weekday_release","year_week","month_week","rank_group", 'nationality', 'city', 'gender', 'is_group' )
 
 nums_n<-c()
 cats_n<-c()
@@ -49,24 +49,22 @@ for (i in cats){
 #Ejecución del ACM, supkementarias todas las numéricas y variables activas todas las categoricas
 
 res.mca1<-MCA(data_acm, quanti.sup=nums_n)
-
-res.mca1$eig
-
+pander(head(res.mca1$eig))
 #Plot para comprobar la varianza explicada por cada dimensión
 dim_explainedVariance <- fviz_screeplot(res.mca1, addlabels = FALSE,
                                         barfill="#1db954", barcolor="#1db954", linecolor="#2d6d62", ylim=c(0,7.5), 
                                         main="Variància/Dimensió",xlab= "Dimensions",ylab= "Percentatge de variància explicada")
-plot(dim_explainedVariance)
 ggsave("ACM1_varianciaDimensions.png", plot=dim_explainedVariance, bg="white", path = PATH_PLOTS)
 
 MCA1_contribVars1 <- fviz_contrib(res.mca1, choice="var", axes = 1, top=20,
                                   fill="#1db954", color="#1db954") +
   labs(title="Contribució de Variables a Dimensió 1") + ylab("Contribucions (%)")
 
+ggsave("ACM1_varaiblesContribDim1.png",plot=MCA1_contribVars1, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
+
 MCA1_contribVars2 <- fviz_contrib(res.mca1, choice="var", axes = 2, top=20,
                                   fill="#cdf564", color="#cdf564") +
   labs(title="Contribució de Variables a Dimensió 2") + ylab("Contribucions (%)")
-
 
 
 #plots de los niveles de las variables según cos2 y contribución:
@@ -77,7 +75,6 @@ mca1_var_cos2<-fviz_mca_var(res.mca1, col.var = "cos2", repel = TRUE, label=c("v
 mca1_var_contrib<-fviz_mca_var(res.mca1, col.var = "contrib", repel = TRUE, label=c("var"),
                                gradient.cols=c("#1db954","#ff7b24","#df75ff"), ylim=c(-10,12), xlim=c(-7,10))
 
-plot(mca1_var_cos2)
 ggsave("ACM1_variablesCos2.png", plot=mca1_var_cos2, bg="white", path = PATH_PLOTS, dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 ggsave("ACM1_varaiblesContrib.png",plot=mca1_var_contrib, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
@@ -94,6 +91,7 @@ for(cat in molts_levels){
 
 res.mca2<-MCA(data_acm, quanti.sup=nums_n, quali.sup=cat_supplement)
 
+pander(head(res.mca2$eig))
 res.mca2$ind$coord
 res.mca2$var$coord
 
@@ -108,13 +106,16 @@ cat_var <- names(dim1)
 cat_vars_coords_df <- data.frame(cat_var, dim1,dim2)
 cat_vars_coords_df
 
+print(res.mca2$eig)
+eigenvalues_mean <- mean(res.mca2$eig[,2])
+eigenvalues_mean
 #Plot para comprobar la varianza explicada por cada dimensión
-dim_explainedVariancemca2 <- fviz_screeplot(res.mca2, addlabels = FALSE,
+dim_explainedVariancemca2 <- fviz_screeplot(res.mca2, addlabels = TRUE,
                                             barfill="#1db954", barcolor="#1db954", linecolor="#2d6d62", 
-                                            main="Variància/Dimensió",xlab= "Dimensions",ylab= "Percentatge de variància explicada")
-plot(dim_explainedVariancemca2)
+                                            main="Variància/Dimensió",xlab= "Dimensions",ylab= "Percentatge de variància explicada")+ geom_hline(yintercept = 2.8, linetype = 2, color = "red")
+
 ggsave("ACM2_varianciaDimensions.png", plot=dim_explainedVariancemca2, bg="white", path = PATH_PLOTS)
-ggsav
+
 MCA2_contribVars1 <- fviz_contrib(res.mca2, choice="var", axes = 1,
                                   fill="#1db954", color="#1db954") +
   labs(title="Contribució de Variables a Dimensió 1") + ylab("Contribucions (%)")
@@ -123,8 +124,19 @@ MCA2_contribVars2 <- fviz_contrib(res.mca2, choice="var", axes = 2,
                                   fill="#cdf564", color="#cdf564") +
   labs(title="Contribució de Variables a Dimensió 2") + ylab("Contribucions (%)")
 
+
+MCA2_contribVars3 <- fviz_contrib(res.mca2, choice="var", axes = 3,
+                                  fill="#cdf564", color="#cdf564") +
+  labs(title="Contribució de Variables a Dimensió 3") + ylab("Contribucions (%)")
+
+MCA2_contribVars4 <- fviz_contrib(res.mca2, choice="var", axes = 4,
+                                  fill="#cdf564", color="#cdf564") +
+  labs(title="Contribució de Variables a Dimensió 4") + ylab("Contribucions (%)")
+
 ggsave("ACM2_contribVars1.png", plot=MCA2_contribVars1, bg="white", path = PATH_PLOTS,dpi=200, width=1400,height=800, units = "px")
 ggsave("ACM2_contribVars2.png", plot=MCA2_contribVars2, bg="white", path = PATH_PLOTS,dpi=200, width=1400,height=800, units = "px")
+ggsave("ACM2_contribVars3.png", plot=MCA2_contribVars3, bg="white", path = PATH_PLOTS,dpi=200, width=1400,height=800, units = "px")
+ggsave("ACM2_contribVars4.png", plot=MCA2_contribVars4, bg="white", path = PATH_PLOTS,dpi=200, width=1400,height=800, units = "px")
 
 
 #Plots de proyecciones de niveles de variables e individuos
@@ -134,13 +146,54 @@ acm2_var_cos2 <-fviz_mca_var(res.mca2, col.var = "cos2", repel = TRUE, label=c("
 plot(acm2_var_cos2)
 ggsave("ACM2_variablesCos2.png", plot=acm2_var_cos2, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
+acm2_var_cos203 <-fviz_mca_var(res.mca2, col.var = "cos2", repel = TRUE, label=c("var"),invisible="quali.sup", select=list(name = NULL, cos2 = 0.3, contrib = NULL),
+                               
+                               gradient.cols=c("#1db954","#ff7b24","#df75ff"),
+                               ylim=c(-3,6), xlim=c(-2,2))
+plot(acm2_var_cos203)
+ggsave("ACM2_variablesCos2_03.png", plot=acm2_var_cos2, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
-'''
+
+acm2_var_cos2_13 <-fviz_mca_var(res.mca2, col.var = "cos2", axes=c(1,3), repel = TRUE, label=c("var"),invisible="quali.sup",
+                             gradient.cols=c("#1db954","#ff7b24","#df75ff"),
+                             ylim=c(-3,6), xlim=c(-2,2))
+plot(acm2_var_cos2_13)
+ggsave("ACM2_variablesCos2_ax13.png", plot=acm2_var_cos2_13, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+
+
+acm2_var_corr <- fviz_mca_var(res.mca2, choice = "mca.cor",
+             repel = TRUE,
+             ggtheme = theme_grey())
+plot(acm2_var_corr)
+ggsave("ACM2_variablesCorr.png", plot=acm2_var_corr, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+
+
+var <- get_mca_var(res.mca2)
+pander(head(round(var$coord, 2), 15))
+
+correlations_plot <- corrplot(var$cos2, is.corr = FALSE)
+
+ggsave("ACM2_correlationsPlot.png", plot=correlations_plot, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+
+
+
 MCA2_biplot <- fviz_mca_biplot(res.mca2, repel=TRUE, col.ind="cos2",label=c("var"), invisible="quali.sup",
                 gradient.cols=c("#ff7b24","#df75ff", "blue"), col.var=("#2d6d62"),
                 ylim=c(-1.5,5), xlim=c(-1.5,1.5))
-'''
+
 plot(MCA2_biplot)
+
+ind <- get_mca_ind(res.mca2)
+
+head(ind)
+
+ind_coords <- (res.mca2$ind$coord)[,1:2]
+dim1 <- ind_coords[,1]
+dim2 <- ind_coords[,2]
+cos2 <- (res.mca2$ind$cos2)[,1] + (res.mca2$ind$cos2)[,2]
+
+ind_coords_df <- data.frame(dim1, dim2, cos2)
+
 MCA2_biplot <- ggplot(cat_vars_coords_df, aes(x=dim1, y=dim2)) +
   scale_colour_gradient2(low="#ff7b24",mid="#df75ff", high="blue", midpoint = 0.3) +
   geom_point(data=ind_coords_df, aes(x=dim1, y=dim2, colour=cos2)) +
@@ -149,14 +202,14 @@ MCA2_biplot <- ggplot(cat_vars_coords_df, aes(x=dim1, y=dim2)) +
   geom_hline(yintercept = 0) + 
   geom_vline(xintercept = 0) + theme_minimal()
 
+plot(MCA2_biplot)
 ggsave("ACM2_biplot.png", plot=MCA2_biplot, bg="white", path = PATH_PLOTS,dpi=110, width=1400,height=800, units = "px")
 
 
 ACM2cos2_top500 <- fviz_mca_ind(res.mca2, select.ind = list(cos2 = 500), repel=TRUE, col.ind="cos2", gradient.cols=c("#ff7b24","#df75ff", "blue"))
+plot(ACM2cos2_top500)
 ggsave("ACM2_cos2Top500.png", plot=ACM2cos2_top500, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
-
-plot(ACM2cos2_top500)
 #buscar individuos y sus títulos en los diferentes grupos que se pueden diferenciar entre los top 300 individuos por valor de cos2 
 list(res.mca2$cos2)
 res.mca2$ind$cos2
@@ -220,6 +273,20 @@ MCA2_indByVarsExplicit<-fviz_mca_ind(res.mca2,
                                      addEllipses = TRUE, ellipse.type = "confidence",
                                      ggtheme = theme_minimal()) + labs(title="Individus segons els valors d'Explicit")
 
+MCA2_indByVarsGroup<-fviz_mca_ind(res.mca2, 
+                                     label = "none", # hide individual labels
+                                     habillage = c("is_group"), # color by groups 
+                                     palette = c("#1db954", "#ff7b24","#df75ff","blue","purple"),
+                                     addEllipses = TRUE, ellipse.type = "confidence",
+                                     ggtheme = theme_minimal()) + labs(title="Individus segons els valors de Is Group")
+
+MCA2_indByVarsGender<-fviz_mca_ind(res.mca2, 
+                                     label = "none", # hide individual labels
+                                     habillage = c("gender"), # color by groups 
+                                     palette = c("#1db954", "#ff7b24","#df75ff","blue","purple"),
+                                     addEllipses = TRUE, ellipse.type = "confidence",
+                                     ggtheme = theme_minimal()) + labs(title="Individus segons els valors de Gender")
+
 ggsave("MCA2_indByVarsPop.png", plot=MCA2_indByVarsPop, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsHipHop.png", plot=MCA2_indByVarsHipHop, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsLatino.png", plot=MCA2_indByVarsLatino, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
@@ -227,7 +294,5 @@ ggsave("MCA2_indByVarsChristmas.png", plot=MCA2_indByVarsChristmas, bg="white", 
 ggsave("MCA2_indByVarsRock.png", plot=MCA2_indByVarsRock, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsAlbum.png", plot=MCA2_indByVarsAlbum, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsExplicit.png", plot=MCA2_indByVarsExplicit, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
-
-
-
-
+ggsave("MCA2_indByVarsGroup.png", plot=MCA2_indByVarsGroup, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+ggsave("MCA2_indByVarsGender.png", plot=MCA2_indByVarsGender, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
