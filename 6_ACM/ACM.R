@@ -143,22 +143,29 @@ ggsave("ACM2_contribVars4.png", plot=MCA2_contribVars4, bg="white", path = PATH_
 acm2_var_cos2 <-fviz_mca_var(res.mca2, col.var = "cos2", repel = TRUE, label=c("var"),invisible="quali.sup",
                              gradient.cols=c("#1db954","#ff7b24","#df75ff"),
                              ylim=c(-3,6), xlim=c(-2,2))
-plot(acm2_var_cos2)
-ggsave("ACM2_variablesCos2.png", plot=acm2_var_cos2, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
-acm2_var_cos203 <-fviz_mca_var(res.mca2, col.var = "cos2", repel = TRUE, label=c("var"),invisible="quali.sup", select=list(name = NULL, cos2 = 0.3, contrib = NULL),
+
+acm2_var_cos202 <-fviz_mca_var(res.mca2, col.var = "cos2", repel = TRUE, label=c("var"),invisible="quali.sup", select=list(name = NULL, cos2 = 0.2, contrib = NULL),
                                
-                               gradient.cols=c("#1db954","#ff7b24","#df75ff"),
+                               gradient.cols=c("#e6a235","#df75ff"),
                                ylim=c(-3,6), xlim=c(-2,2))
-plot(acm2_var_cos203)
-ggsave("ACM2_variablesCos2_03.png", plot=acm2_var_cos2, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+plot(acm2_var_cos202)
+
+ggsave("ACM2_variablesCos2.png", plot=acm2_var_cos2, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+ggsave("ACM2_variablesCos2_02.png", plot=acm2_var_cos202, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 
 acm2_var_cos2_13 <-fviz_mca_var(res.mca2, col.var = "cos2", axes=c(1,3), repel = TRUE, label=c("var"),invisible="quali.sup",
                              gradient.cols=c("#1db954","#ff7b24","#df75ff"),
                              ylim=c(-3,6), xlim=c(-2,2))
-plot(acm2_var_cos2_13)
+
+acm2_var_cos2_1302 <-fviz_mca_var(res.mca2, col.var = "cos2",axes=c(1,3), repel = TRUE, label=c("var"),invisible="quali.sup", select=list(name = NULL, cos2 = 0.2, contrib = NULL),
+                               
+                               gradient.cols=c("#e6a235","#df75ff"),
+                               ylim=c(-3,6), xlim=c(-2,2))
+
 ggsave("ACM2_variablesCos2_ax13.png", plot=acm2_var_cos2_13, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+ggsave("ACM2_variablesCos2_ax1302.png", plot=acm2_var_cos2_1302, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 
 acm2_var_corr <- fviz_mca_var(res.mca2, choice = "mca.cor",
@@ -171,17 +178,20 @@ ggsave("ACM2_variablesCorr.png", plot=acm2_var_corr, bg="white", path = PATH_PLO
 var <- get_mca_var(res.mca2)
 pander(head(round(var$coord, 2), 15))
 
-correlations_plot <- corrplot(var$cos2, is.corr = FALSE)
 
-ggsave("ACM2_correlationsPlot.png", plot=correlations_plot, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
+correlations_plot <- function() {
+  corrplot(var$cos2, is.corr = FALSE, insig = 'blank')
+}
 
+
+correlations_plot()
 
 
 MCA2_biplot <- fviz_mca_biplot(res.mca2, repel=TRUE, col.ind="cos2",label=c("var"), invisible="quali.sup",
                 gradient.cols=c("#ff7b24","#df75ff", "blue"), col.var=("#2d6d62"),
                 ylim=c(-1.5,5), xlim=c(-1.5,1.5))
 
-plot(MCA2_biplot)
+ggsave("ACM2_indivBiplot.png", plot=MCA2_biplot, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 ind <- get_mca_ind(res.mca2)
 
@@ -194,20 +204,20 @@ cos2 <- (res.mca2$ind$cos2)[,1] + (res.mca2$ind$cos2)[,2]
 
 ind_coords_df <- data.frame(dim1, dim2, cos2)
 
-MCA2_biplot <- ggplot(cat_vars_coords_df, aes(x=dim1, y=dim2)) +
+nonation_cat_vars_coords_df <- cat_vars_coords_df[!grepl("^nationality", cat_vars_coords_df$cat_var), ]
+
+MCA2_biplot <- ggplot(nonation_cat_vars_coords_df, aes(x=dim1, y=dim2)) +
   scale_colour_gradient2(low="#ff7b24",mid="#df75ff", high="blue", midpoint = 0.3) +
   geom_point(data=ind_coords_df, aes(x=dim1, y=dim2, colour=cos2)) +
   geom_point(color="#2d6d62") +
-  geom_text_repel(box.padding = 0.7,point.padding = 0.5, segment.color="#2d6d62", max.overlaps = 100, label=cat_var, colour="#2d6d62") + 
+  geom_text_repel(box.padding = 0.7,point.padding = 0.5, segment.color="#2d6d62", max.overlaps = 100, label=nonation_cat_vars_coords_df$cat_var, colour="#2d6d62") + 
   geom_hline(yintercept = 0) + 
   geom_vline(xintercept = 0) + theme_minimal()
 
-plot(MCA2_biplot)
 ggsave("ACM2_biplot.png", plot=MCA2_biplot, bg="white", path = PATH_PLOTS,dpi=110, width=1400,height=800, units = "px")
 
 
 ACM2cos2_top500 <- fviz_mca_ind(res.mca2, select.ind = list(cos2 = 500), repel=TRUE, col.ind="cos2", gradient.cols=c("#ff7b24","#df75ff", "blue"))
-plot(ACM2cos2_top500)
 ggsave("ACM2_cos2Top500.png", plot=ACM2cos2_top500, bg="white", path = PATH_PLOTS,dpi=130,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 #buscar individuos y sus títulos en los diferentes grupos que se pueden diferenciar entre los top 300 individuos por valor de cos2 
@@ -296,3 +306,4 @@ ggsave("MCA2_indByVarsAlbum.png", plot=MCA2_indByVarsAlbum, bg="white", path = P
 ggsave("MCA2_indByVarsExplicit.png", plot=MCA2_indByVarsExplicit, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsGroup.png", plot=MCA2_indByVarsGroup, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("MCA2_indByVarsGender.png", plot=MCA2_indByVarsGender, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+
