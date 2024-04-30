@@ -21,12 +21,13 @@ PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 #assuming R data (not pages web datafile)
 
 #subset con las variables que queremos utilizar en el ACM
-data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality', 'city', 'gender', 'is_group'))
+#sense nationality
+data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'city', 'gender', 'is_group'))
 
 
 #Mini bucles para buscar el índice de las variables en nums y cats, para lugo utilizar vector de índices en suplementarias de ACM
 nums<-c("track_popularity","album_popularity", "artist_popularity","danceability", "energy", "streams")
-cats<-c("album_type", "pop","hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode","year_release","month_release","day_release","weekday_release","year_week","month_week","rank_group", 'nationality', 'city', 'gender', 'is_group' )
+cats<-c("album_type", "pop","hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode","year_release","month_release","day_release","weekday_release","year_week","month_week","rank_group", 'city', 'gender', 'is_group' )
 
 nums_n<-c()
 cats_n<-c()
@@ -42,7 +43,7 @@ for (i in cats){
 "hip_hop" = "#2d6d62"
 "rock" = "#cdf564"
 "electro" = "#ff7b24"
-"christmas" = "#c6182c", 
+"christmas" = "#c6182c" 
 "cinema" = "#df75ff"
 "latino" = "pink"
 
