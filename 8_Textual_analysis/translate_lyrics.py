@@ -8,11 +8,12 @@ def translate_to_english(sentence):
     result = translator.translate(sentence, dest='en')
 
     # Return the translated text
-    return result.text
+    return result.src, result.text
 
 # Example of use
 if __name__ == "__main__":
     sentence = input("Write a sentence: ")
-    translation = translate_to_english(sentence)
+    initial_language, translation = translate_to_english(sentence)
     print("Translation in English:", translation)
+    print("Initial language:", initial_language)
 
