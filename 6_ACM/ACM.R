@@ -55,6 +55,7 @@ pander(head(res.mca1$eig))
 dim_explainedVariance <- fviz_screeplot(res.mca1, addlabels = FALSE,
                                         barfill="#1db954", barcolor="#1db954", linecolor="#2d6d62", ylim=c(0,7.5), 
                                         main="Variància/Dimensió",xlab= "Dimensions",ylab= "Percentatge de variància explicada")
+print(dim_explainedVariance)
 ggsave("ACM1_varianciaDimensions.png", plot=dim_explainedVariance, bg="white", path = PATH_PLOTS)
 
 MCA1_contribVars1 <- fviz_contrib(res.mca1, choice="var", axes = 1, top=20,
@@ -73,6 +74,7 @@ mca1_var_cos2<-fviz_mca_var(res.mca1, col.var = "cos2", repel = TRUE, label=c("v
                             gradient.cols=c("#1db954","#ff7b24","#df75ff"), alpha.var = "cos2",
                             ylim=c(-10,12), xlim=c(-7,10))
 
+print(mca1_var_cos2)
 mca1_var_contrib<-fviz_mca_var(res.mca1, col.var = "contrib", repel = TRUE, label=c("var"),
                                gradient.cols=c("#1db954","#ff7b24","#df75ff"), ylim=c(-10,12), xlim=c(-7,10))
 
