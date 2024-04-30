@@ -1,6 +1,4 @@
-setwd("C:/Users/Cai Selvas Sala/GIA_UPC/2nC/1rQ/ME/Project")
-
-load('data_preprocessed.RData')
+load('final_d3_data.RData')
 
 ################################################################################
 
@@ -13,7 +11,7 @@ data_numerical <- data[, numerical_vars]
 names(data_numerical)
 
 # Eliminem les variables que no aporten informació nova
-data_numerical <- subset(data_numerical, select = -c(album_popularity, artist_followers))
+data_numerical <- subset(data_numerical, select = -c(album_popularity, artist_followers, lyrics))
 names(data_numerical)
 
 columnas_a_mantener <- setdiff(colnames(data), colnames(data_numerical))
@@ -21,7 +19,7 @@ columnas_a_mantener <- setdiff(colnames(data), colnames(data_numerical))
 data_categorical <- data[, columnas_a_mantener]
 names(data_categorical)
 
-data_categorical <- subset(data_categorical, select = -c(track_id, track_name, album_name, album_label, artist_name, day_release, year_release, artist_followers, album_popularity))
+data_categorical <- subset(data_categorical, select = -c(track_id, track_name, album_name, album_label, artist_name, day_release, year_release, artist_followers, album_popularity, lyrics, city))
 
 ################################################################################
 # Guardem en variables els colors que utilitzarem pels plots
