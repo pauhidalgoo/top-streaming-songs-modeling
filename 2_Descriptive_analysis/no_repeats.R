@@ -6,7 +6,7 @@ unique_tracks <- data %>%
   slice(1) %>%
   ungroup()
 
-save(unique_tracks, file = "./2_Descriptive analysis/unique_tracks.RData")
+save(unique_tracks, file = "./2_Descriptive_analysis/unique_tracks.RData")
 
 
 unique_artists <- data %>%
@@ -14,4 +14,4 @@ unique_artists <- data %>%
   slice(1) %>%
   ungroup()
 
-save(unique_artists, file = "./2_Descriptive analysis/unique_artists.RData")
+save(unique_artists, file = "./2_Descriptive_analysis/unique_artists.RData")
