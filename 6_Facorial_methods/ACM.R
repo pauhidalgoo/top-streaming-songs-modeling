@@ -10,7 +10,7 @@ library(pander)
 library(corrplot)
 library(gridExtra)
 
-load("./3_Preprocessing/data_knn_imputed_unknown.RData")
+load('final_d3_data.RData')
 
 PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 
@@ -22,7 +22,10 @@ PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 
 #subset con las variables que queremos utilizar en el ACM
 #sense nationality
-data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'city', 'gender', 'is_group'))
+categorical_vars <- sapply(data, function(x) is.factor(x) || is.logical(x))
+names(categorical_vars)
+
+data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality', 'gender', 'is_group'))
 
 
 #Mini bucles para buscar el índice de las variables en nums y cats, para lugo utilizar vector de índices en suplementarias de ACM
