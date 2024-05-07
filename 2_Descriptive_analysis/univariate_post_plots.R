@@ -1,4 +1,4 @@
-load("./2_Descriptive analysis/unique_artists.RData")
+load("./2_Descriptive_analysis/unique_artists.RData")
 dataset <- as.data.frame(na.omit(unique_artists))
 dataset[,"lyrics"] <- NULL
 library(ggplot2)
