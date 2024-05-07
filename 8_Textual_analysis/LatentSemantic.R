@@ -40,7 +40,18 @@ clean_corpus <- tm_map(clean_corpus, removeWords, c("tis"))
 writeLines(head(strwrap(clean_corpus[[1]]), 7))
 
 corpus <- clean_corpus
-td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(global = c(5, Inf))))
+td.mat <- TermDocumentMatrix(corpus)
+
+min_freq <- ceiling(0.1 * length(track_names))
+
+# Get the terms that appear in at least 10% of the documents
+terms_freq_10 <- findFreqTerms(td.mat, lowfreq = 10)
+
+# Subset the term-document matrix to include only these terms
+td.mat_freq_10 <- td.mat[terms_freq_10, ]
+
+td.mat <- as.matrix(td.mat_freq_10)
+
 td.mat.lsa <- lw_bintf(td.mat) * gw_idf(td.mat) # weighting
 lsaSpace <- lsa(td.mat.lsa) # create LSA space
 as.textmatrix(lsaSpace)
@@ -84,51 +95,73 @@ multicos(list1,tvectors = results)
 doc_texts <- sapply(old_clean_corpus, paste, collapse = " ")
 plot_doclist(doc_texts[1:100], tvectors=results, method="MDS", dims=2, doc_names=track_names[1:10])
 
-
-library(foreach)
-library(doParallel)
-
-# Check if lsaSpace is defined and not empty
-if (!exists("lsaSpace") || is.null(lsaSpace) || ncol(lsaSpace) == 0) {
-  stop("lsaSpace is not defined or empty.")
-}
-
-# Number of cores to use
-num_cores <- detectCores()
-
-# Initialize parallel backend
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
-
-# Parallel computation of distance matrix
-dist.mat.lsa <- foreach(i = 1:ncol(lsaSpace), .combine = cbind) %dopar% {
-  dist(as.matrix(lsaSpace[, i]))
-}
-
-# Stop the cluster
-stopCluster(cl)
-
-# Combine the distance matrices into one
-dist.mat.lsa <- do.call(cbind, dist.mat.lsa)
-
-
-
-
-
-
+dist.mat.lsa <- dist(t(as.textmatrix(lsaSpace))) # compute distance matrix
 dist.mat.lsa # check distance matrix for DOCUMENTS
 fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
 points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
 ggplot(points,aes(x=x, y=y)) + 
   geom_point(data=points,aes(x=x, y=y, color=df$view)) + 
-  geom_text(data=points,aes(x=x, y=y-0.2, label=row.names(df)))
+  geom_text(data=points,aes(x=x, y=y-0.2, label=track_names))
+
+row.names(df)
 
 library(scatterplot3d)
 fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=3)
-colors <- rep(c("blue", "green", "red"), each=3)
+colors <- ifelse(unique_tracks$latino, "blue", "red")
+
 scatterplot3d(fit$points[, 1], fit$points[, 2], fit$points[, 3], color=colors, pch=16, 
               main="Semantic Space Scaled to 3D", xlab="x", ylab="y", zlab="z", type="h")
 
+
+# cLUSTER SONGS -----------------------------------
+k <- 5 # Number of clusters (you can adjust this)
+set.seed(123) # Set seed for reproducibility
+km_clusters <- kmeans(as.textmatrix(lsaSpace), centers = k)
+
+# Add cluster labels to the data
+cluster_labels <- as.factor(km_clusters$cluster)
+points$cluster <- cluster_labels
+
+# Visualize clusters
+ggplot(points, aes(x = x, y = y, color = cluster)) + 
+  geom_point() + 
+  geom_text(aes(label = track_names), vjust = -0.5) +
+  ggtitle("Clusters of Songs based on Lyrics Similarity")
+
+# Cluster centers
+cluster_centers <- as.textmatrix(lsaSpace)[km_clusters$centers, ]
+
+
+# SIMILAR SONGS -----------------------------------
+
+find_similar_elements <- function(new_phrase, results, track_names, N = 5) {
+  new_phrase_clean <- tolower(new_phrase)
+  new_phrase_clean <- removeNumbers(new_phrase_clean)
+  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("english"))
+  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("SMART"))
+  new_phrase_clean <- removePunctuation(new_phrase_clean)
+  new_phrase_clean <- stripWhitespace(new_phrase_clean)
+  
+  new_phrase_vec <- as.textmatrix(lsa(as.matrix(TermDocumentMatrix(Corpus(VectorSource(new_phrase_clean))))))
+  
+  similarities <- sapply(1:nrow(results), function(i) {
+    cosine(new_phrase_vec, results[i, , drop = FALSE])
+  })
+  
+  top_N_indices <- order(similarities, decreasing = TRUE)[1:N]
+  top_N_tracks <- track_names[top_N_indices]
+  top_N_similarity <- similarities[top_N_indices]
+  
+  return(data.frame(Track = top_N_tracks, Similarity = top_N_similarity))
+}
+
+# Example usage
+new_phrase <- "I feel lost in the crowd"
+similar_elements <- find_similar_elements(new_phrase, results, track_names, N = 5)
+print(similar_elements)
+
+
+# WORDS ------------------------------------------
 dist.mat.lsa <- dist((as.textmatrix(lsaSpace))) # compute distance matrix
 dist.mat.lsa # check distance matrix for TERMS
 fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
@@ -136,14 +169,4 @@ points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
 ggplot(points,aes(x=x, y=y)) + 
   geom_point(data=points,aes(x=x, y=y)) + 
   geom_text(data=points,aes(x=x, y=y-0.2, label=row.names(points)))
-
-
-
-
-
-
-dist.mat.lsa <- dist(t(as.textmatric(lsaSpace)))
-
-
-
 points <- data.frame(x=fit)
