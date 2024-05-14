@@ -100,7 +100,7 @@ dist.mat.lsa # check distance matrix for DOCUMENTS
 fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
 points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
 ggplot(points,aes(x=x, y=y)) + 
-  geom_point(data=points,aes(x=x, y=y, color=df$view)) + 
+  geom_point(data=points,aes(x=x, y=y, color=points$view)) + 
   geom_text(data=points,aes(x=x, y=y-0.2, label=track_names))
 
 row.names(df)
@@ -116,49 +116,20 @@ scatterplot3d(fit$points[, 1], fit$points[, 2], fit$points[, 3], color=colors, p
 # cLUSTER SONGS -----------------------------------
 k <- 5 # Number of clusters (you can adjust this)
 set.seed(123) # Set seed for reproducibility
-km_clusters <- kmeans(as.textmatrix(lsaSpace), centers = k)
+km_clusters <- kmeans(t(as.textmatrix(lsaSpace)), centers = k)
 
 # Add cluster labels to the data
 cluster_labels <- as.factor(km_clusters$cluster)
 points$cluster <- cluster_labels
 
 # Visualize clusters
-ggplot(points, aes(x = x, y = y, color = cluster)) + 
+ggplot(points, aes(x = x, y = y, color = points$cluster)) + 
   geom_point() + 
   geom_text(aes(label = track_names), vjust = -0.5) +
   ggtitle("Clusters of Songs based on Lyrics Similarity")
 
 # Cluster centers
 cluster_centers <- as.textmatrix(lsaSpace)[km_clusters$centers, ]
-
-
-# SIMILAR SONGS -----------------------------------
-
-find_similar_elements <- function(new_phrase, results, track_names, N = 5) {
-  new_phrase_clean <- tolower(new_phrase)
-  new_phrase_clean <- removeNumbers(new_phrase_clean)
-  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("english"))
-  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("SMART"))
-  new_phrase_clean <- removePunctuation(new_phrase_clean)
-  new_phrase_clean <- stripWhitespace(new_phrase_clean)
-  
-  new_phrase_vec <- as.textmatrix(lsa(as.matrix(TermDocumentMatrix(Corpus(VectorSource(new_phrase_clean))))))
-  
-  similarities <- sapply(1:nrow(results), function(i) {
-    cosine(new_phrase_vec, results[i, , drop = FALSE])
-  })
-  
-  top_N_indices <- order(similarities, decreasing = TRUE)[1:N]
-  top_N_tracks <- track_names[top_N_indices]
-  top_N_similarity <- similarities[top_N_indices]
-  
-  return(data.frame(Track = top_N_tracks, Similarity = top_N_similarity))
-}
-
-# Example usage
-new_phrase <- "I feel lost in the crowd"
-similar_elements <- find_similar_elements(new_phrase, results, track_names, N = 5)
-print(similar_elements)
 
 
 # WORDS ------------------------------------------
