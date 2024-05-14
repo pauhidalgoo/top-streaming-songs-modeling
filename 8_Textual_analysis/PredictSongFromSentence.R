@@ -18,7 +18,7 @@ clean_corpus <- function(corpus) {
 }
 
 # Function to ensure minimum length of phrase
-extend_phrase <- function(phrase, min_length = 500) {
+extend_phrase <- function(phrase, min_length = 1500) {
   while (nchar(phrase) < min_length) {
     phrase <- paste(phrase, phrase)
   }
@@ -64,6 +64,40 @@ perform_lsa <- function(phrase, n = 5) {
 }
 
 # Example usage
-phrase <- "Me gusta el sexo mami culi fuck yeah"
-top_similar_docs <- perform_lsa(phrase, n = 1)
+phrase <- "Me gustas mucho pero la relación no puede seguir"
+phrase2 <- "Baila conmigo toda la noche, bajo la luna llena y las estrellas brillantes."
+phrase3 <- "Late at night, the streets are alive with the fucking pulse of the city. 
+            The bass hits hard as hell, and the beat is relentless, pounding like my
+            heartbeat. I'm out here, grinding, spitting raw-ass bars that tell my
+            fucked-up story. Fuck the haters, fuck the bullshit, I'm rising above all
+            that shit. The struggle is fucking real, but so is my motherfucking hustle. 
+            Every verse is a big fuck you to the doubters, every rhyme a testament to my
+            grind. This ain't just music, it's a goddamn way of life. In the concrete jungle,
+            you either make it or you fucking don't. No bullshit, no excuses, just raw, unfiltered
+            truth. I'm here to claim my spot, and ain't nobody gonna fucking stop me. 
+            The mic is my weapon, and every word is fucking loaded. This is hip hop, 
+            motherfucker. It's gritty, it's real, it's raw as fuck, and it's unapologetically me. 
+            This is my fucking anthem, my story told in rhymes and beats, a middle finger 
+            to the world, a declaration of my fucking existence. Every beat is a battle, 
+            every rhyme a war cry. This is hip hop, and I'm here to fucking conquer it."
+
+
+print(phrase1)
+top_similar_docs <- perform_lsa(phrase, n=5)
 print(top_similar_docs)
+
+print(phrase2)
+top_similar_docs <- perform_lsa(phrase2, n = 5)
+print(top_similar_docs)
+
+print(phrase3)
+top_similar_docs <- perform_lsa(phrase3, n = 5)
+print(top_similar_docs)
+
+
+
+
+
+
+
+
