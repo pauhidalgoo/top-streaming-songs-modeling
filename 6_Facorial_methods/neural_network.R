@@ -13,7 +13,7 @@ library(caret)
 # Prepare the data
 
 # Load data
-load("./9_Factorial_methods/data_acp_acm_merged.RData")
+load("./6_Factorial_methods/data_acp_acm_merged.RData")
 
 data <- NOM_ENTORN_GLOBAL
 

@@ -3,7 +3,7 @@ load('final_d3_data.RData')
 ################################################################################
 
 # Variables numèriques
-numerical_vars <- !sapply(data, is.factor)
+numerical_vars <- sapply(data, is.numeric)
 sum(numerical_vars == T)
 
 # Dataset només amb numèriques
@@ -11,7 +11,7 @@ data_numerical <- data[, numerical_vars]
 names(data_numerical)
 
 # Eliminem les variables que no aporten informació nova
-data_numerical <- subset(data_numerical, select = -c(album_popularity, artist_followers, lyrics))
+data_numerical <- subset(data_numerical, select = -c(album_popularity, artist_followers))
 names(data_numerical)
 
 columnas_a_mantener <- setdiff(colnames(data), colnames(data_numerical))
@@ -33,7 +33,7 @@ custom_blue = "#0051ff"
 custom_lightgreen = "#4acf79"
 
 ################################################################################
-
+print(data_numerical)
 # PCA
 pc1 <- prcomp(data_numerical, scale = TRUE)
 dim(pc1)
@@ -75,7 +75,7 @@ p <- ggplot(df_varianza, aes(x = factor(Componente))) +
     panel.grid.major.x = element_blank()
   )
 
-ggsave(plot = p, filename = paste('Percentatge_varianca_per_component', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+#ggsave(plot = p, filename = paste('Percentatge_varianca_per_component', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 
 
 perc_varianza_acum <- 100*cumsum(varianza[1:ncol(data_numerical)])/ncol(data_numerical)
@@ -97,10 +97,14 @@ abline(h = 80, col = custom_red, lty = 2) # Afegeix la línia discontínua en 80
 num_comp <- which(cumsum(perc_varianza) >= 80)[1]
 num_comp
 
+
 ################################################################################
 
 psi = pc1$x[, 1:num_comp] # ENS QUEDEM NOMÉS AMB LES DIMENSIONS QUE HEM TRIAT (9)
 dim(psi)
+
+data_psi <- as.data.frame(psi)
+save(data_psi, file = "./6_Facorial_methods/acp_data.RData")
 
 # Càlcul dels percentatges de variació explicada per els dos primers components
 perc_var1 <- round(perc_varianza[1], 2)
@@ -132,7 +136,7 @@ p <- ggplot(df_psi, aes(x = PC1, y = PC2)) +
        title = "Projecció de totes les dades sobre els 2 primers Components Principals",
        subtitle = "Punts colorejats per nombre de fila (files ordenades per data de cada setmana)")
 
-ggsave(plot = p, filename = paste('Data_C1_C2', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+#ggsave(plot = p, filename = paste('Data_C1_C2', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 
 
 ################################################################################
@@ -171,7 +175,7 @@ for (eje1 in 1:(num_comp - 1)) {
     # Imprimir gràfic
     print(p)
     
-    ggsave(plot = p, filename = paste('Num_C', eje1, '_C' , eje2, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+    #ggsave(plot = p, filename = paste('Num_C', eje1, '_C' , eje2, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
     
   }
 }
@@ -244,7 +248,7 @@ for (varcat_name in colnames(data_categorical)){
                       color = custom_red, size = 5, fontface = "bold")
   print(p2)
   
-  ggsave(plot = p2, filename = paste('Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+  #ggsave(plot = p2, filename = paste('Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 }
 
 ################################################################################
@@ -307,7 +311,7 @@ p <- ggplot() +
 
 print(p)
 
-ggsave(plot = p, filename = paste('All_Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+#ggsave(plot = p, filename = paste('All_Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 
 
 

@@ -10,9 +10,8 @@ library(pander)
 library(corrplot)
 library(gridExtra)
 
-load("./3_Preprocessing/data_knn_imputed_unknown.RData")
+load('final_d3_data.RData')
 
-PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 
 
 #?MCA
@@ -22,12 +21,25 @@ PATH_PLOTS = paste(getwd(),"./Media/ACM",sep="")
 
 #subset con las variables que queremos utilizar en el ACM
 #sense nationality
-data_acm<-subset(data,select=c('track_popularity','album_popularity', 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'city', 'gender', 'is_group'))
+# categorical_vars <- sapply(data, function(x) !is.numeric(x))
+cats <- c('album_type', 'pop', 'hip_hop', 'rock', 'electro', 'christmas', 'cinema', 'latino', 'collab', 'explicit', 'key', 'major_mode', 'time_signature', 'is_group', 'gender', 'rank_group', "nationality")
+categorical_data <- data[, cats]
 
+# Falten algunes temporals encara
+
+
+#data_acm<-subset(data,select=c('track_popularity','album_popularity', "artist_followers", 'streams', 'artist_popularity','danceability', 'energy','album_type', 'pop','hip_hop','rock','electro','christmas','cinema','latino','collab','explicit','key','major_mode','year_release','month_release','day_release','weekday_release','year_week','month_week','rank_group', 'nationality','city',  'gender', 'is_group', "loudness","speechiness", "acousticness", "liveness", "valence", "tempo","duration"))
+data_acm <-subset(data, select=c('album_type', 'pop', 'hip_hop', 'rock', 'electro', 'christmas', 'cinema', 'latino', 'collab', 'explicit', 'key', 'major_mode', 'time_signature', 'is_group', 'gender', 'rank_group', "track_popularity","album_popularity", "artist_num", "artist_followers", "artist_popularity","danceability", "energy", "streams","loudness","speechiness", "acousticness", "liveness", "valence", "tempo","duration" , "year_release", "month_release", "day_release", "nationality"))
 
 #Mini bucles para buscar el índice de las variables en nums y cats, para lugo utilizar vector de índices en suplementarias de ACM
-nums<-c("track_popularity","album_popularity", "artist_popularity","danceability", "energy", "streams")
-cats<-c("album_type", "pop","hip_hop","rock","electro","christmas","cinema","latino","collab","explicit","key","major_mode","year_release","month_release","day_release","weekday_release","year_week","month_week","rank_group", 'city', 'gender', 'is_group' )
+nums<-c("track_popularity","album_popularity", "artist_num", "artist_followers", "artist_popularity","danceability", "energy", "streams","loudness","speechiness", "acousticness", "liveness", "valence", "tempo","duration" )
+
+quali_sup <- c("year_release", "month_release", "day_release")
+
+quali_sup_n <- c()
+for (i in quali_sup){
+  quali_sup_n <- append(quali_sup_n,match(i,names(data_acm)))
+}
 
 nums_n<-c()
 cats_n<-c()
@@ -47,27 +59,25 @@ for (i in cats){
 "cinema" = "#df75ff"
 "latino" = "pink"
 
-#Ejecución del ACM, supkementarias todas las numéricas y variables activas todas las categoricas
-
-res.mca1<-MCA(data_acm, quanti.sup=nums_n)
+res.mca1<-MCA(data_acm, quanti.sup=nums_n, quali.sup= quali_sup)
 pander(head(res.mca1$eig))
 #Plot para comprobar la varianza explicada por cada dimensión
 dim_explainedVariance <- fviz_screeplot(res.mca1, addlabels = FALSE,
                                         barfill="#1db954", barcolor="#1db954", linecolor="#2d6d62", ylim=c(0,7.5), 
                                         main="Variància/Dimensió",xlab= "Dimensions",ylab= "Percentatge de variància explicada")
 print(dim_explainedVariance)
-ggsave("ACM1_varianciaDimensions.png", plot=dim_explainedVariance, bg="white", path = PATH_PLOTS)
+#ggsave("ACM1_varianciaDimensions.png", plot=dim_explainedVariance, bg="white", path = PATH_PLOTS)
 
 MCA1_contribVars1 <- fviz_contrib(res.mca1, choice="var", axes = 1, top=20,
                                   fill="#1db954", color="#1db954") +
   labs(title="Contribució de Variables a Dimensió 1") + ylab("Contribucions (%)")
-
-ggsave("ACM1_varaiblesContribDim1.png",plot=MCA1_contribVars1, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
+print(MCA1_contribVars1)
+#ggsave("ACM1_varaiblesContribDim1.png",plot=MCA1_contribVars1, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 MCA1_contribVars2 <- fviz_contrib(res.mca1, choice="var", axes = 2, top=20,
                                   fill="#cdf564", color="#cdf564") +
   labs(title="Contribució de Variables a Dimensió 2") + ylab("Contribucions (%)")
-
+print(MCA1_contribVars2)
 
 #plots de los niveles de las variables según cos2 y contribución:
 mca1_var_cos2<-fviz_mca_var(res.mca1, col.var = "cos2", repel = TRUE, label=c("var"),
@@ -78,14 +88,40 @@ print(mca1_var_cos2)
 mca1_var_contrib<-fviz_mca_var(res.mca1, col.var = "contrib", repel = TRUE, label=c("var"),
                                gradient.cols=c("#1db954","#ff7b24","#df75ff"), ylim=c(-10,12), xlim=c(-7,10))
 
-ggsave("ACM1_variablesCos2.png", plot=mca1_var_cos2, bg="white", path = PATH_PLOTS, dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
+#ggsave("ACM1_variablesCos2.png", plot=mca1_var_cos2, bg="white", path = PATH_PLOTS, dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
-ggsave("ACM1_varaiblesContrib.png",plot=mca1_var_contrib, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
-
-
+#ggsave("ACM1_varaiblesContrib.png",plot=mca1_var_contrib, bg="white", path = PATH_PLOTS,dpi=150,limitsize = FALSE,width = 1920, height=1080, units = "px")
 
 ##########################################################################
-#Nos da un 2.48% en el mejor eje, probamos a quitar variables temporales
+
+length(res.mca1$eig)
+
+num_dimensions <- min(12, ncol(res.mca1$var$coord))
+
+# Coordenadas de los individuos para las dimensiones disponibles
+if (num_dimensions > 0) {
+  ind_coords_avail <- res.mca1$ind$coord[, 1:num_dimensions]
+  # Coordenadas de las variables para las dimensiones disponibles
+  var_coords_avail <- res.mca1$var$coord[, 1:num_dimensions]
+} else {
+  message("No hay dimensiones disponibles para extraer.")
+}
+
+ind_coords_12d <- res.mca1$ind$coord[, 1:12]
+var_coords_12d <- res.mca1$var$coord[, 1:12]
+
+# Usar fviz_contrib para mostrar las contribuciones en las primeras dos dimensiones
+library(factoextra)
+fviz_contrib(res.mca1, choice = "var", axes = 1:2, top = 20)
+
+# Guardar las coordenadas de los individuos para las primeras 12 dimensiones
+write.csv(ind_coords_12d, "ind_coords_12_dimensions.csv")
+
+# Guardar las coordenadas de las variables para las primeras 12 dimensiones
+write.csv(var_coords_12d, "var_coords_12_dimensions.csv")
+
+##########################################################################
+
 molts_levels <- c("year_release", "day_release", "month_release", "weekday_release","year_week","month_week", "key", "city") 
 cat_supplement<-c()
 for(cat in molts_levels){
