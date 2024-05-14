@@ -106,6 +106,8 @@ if (num_dimensions > 0) {
 } else {
   message("No hay dimensiones disponibles para extraer.")
 }
+data_acm <- as.data.frame(ind_coords_avail)
+save(data_acm, file = "./6_Facorial_methods/acm_data.RData")
 
 ind_coords_12d <- res.mca1$ind$coord[, 1:12]
 var_coords_12d <- res.mca1$var$coord[, 1:12]
