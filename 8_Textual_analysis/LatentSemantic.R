@@ -100,7 +100,7 @@ dist.mat.lsa # check distance matrix for DOCUMENTS
 fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
 points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
 ggplot(points,aes(x=x, y=y)) + 
-  geom_point(data=points,aes(x=x, y=y, color=df$view)) + 
+  geom_point(data=points,aes(x=x, y=y, color=points$view)) + 
   geom_text(data=points,aes(x=x, y=y-0.2, label=track_names))
 
 row.names(df)
@@ -116,14 +116,14 @@ scatterplot3d(fit$points[, 1], fit$points[, 2], fit$points[, 3], color=colors, p
 # cLUSTER SONGS -----------------------------------
 k <- 5 # Number of clusters (you can adjust this)
 set.seed(123) # Set seed for reproducibility
-km_clusters <- kmeans(as.textmatrix(lsaSpace), centers = k)
+km_clusters <- kmeans(t(as.textmatrix(lsaSpace)), centers = k)
 
 # Add cluster labels to the data
 cluster_labels <- as.factor(km_clusters$cluster)
 points$cluster <- cluster_labels
 
 # Visualize clusters
-ggplot(points, aes(x = x, y = y, color = cluster)) + 
+ggplot(points, aes(x = x, y = y, color = points$cluster)) + 
   geom_point() + 
   geom_text(aes(label = track_names), vjust = -0.5) +
   ggtitle("Clusters of Songs based on Lyrics Similarity")
@@ -134,31 +134,70 @@ cluster_centers <- as.textmatrix(lsaSpace)[km_clusters$centers, ]
 
 # SIMILAR SONGS -----------------------------------
 
-find_similar_elements <- function(new_phrase, results, track_names, N = 5) {
-  new_phrase_clean <- tolower(new_phrase)
-  new_phrase_clean <- removeNumbers(new_phrase_clean)
-  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("english"))
-  new_phrase_clean <- removeWords(new_phrase_clean, stopwords("SMART"))
-  new_phrase_clean <- removePunctuation(new_phrase_clean)
-  new_phrase_clean <- stripWhitespace(new_phrase_clean)
-  
-  new_phrase_vec <- as.textmatrix(lsa(as.matrix(TermDocumentMatrix(Corpus(VectorSource(new_phrase_clean))))))
-  
-  similarities <- sapply(1:nrow(results), function(i) {
-    cosine(new_phrase_vec, results[i, , drop = FALSE])
-  })
-  
-  top_N_indices <- order(similarities, decreasing = TRUE)[1:N]
-  top_N_tracks <- track_names[top_N_indices]
-  top_N_similarity <- similarities[top_N_indices]
-  
-  return(data.frame(Track = top_N_tracks, Similarity = top_N_similarity))
-}
+track_names = unique_tracks$track_name
 
-# Example usage
-new_phrase <- "I feel lost in the crowd"
-similar_elements <- find_similar_elements(new_phrase, results, track_names, N = 5)
-print(similar_elements)
+sentence <- paste(rep("Look at the stars, look how they shine for you and all the things you do, and it was all yellow
+Look at the stars, look how they shine for you and all the things you do, and it was all yellow 
+Look at the stars, look how they shine for you and all the things you do, and it was all yellow 
+Look at the stars, look how they shine for you and all the things you do, and it was all yellow 
+Look at the stars, look how they shine for you and all the things you do, and it was all yellow ", times=10))
+length(sentence)
+
+source <- c(unique_tracks$lyrics, sentence)
+
+track_names <- c(track_names, "NEW_TEST")
+
+new_corpus<- Corpus(VectorSource(source))
+
+new_corpus <- tm_map(new_corpus, content_transformer(tolower))
+# Remove numbers
+new_corpus <- tm_map(new_corpus, removeNumbers)
+# Remove conjunctions etc.: "and",the", "of"
+new_corpus <- tm_map(new_corpus, removeWords, stopwords("english"))
+# Remove words like "you'll", "will", "anyways", etc.
+new_corpus <- tm_map(new_corpus, removeWords, stopwords("SMART"))
+# Remove commas, periods, etc.
+new_corpus <- tm_map(new_corpus, removePunctuation)
+# Strip unnecessary whitespace
+new_corpus <- tm_map(new_corpus, stripWhitespace)
+
+# Customize your own list of words for removal
+new_corpus <- tm_map(new_corpus, removeWords, c("tis"))
+
+new_td.mat <- TermDocumentMatrix(new_corpus)
+
+min_freq <- ceiling(0.1 * length(track_names))
+
+# Get the terms that appear in at least 10% of the documents
+new_terms_freq_10 <- findFreqTerms(new_td.mat, lowfreq = 10)
+
+# Subset the term-document matrix to include only these terms
+new_td.mat_freq_10 <- new_td.mat[new_terms_freq_10, ]
+
+new_td.mat <- as.matrix(new_td.mat_freq_10)
+
+new_td.mat.lsa <- lw_bintf(new_td.mat) * gw_idf(new_td.mat) # weighting
+new_lsaSpace <- lsa(new_td.mat.lsa) # create LSA space
+
+
+new_dist.mat.lsa <- dist(t(as.textmatrix(new_lsaSpace))) # compute distance matrix
+new_dist.mat.lsa # check distance matrix for DOCUMENTS
+
+distance_matrix <- as.matrix(new_dist.mat.lsa)
+
+
+distances_to_new_test <- distance_matrix[,ncol(distance_matrix)]
+
+# Sort distances
+sorted_distances <- sort(distances_to_new_test)
+
+# Find the indices of the documents most similar to NEW_TEST
+most_similar_indices <- as.numeric(names(sorted_distances)[2:6])  # Exclude NEW_TEST itself
+
+# Print the indices of the most similar documents
+print(most_similar_indices)
+
+print(unique_tracks$track_name[most_similar_indices])
 
 
 # WORDS ------------------------------------------
