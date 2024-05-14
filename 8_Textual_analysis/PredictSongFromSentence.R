@@ -59,12 +59,13 @@ perform_lsa <- function(phrase, n = 5) {
   # Get top n most similar documents
   top_n <- order(similarities, decreasing = TRUE)[1:n]
   similar_docs <- track_names[top_n]
-  
-  return(similar_docs)
+  similar_ids <- unique_tracks$track_id[top_n]
+  llista <- list("documents" = similar_docs, "ids" = similar_ids) 
+  return(llista)
 }
 
 # Example usage
-phrase <- "Me gustas mucho pero la relación no puede seguir"
+phrase1 <- "Me gustas mucho pero la relación no puede seguir"
 phrase2 <- "Baila conmigo toda la noche, bajo la luna llena y las estrellas brillantes."
 phrase3 <- "Late at night, the streets are alive with the fucking pulse of the city. 
             The bass hits hard as hell, and the beat is relentless, pounding like my
@@ -83,21 +84,58 @@ phrase3 <- "Late at night, the streets are alive with the fucking pulse of the c
 
 
 print(phrase1)
-top_similar_docs <- perform_lsa(phrase, n=5)
+top_similar_docs <- perform_lsa(phrase1, n=30)
+top_similar_ids1 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
 
 print(phrase2)
-top_similar_docs <- perform_lsa(phrase2, n = 5)
+top_similar_docs <- perform_lsa(phrase2, n = 30)
+top_similar_ids2 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
 
 print(phrase3)
-top_similar_docs <- perform_lsa(phrase3, n = 5)
+top_similar_docs <- perform_lsa(phrase3, n = 30)
+top_similar_ids3 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
 
 
+# TO SPOTIFY PLAYLIST USING API -------------------------------
+
+library("spotifyr")
 
 
+# Sys.setenv(SPOTIFY_CLIENT_ID = 'XXXXXXXXXXXXXXXX')
+# Sys.setenv(SPOTIFY_CLIENT_SECRET = 'XXXXXXXXXXXXXXXX')
 
 
+create_new_playlist <- function(track_ids, playlist_name) {
+  # Authenticate with Spotify API
+  my_token <- spotifyr::get_spotify_authorization_code(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                                   client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"),
+                                                   scope = 'playlist-modify-public playlist-read-private')
+  my_token
+  # Create a new playlist
+  new_playlist <- create_playlist(user_id = "31kej347oroci5uq32dpg6wpnpae",
+                                  name = playlist_name,
+                                  public = TRUE,
+                                  collaborative = FALSE,
+                                  description = "Playlist created with LSA for PMAAD",
+                                  authorization  = my_token)
+  
+  # Add tracks to the playlist
+  add_tracks_to_playlist(playlist_id = new_playlist$id,
+                         uris = track_ids,
+                         position = NULL,
+                         authorization = my_token)
+  
+  cat("Playlist", playlist_name, "created successfully!\n")
+}
+create_new_playlist(top_similar_ids1, "Dejarnos de querer")
 
+create_new_playlist(top_similar_ids2, "Bailando de noche")
+
+create_new_playlist(top_similar_ids3, "Hip hop life")
 
