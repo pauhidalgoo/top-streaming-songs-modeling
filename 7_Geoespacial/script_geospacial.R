@@ -1,6 +1,18 @@
 
 load('final_d3_data.RData')
+library(httr)
+library(jsonlite)
+library(dplyr) # para manipulación de dataframes
 
+# Suponiendo que tu dataframe se llama 'data' y tiene las columnas 'city' y 'country'
+data$latitude <- NA  # Añadir columna para latitud
+data$longitude <- NA # Añadir columna para longitud
+
+data$latitude <- rep(NA, nrow(data))  # Añadir columna para latitudes
+data$longitude <- rep(NA, nrow(data)) # Añadir columna para longitudes
+
+
+api_key <- "XAv1H8bp0iD+snw9znO3XA==g8KXgtstezF2zl2A" 
 library(httr)
 library(jsonlite)
 
@@ -55,19 +67,7 @@ View(data)
 
 
 
-library(httr)
-library(jsonlite)
-library(dplyr) # para manipulación de dataframes
-
-# Suponiendo que tu dataframe se llama 'data' y tiene las columnas 'city' y 'country'
-data$latitude <- NA  # Añadir columna para latitud
-data$longitude <- NA # Añadir columna para longitud
-
-data$latitude <- rep(NA, nrow(data))  # Añadir columna para latitudes
-data$longitude <- rep(NA, nrow(data)) # Añadir columna para longitudes
-
-
-api_key <- "XAv1H8bp0iD+snw9znO3XA==g8KXgtstezF2zl2A"  # Reemplaza esto con tu clave API real
+ # Reemplaza esto con tu clave API real
 
 for (i in 1:nrow(data)) {
   city <- data$city[i]
