@@ -10,13 +10,13 @@ library(textdata) # provides access to lexicon dictionaries
 library(knitr) # used to make kable tables
 
 
-load("./2_Descriptive analysis/unique_tracks.RData")
+load("./8_Textual_analysis/unique_tracks_translated.RData")
 PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis",sep="")
 
 
-track_names = unique_tracks$track_name
+track_names = unique_translated$track_name
 
-uncleaned_corpus<- Corpus(VectorSource(unique_tracks$lyrics))
+uncleaned_corpus<- Corpus(VectorSource(unique_translated$translated_lyrics))
 uncleaned_corpus
 
 writeLines(head(strwrap(uncleaned_corpus[[1]]), 7))
@@ -39,11 +39,11 @@ clean_corpus <- tm_map(clean_corpus, removeWords, c("tis"))
 palabras <- syuzhet::get_tokens(clean_corpus)
 cat("Tenemos", length(palabras), "palabras en nuestro Corpus\n")
 
-#sentimentOpinion <- syuzhet::get_nrc_sentiment(char_v = palabras, language = "english")
+sentimentOpinion <- syuzhet::get_nrc_sentiment(char_v = palabras, language = "english")
 
-#saveRDS(sentimentOpinion, file = "./8_textual_analysis/sentimentOpinion.rds")
+saveRDS(sentimentOpinion, file = "./8_textual_analysis/sentimentOpinion_translated.rds")
 
-readRDS(file = "./8_textual_analysis/sentimentOpinion.rds")
+readRDS(file = "./8_textual_analysis/sentimentOpinion_translated.rds")
 
 head(sentimentOpinion)
 
@@ -136,9 +136,9 @@ track_emotion_scores_df <- data.frame(track_id = numeric(),
                                       trust_score = numeric())
 
 
-for (i in 1:nrow(unique_tracks)) {
+for (i in 1:nrow(unique_translated)) {
   # Get the lyrics for the current track
-  lyrics <- unique_tracks[i, "lyrics"]
+  lyrics <- unique_translated[i, "translated_lyrics"]
   
   # Skip tracks with empty lyrics
   if (is.na(lyrics) || lyrics == "") {
@@ -166,13 +166,14 @@ for (i in 1:nrow(unique_tracks)) {
   )
   
   # Aggregate scores for each emotion
+  word_emotion_scores[is.na(word_emotion_scores)] <- 0
   track_emotion_scores <- aggregate(. ~ word, data = word_emotion_scores, sum)
   
   track_emotion_scores <- colSums(track_emotion_scores[, c("anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust")])
   track_emotion_scores
   names(track_emotion_scores) <- c("anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust")
   # Add the aggregated scores as new columns to the unique_tracks dataframe
-  track_emotion_scores$track_id <- unique_tracks[i, "track_id"]
+  track_emotion_scores$track_id <- unique_translated[i, "track_id"]
   
   # Bind the aggregated scores to the track_emotion_scores_df dataframe
   track_emotion_scores_df <- rbind(track_emotion_scores_df, track_emotion_scores)
@@ -181,6 +182,6 @@ for (i in 1:nrow(unique_tracks)) {
 #Track ID peta? 
 track_emotion_scores_df <- subset(track_emotion_scores_df, select = -track_id)
 
-emotions_df <- cbind(unique_tracks, track_emotion_scores_df)
-save(emotions_df, file = "./8_textual_analysis/emotions_unique_tracks.RData")
+emotions_df <- cbind(unique_translated, track_emotion_scores_df)
+save(emotions_df, file = "./8_textual_analysis/emotions_unique_translated.RData")
 
