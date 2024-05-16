@@ -9,8 +9,8 @@ library(textdata) # provides access to lexicon dictionaries
 library(knitr) # used to make kable tables
 
 
-load("./2_Descriptive analysis/unique_tracks.RData")
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis",sep="")
+load("./2_Descriptive_analysis/unique_tracks.RData")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Original",sep="")
 
 
 track_names = unique_tracks$track_name
@@ -174,7 +174,7 @@ bing_df %>%
 dev.off()
 # FOR EACH TRACK CORPUS ---------------------------
 
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/tracks",sep="")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Original/Tracks",sep="")
 
 
 for (i in 1:min(10,length(clean_corpus))) {
