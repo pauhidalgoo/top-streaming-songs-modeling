@@ -9,13 +9,13 @@ library(textdata) # provides access to lexicon dictionaries
 library(knitr) # used to make kable tables
 
 
-load("./2_Descriptive_analysis/unique_tracks.RData")
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Original",sep="")
+load("./8_Textual_analysis/unique_tracks_translated.RData")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated",sep="")
 
 
-track_names = unique_tracks$track_name
+track_names = unique_translated$track_name
 
-uncleaned_corpus<- Corpus(VectorSource(unique_tracks$lyrics))
+uncleaned_corpus<- Corpus(VectorSource(unique_translated$translated_lyrics))
 uncleaned_corpus
 
 writeLines(head(strwrap(uncleaned_corpus[[1]]), 7))
@@ -174,7 +174,7 @@ bing_df %>%
 dev.off()
 # FOR EACH TRACK CORPUS ---------------------------
 
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Original/Tracks",sep="")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated/Tracks",sep="")
 
 
 for (i in 1:min(10,length(clean_corpus))) {
