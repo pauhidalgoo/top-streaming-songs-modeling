@@ -9,14 +9,14 @@ library(LSAfun)
 
 
 
-load("./2_Descriptive_analysis/unique_tracks.RData")
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/LSA/Original",sep="")
+load("./8_Textual_analysis/unique_tracks_translated.RData")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/LSA/Translated",sep="")
 
 
 
-track_names = unique_tracks$track_name
+track_names = unique_translated$track_name
 
-uncleaned_corpus<- Corpus(VectorSource(unique_tracks$lyrics))
+uncleaned_corpus<- Corpus(VectorSource(unique_translated$translated_lyrics))
 uncleaned_corpus
 
 # cleaning corpus
@@ -109,10 +109,13 @@ dev.off()
 
 multicos(list1,tvectors = results)
 
+# trace(plot_doclist, edit = T) (he canviat la funció de la llibreria)
+# canvia els noms dels documents i la funció de plot
+
 
 doc_texts <- sapply(old_clean_corpus, paste, collapse = " ")
 
-png(file=paste0(PATH_PLOTS, "/all_songs_MDS.png"),
+png(file=paste0(PATH_PLOTS, "/all_songs_less_labels_MDS.png"),
     width=1920, height=1080, units="px", res=130)
 
 results_with_names <- results
@@ -225,6 +228,34 @@ ggplot(points, aes(x = x, y = y, color = points$cluster)) +
 dev.off()
 # Cluster centers
 cluster_centers <- as.textmatrix(lsaSpace)[km_clusters$centers, ]
+
+cluster_distribution <- table(cluster_labels)
+cluster_distribution_df <- data.frame(Cluster = as.numeric(names(cluster_distribution)), 
+                                      Count = as.numeric(cluster_distribution))
+
+# Plot distribution of songs within clusters
+png(file=paste0(PATH_PLOTS, "/cluster_distribution.png"),
+    width=800, height=600, units="px", res=130)
+ggplot(cluster_distribution_df, aes(x = factor(Cluster), y = Count)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Songs Within Clusters",
+       x = "Cluster", y = "Number of Songs")
+dev.off()
+
+
+length(cluster_labels)
+unique_translated["textual_cluster"] <- cluster_labels
+
+
+
+class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff", "#FF0000")
+
+numeric_prof <- c("danceability", "energy", "valence", "streams", "acousticness")
+
+ggplot(unique_translated, aes(x = factor(textual_cluster), y = danceability)) +
+  geom_bar(stat = "summary", fun = "mean", fill = class_colors) +
+  labs(title = "Distribution of Danceability Within Clusters",
+       x = "Cluster", y = "Mean Danceability")
 
 
 # WORDS ------------------------------------------
