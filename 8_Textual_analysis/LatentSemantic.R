@@ -252,10 +252,50 @@ class_colors <- c("#1db954", "#ff7b24", "#df75ff", "#67b4ff", "#FF0000")
 
 numeric_prof <- c("danceability", "energy", "valence", "streams", "acousticness")
 
-ggplot(unique_translated, aes(x = factor(textual_cluster), y = danceability)) +
-  geom_bar(stat = "summary", fun = "mean", fill = class_colors) +
-  labs(title = "Distribution of Danceability Within Clusters",
-       x = "Cluster", y = "Mean Danceability")
+for (variable in numeric_prof) {
+  # Create the plot
+  p <- ggplot(unique_translated, aes(x = factor(textual_cluster), y = !!sym(variable))) +
+    geom_bar(stat = "summary", fun = "mean", fill = class_colors) +
+    geom_hline(yintercept = mean(unique_translated[[variable]]), linetype = "dashed", color = "black") +
+    labs(title = paste("Distribution of", variable, "Within Clusters"),
+         x = "Cluster", y = paste("Mean", variable))
+  
+  # Save the plot as a PNG file
+  filename <- paste0(PATH_PLOTS, "/profiling_", variable, ".png")
+  png(filename, width = 800, height = 600, units = "px", res = 130)
+  print(p)
+  dev.off() # Close the PNG device
+}
+
+
+categoric_prof <- c("pop", "hip_hop", "explicit", "latino", "nationality", "rank_group") 
+binary_colors <- c( "black", "#1db954")
+
+# Create plots for each categorical variable
+for (variable in categoric_prof) {
+  if (variable %in% c("pop", "hip_hop", "explicit", "latino")) {
+    # For binary variables
+    p <- ggplot(unique_translated, aes(x = factor(textual_cluster), fill = factor(.data[[variable]]))) +
+      geom_bar(position = "fill") +
+      scale_fill_manual(values = binary_colors, labels = c("False", "True")) +
+      labs(title = paste("Distribution of", variable, "Within Clusters"),
+           x = "Cluster", y = "Proportion") +
+      theme(legend.title = element_blank(), legend.position = "bottom")
+  } else {
+    # For non-binary variables
+    p <- ggplot(unique_translated, aes(x = factor(textual_cluster), fill = factor(.data[[variable]]))) +
+      geom_bar(position = "fill") +
+      labs(title = paste("Distribution of", variable, "Within Clusters"),
+           x = "Cluster", y = "Proportion") +
+      theme(legend.position = "bottom")
+  }
+  
+  # Save the plot as a PNG file
+  filename <- paste0(PATH_PLOTS, "/profiling_", variable, ".png")
+  png(filename, width = 800, height = 600, units = "px", res = 130)
+  print(p)
+  dev.off() # Close the PNG device
+}
 
 
 # WORDS ------------------------------------------
@@ -277,5 +317,7 @@ points <- data.frame(x=fit)
 dev.off()
 
 
+
+# PROFILING USING WORDS --------------------
 
 
