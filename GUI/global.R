@@ -17,19 +17,19 @@ uncleaned_corpus
 writeLines(head(strwrap(uncleaned_corpus[[1]]), 7))
 
 # Convert to lowercase
-clean_corpus <- tm_map(uncleaned_corpus, content_transformer(tolower))
+wc_clean_corpus <- tm_map(uncleaned_corpus, content_transformer(tolower))
 # Remove numbers
-clean_corpus <- tm_map(clean_corpus, removeNumbers)
+wc_clean_corpus <- tm_map(wc_clean_corpus, removeNumbers)
 # Remove conjunctions etc.: "and",the", "of"
-clean_corpus <- tm_map(clean_corpus, removeWords, stopwords("english"))
+wc_clean_corpus <- tm_map(wc_clean_corpus, removeWords, stopwords("english"))
 # Remove words like "you'll", "will", "anyways", etc.
-clean_corpus <- tm_map(clean_corpus, removeWords, stopwords("SMART"))
+wc_clean_corpus <- tm_map(wc_clean_corpus, removeWords, stopwords("SMART"))
 # Remove commas, periods, etc.
-clean_corpus <- tm_map(clean_corpus, removePunctuation)
+wc_clean_corpus <- tm_map(wc_clean_corpus, removePunctuation)
 # Strip unnecessary whitespace
-clean_corpus <- tm_map(clean_corpus, stripWhitespace)
+wc_clean_corpus <- tm_map(wc_clean_corpus, stripWhitespace)
 # Customize your own list of words for removal
-clean_corpus <- tm_map(clean_corpus, removeWords, c("tis"))
+wc_clean_corpus <- tm_map(wc_clean_corpus, removeWords, c("tis"))
 
 books <<- track_names
 
@@ -41,7 +41,7 @@ getTermMatrix <- memoise(function(book) {
     stop("Unknown book")
   
   i <- which(books == book)
-  corpus <- content(clean_corpus[[i]])
+  corpus <- content(wc_clean_corpus[[i]])
   name = track_names[i]
   print(name)
   name = gsub(" ", "", name , fixed = TRUE)
@@ -55,3 +55,12 @@ getTermMatrix <- memoise(function(book) {
   
   sort(rowSums(tdm), decreasing = TRUE)
 })
+
+
+track_info_from_index <- memoise(function(track_id){
+  row = images_unique[images_unique$track_id == track_id, ]
+  print(row)
+  row
+})
+
+
