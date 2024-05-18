@@ -6,6 +6,9 @@ library(stringr)
 
 load("./2_Descriptive_analysis/unique_tracks.RData")
 
+# Obtener los nombres únicos de países
+unique_countries <- unique(unique_tracks$nationality)
+
 # Function to clean the corpus
 clean_corpus <- function(corpus) {
   corpus <- tm_map(corpus, content_transformer(tolower))
@@ -33,7 +36,7 @@ interpret_request <- function(request) {
   # Detect genre
   genre_keywords <- list(
     "pop" = "pop",
-    "hip hop" = "hip hop|rap",
+    "hip hop" = "hip_hop|rap",
     "rock" = "rock",
     "electro" = "electro|electrónica|electronic",
     "christmas" = "christmas",
@@ -56,45 +59,31 @@ interpret_request <- function(request) {
   }
   
   # Detect explicit content
-  if (grepl("not explicit|no explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
+  if (grepl("not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
     filters$explicit <- FALSE
   } else if (grepl("explicit|explícita|explícito", request, ignore.case = TRUE)) {
     filters$explicit <- TRUE
   }
   
+  # Detect country
+  for (country in unique_countries) {
+    if (grepl(country, request, ignore.case = TRUE)) {
+      filters$country <- country
+      break
+    }
+  }
+  
   return(filters)
 }
 
-# Main LSA function with genre, danceability, and explicit filtering
+# Main LSA function with genre, danceability, explicit, and country filtering
 perform_lsa <- function(phrase, request, n = 5) {
   # Interpret the user request to set filters
   filters <- interpret_request(request)
   
-  # Apply genre filter to the dataset
-  filtered_tracks <- unique_tracks
-  if (!is.null(filters$genre)) {
-    filtered_tracks <- filtered_tracks[filtered_tracks[[filters$genre]] == TRUE, ]
-  }
-  
-  # Apply danceability filter to the dataset
-  if (!is.null(filters$danceability)) {
-    filtered_tracks <- filtered_tracks[filtered_tracks$danceability >= filters$danceability, ]
-  }
-  
-  # Apply explicit filter to the dataset
-  if (!is.null(filters$explicit)) {
-    filtered_tracks <- filtered_tracks[filtered_tracks$explicit == filters$explicit, ]
-  }
-  
-  # If no tracks match the filters, return empty results
-  if (nrow(filtered_tracks) == 0) {
-    return(list("documents" = character(0), "ids" = character(0)))
-  }
-  
-  # Update the corpus and track names with the filtered data
-  track_names <- filtered_tracks$track_name
-  clean_corpus_data <- Corpus(VectorSource(filtered_tracks$lyrics))
-  clean_corpus_data <- clean_corpus(clean_corpus_data)
+  # Clean the corpus
+  uncleaned_corpus <- Corpus(VectorSource(unique_tracks$lyrics))
+  clean_corpus_data <- clean_corpus(uncleaned_corpus)
   
   # Extend the phrase to the minimum length
   phrase <- extend_phrase(phrase)
@@ -105,7 +94,7 @@ perform_lsa <- function(phrase, request, n = 5) {
   
   # Create the term-document matrix
   td.mat <- TermDocumentMatrix(new_corpus)
-  min_freq <- ceiling(0.1 * length(track_names))
+  min_freq <- ceiling(0.1 * length(unique_tracks$track_name))
   terms_freq_10 <- findFreqTerms(td.mat, lowfreq = min_freq)
   td.mat_freq_10 <- td.mat[terms_freq_10, ]
   td.mat <- as.matrix(td.mat_freq_10)
@@ -119,11 +108,44 @@ perform_lsa <- function(phrase, request, n = 5) {
   new_doc_vector <- results[, ncol(results)]
   similarities <- cosine(new_doc_vector, results[, -ncol(results)])
   
-  # Get top n most similar documents
-  top_n <- order(similarities, decreasing = TRUE)[1:n]
-  similar_docs <- track_names[top_n]
-  similar_ids <- filtered_tracks$track_id[top_n]
-  llista <- list("documents" = similar_docs, "ids" = similar_ids) 
+  # Create a data frame with similarities and track details
+  similarity_df <- data.frame(
+    track_name = unique_tracks$track_name,
+    track_id = unique_tracks$track_id,
+    similarity = similarities,
+    danceability = unique_tracks$danceability,
+    explicit = unique_tracks$explicit,
+    country = unique_tracks$nationality,
+    stringsAsFactors = FALSE
+  )
+  
+  # Add genre columns to similarity_df
+  for (genre in names(genre_keywords)) {
+    similarity_df[[genre]] <- unique_tracks[[genre]]
+  }
+  
+  # Apply filters to the similarity data frame
+  if (!is.null(filters$genre)) {
+    similarity_df <- similarity_df[similarity_df[[filters$genre]] == TRUE, ]
+  }
+  
+  if (!is.null(filters$danceability)) {
+    similarity_df <- similarity_df[similarity_df$danceability >= filters$danceability, ]
+  }
+  
+  if (!is.null(filters$explicit)) {
+    similarity_df <- similarity_df[similarity_df$explicit == filters$explicit, ]
+  }
+  
+  if (!is.null(filters$country)) {
+    similarity_df <- similarity_df[similarity_df$country == filters$country, ]
+  }
+  
+  # Order by similarity and get top n
+  similarity_df <- similarity_df[order(similarity_df$similarity, decreasing = TRUE), ]
+  top_n_df <- head(similarity_df, n)
+  
+  llista <- list("documents" = top_n_df$track_name, "ids" = top_n_df$track_id) 
   return(llista)
 }
 
@@ -132,9 +154,12 @@ phrase1 <- "Me gustas mucho pero la relación no puede seguir"
 phrase2 <- "Baila conmigo toda la noche, bajo la luna llena y las estrellas brillantes."
 phrase3 <- "Late at night, the streets are alive with the fucking pulse of the city. The bass hits hard as hell, and the beat is relentless, pounding like my heartbeat. I'm out here, grinding, spitting raw-ass bars that tell my fucked-up story. Fuck the haters, fuck the bullshit, I'm rising above all that shit. The struggle is fucking real, but so is my motherfucking hustle. Every verse is a big fuck you to the doubters, every rhyme a testament to my grind. This ain't just music, it's a goddamn way of life. In the concrete jungle, you either make it or you fucking don't. No bullshit, no excuses, just raw, unfiltered truth. I'm here to claim my spot, and ain't nobody gonna fucking stop me. The mic is my weapon, and every word is fucking loaded. This is hip hop, motherfucker. It's gritty, it's real, it's raw as fuck, and it's unapologetically me. This is my fucking anthem, my story told in rhymes and beats, a middle finger to the world, a declaration of my fucking existence. Every beat is a battle, every rhyme a war cry. This is hip hop, and I'm here to fucking conquer it."
 
-request1 <- "Quiero una canción del género latino que sea muy bailable no explícita"
+request1 <- "Quiero una canción del género latino que sea muy bailable"
 request2 <- "Quiero una canción del género latino bailable"
 request3 <- "Quiero una canción hip hop explícita"
+request4 <- "Quiero una canción pop no explícita"
+request5 <- "Quiero una canción del género pop de Estados Unidos"
+request6 <- "Quiero una canción del género rock de Canadá que no sea explícita"
 
 print(phrase1)
 top_similar_docs <- perform_lsa(phrase1, request1, n=30)
@@ -154,8 +179,20 @@ top_similar_ids3 <- top_similar_docs$ids
 top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
 
-print(phrase4)
-top_similar_docs <- perform_lsa(phrase4, request4, n = 30)
+print(phrase3)
+top_similar_docs <- perform_lsa(phrase3, request4, n = 30)
 top_similar_ids4 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
+
+print(phrase1)
+top_similar_docs <- perform_lsa(phrase1, request5, n=30)
+top_similar_ids5 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
+
+print(phrase2)
+top_similar_docs <- perform_lsa(phrase2, request6, n = 30)
+top_similar_ids6 <- top_similar_docs$ids
 top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
