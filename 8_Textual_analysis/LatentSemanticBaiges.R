@@ -33,7 +33,7 @@ interpret_request <- function(request) {
   # Detect genre
   genre_keywords <- list(
     "pop" = "pop",
-    "hip hop" = "hip_hop|rap",
+    "hip hop" = "hip hop|rap",
     "rock" = "rock",
     "electro" = "electro|electrónica|electronic",
     "christmas" = "christmas",
@@ -55,10 +55,17 @@ interpret_request <- function(request) {
     filters$danceability <- 0.65
   }
   
+  # Detect explicit content
+  if (grepl("not explicit|no explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
+    filters$explicit <- FALSE
+  } else if (grepl("explicit|explícita|explícito", request, ignore.case = TRUE)) {
+    filters$explicit <- TRUE
+  }
+  
   return(filters)
 }
 
-# Main LSA function with genre and danceability filtering
+# Main LSA function with genre, danceability, and explicit filtering
 perform_lsa <- function(phrase, request, n = 5) {
   # Interpret the user request to set filters
   filters <- interpret_request(request)
@@ -72,6 +79,11 @@ perform_lsa <- function(phrase, request, n = 5) {
   # Apply danceability filter to the dataset
   if (!is.null(filters$danceability)) {
     filtered_tracks <- filtered_tracks[filtered_tracks$danceability >= filters$danceability, ]
+  }
+  
+  # Apply explicit filter to the dataset
+  if (!is.null(filters$explicit)) {
+    filtered_tracks <- filtered_tracks[filtered_tracks$explicit == filters$explicit, ]
   }
   
   # If no tracks match the filters, return empty results
@@ -120,9 +132,9 @@ phrase1 <- "Me gustas mucho pero la relación no puede seguir"
 phrase2 <- "Baila conmigo toda la noche, bajo la luna llena y las estrellas brillantes."
 phrase3 <- "Late at night, the streets are alive with the fucking pulse of the city. The bass hits hard as hell, and the beat is relentless, pounding like my heartbeat. I'm out here, grinding, spitting raw-ass bars that tell my fucked-up story. Fuck the haters, fuck the bullshit, I'm rising above all that shit. The struggle is fucking real, but so is my motherfucking hustle. Every verse is a big fuck you to the doubters, every rhyme a testament to my grind. This ain't just music, it's a goddamn way of life. In the concrete jungle, you either make it or you fucking don't. No bullshit, no excuses, just raw, unfiltered truth. I'm here to claim my spot, and ain't nobody gonna fucking stop me. The mic is my weapon, and every word is fucking loaded. This is hip hop, motherfucker. It's gritty, it's real, it's raw as fuck, and it's unapologetically me. This is my fucking anthem, my story told in rhymes and beats, a middle finger to the world, a declaration of my fucking existence. Every beat is a battle, every rhyme a war cry. This is hip hop, and I'm here to fucking conquer it."
 
-request1 <- "Quiero una canción del género latino que sea muy bailable"
+request1 <- "Quiero una canción del género latino que sea muy bailable no explícita"
 request2 <- "Quiero una canción del género latino bailable"
-request3 <- "Quiero una canción hip hop"
+request3 <- "Quiero una canción hip hop explícita"
 
 print(phrase1)
 top_similar_docs <- perform_lsa(phrase1, request1, n=30)
@@ -142,3 +154,8 @@ top_similar_ids3 <- top_similar_docs$ids
 top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
 
+print(phrase4)
+top_similar_docs <- perform_lsa(phrase4, request4, n = 30)
+top_similar_ids4 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
