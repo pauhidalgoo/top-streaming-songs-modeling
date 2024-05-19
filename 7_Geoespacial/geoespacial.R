@@ -1,5 +1,6 @@
 library(sf)
 
+load('data_coordenades.RData')
 my_sf <- st_read("./7_Geoespacial/ne_10m_populated_places.shp")
 plot(st_geometry(my_sf))
 
@@ -10,7 +11,7 @@ ggplot(my_sf) +
 
 ggplot(my_sf) +
   geom_sf(fill = "#69b3a2", color = "red") +  # Draw the points or other geometries
-  geom_sf_text(aes(label = NAME), color = "black", size = 2, nudge_y = 0.1) +  # Add city names
+  geom_sf_text(aes(label = NAMES), color = "black", size = 2, nudge_y = 0.1) +  # Add city names
   theme_void()
 
 # ------------------------------------------------------------------------------
@@ -24,8 +25,10 @@ library(sf)
 library(ggplot2)
 library(leaflet)
 
+load('final_d3_data.RData')
 
-data$full_address <- paste(data$city, data$country, sep = ", ")
+
+data$full_address <- paste(data$city, data$nationality, sep = ", ")
 data_coords <- geocode(data, address = full_address, method = "osm")
 
 data_sf <- st_as_sf(data_coords, coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)

@@ -115,9 +115,9 @@ load('data_coordenades.RData')
 
 ###### MODELADO Datos Tipo I : GeoestadÃ­stica (Variogramas & Kriging)
 #########Ejemplo 1
-hist(data$streams, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
-data$logstreams <- log10(data$streams)
-hist(data$logstreams, breaks = 16)
+hist(data$artist_followers, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
+#data$logartist_followers <- log10(data$artist_followers)
+#hist(data$logartist_followers, breaks = 16)
 
 coordinates(data) <- c("latitude", "longitude")
 class(data)
