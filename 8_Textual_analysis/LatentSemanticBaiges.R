@@ -37,7 +37,7 @@ interpret_request <- function(request) {
   # Detect genre
   genre_keywords <- list(
     "pop" = "pop",
-    "hip hop" = "hip_hop|rap",
+    "hip hop" = "hip hop|rap",
     "rock" = "rock",
     "electro" = "electro|electrónica|electronic",
     "christmas" = "christmas",
@@ -82,10 +82,24 @@ interpret_request <- function(request) {
     }
   }
   
+  # Detect gender
+  gender_keywords <- list(
+    "female" = "chica|mujer|girl|woman|female|chicas|mujeres|girls|women|females",
+    "male" = "chico|hombre|boy|man|male|chicos|homrbes|boys|men|males",
+    "non-binary" = "non-binary|no binario|nonbinary|no binarias|no binarios"
+  )
+  
+  for (gender in names(gender_keywords)) {
+    if (grepl(gender_keywords[[gender]], tolower(request), ignore.case = TRUE)) {
+      filters$gender <- gender
+      break
+    }
+  }
+  
   return(filters)
 }
 
-# Main LSA function with genre, danceability, explicit, country, and artist filtering
+# Main LSA function with genre, danceability, explicit, country, artist, and gender filtering
 perform_lsa <- function(phrase, request, n = 5) {
   # Interpret the user request to set filters
   filters <- interpret_request(request)
@@ -126,6 +140,7 @@ perform_lsa <- function(phrase, request, n = 5) {
     danceability = unique_tracks$danceability,
     explicit = unique_tracks$explicit,
     country = unique_tracks$nationality,
+    gender = unique_tracks$gender,
     stringsAsFactors = FALSE
   )
   
@@ -155,6 +170,10 @@ perform_lsa <- function(phrase, request, n = 5) {
     similarity_df <- similarity_df[similarity_df$artist_name == filters$artist, ]
   }
   
+  if (!is.null(filters$gender)) {
+    similarity_df <- similarity_df[similarity_df$gender == filters$gender, ]
+  }
+  
   # Order by similarity and get top n
   similarity_df <- similarity_df[order(similarity_df$similarity, decreasing = TRUE), ]
   top_n_df <- head(similarity_df, n)
@@ -169,8 +188,11 @@ phrase2 <- "Baila conmigo toda la noche, bajo la luna llena y las estrellas bril
 phrase3 <- "Late at night, the streets are alive with the fucking pulse of the city. The bass hits hard as hell, and the beat is relentless, pounding like my heartbeat. I'm out here, grinding, spitting raw-ass bars that tell my fucked-up story. Fuck the haters, fuck the bullshit, I'm rising above all that shit. The struggle is fucking real, but so is my motherfucking hustle. Every verse is a big fuck you to the doubters, every rhyme a testament to my grind. This ain't just music, it's a goddamn way of life. In the concrete jungle, you either make it or you fucking don't. No bullshit, no excuses, just raw, unfiltered truth. I'm here to claim my spot, and ain't nobody gonna fucking stop me. The mic is my weapon, and every word is fucking loaded. This is hip hop, motherfucker. It's gritty, it's real, it's raw as fuck, and it's unapologetically me. This is my fucking anthem, my story told in rhymes and beats, a middle finger to the world, a declaration of my fucking existence. Every beat is a battle, every rhyme a war cry. This is hip hop, and I'm here to fucking conquer it."
 
 request1 <- "Quiero una canción del género latino que sea muy bailable de Bad Bunny"
-request2 <- "Quiero una canción del género latino bailable"
+request2 <- "Quiero una canción bailable"
 request3 <- "Quiero una canción hip hop explícita de un cantante de Canada"
+request4 <- "Quiero una canción pop de una mujer"
+request5 <- "Quiero una canción del género rock de un hombre"
+request6 <- "Quiero una canción pop de un cantante no binario"
 
 print(phrase1)
 top_similar_docs <- perform_lsa(phrase1, request1, n=30)
@@ -187,5 +209,23 @@ print(top_similar_docs)
 print(phrase3)
 top_similar_docs <- perform_lsa(phrase3, request3, n = 30)
 top_similar_ids3 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
+
+print(phrase1)
+top_similar_docs <- perform_lsa(phrase1, request4, n = 30)
+top_similar_ids4 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
+
+print(phrase1)
+top_similar_docs <- perform_lsa(phrase1, request5, n=30)
+top_similar_ids5 <- top_similar_docs$ids
+top_similar_docs <- top_similar_docs$documents
+print(top_similar_docs)
+
+print(phrase2)
+top_similar_docs <- perform_lsa(phrase2, request6, n = 30)
+top_similar_ids6 <- top_similar_docs$ids
 top_similar_docs <- top_similar_docs$documents
 print(top_similar_docs)
