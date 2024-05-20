@@ -35,5 +35,19 @@ ui <- navbarPage(
                uiOutput("playlist_output")
              )
            )
+  ),
+  tabPanel("Genre prediction",
+           sidebarLayout(
+             sidebarPanel(
+               uiOutput("genre_output")
+               
+             ),
+             
+             mainPanel(
+               tags$style(type="text/css", "textarea {width:95%; height: 50vh; resize:none;}") ,
+               tags$textarea(id="genre_text", rows=5,placeholder =  "Add the lyrics of the song", ""), 
+               actionButton("genre", "Predict genre")
+             )
+           )
   )
 )

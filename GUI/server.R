@@ -85,5 +85,27 @@ server <- function(input, output, session) {
     # Return the playlist container
     playlist_container
   })
+  
+  
+  genre <- reactive({
+    # Change when the "playlist" button is pressed...
+    input$genre
+    
+    # ...but not for anything else
+    req(input$genre)
+    isolate({
+      withProgress({
+        setProgress(message = "Predicting genre...")
+        print(input$genre_text)
+        predicted_genre <- predict_genre(input$genre_text, 5, lsa_prep)
+        predicted_genre
+      })
+    })
+  })
+  
+  output$genre_output <- renderUI({
+    genre_name <- genre()  # Assuming playlist() returns a list of track indices
+    tags$h2(genre_name)
+  })
 }
 
