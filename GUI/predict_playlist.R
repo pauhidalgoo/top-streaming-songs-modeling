@@ -40,7 +40,7 @@ interpret_request <- function(request) {
   }
   
   # Detect explicit content
-  if (grepl("not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
+  if (grepl("no explicit|not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
     filters$explicit <- FALSE
   } else if (grepl("explicit|explícita|explícito", request, ignore.case = TRUE)) {
     filters$explicit <- TRUE

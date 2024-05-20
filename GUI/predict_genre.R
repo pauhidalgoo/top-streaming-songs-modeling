@@ -16,6 +16,8 @@ prepare_lsa_space <- function() {
 
 lsa_prep <- prepare_lsa_space()
 
+
+
 # Function to predict genre based on KNN using LSA
 predict_genre <- function(song_lyrics, k = 5, lsa_prep) {
   # Preprocess the song lyrics
@@ -40,7 +42,11 @@ predict_genre <- function(song_lyrics, k = 5, lsa_prep) {
   top_k <- order(similarities, decreasing = TRUE)[1:k]
   top_k_genres <- unique_translated[top_k, c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino")]
   
+  # Remove 'pop' if 'latino' or 'christmas' are present
+  adjusted_top_k_genres <- top_k_genres
+  adjusted_top_k_genres[,"pop"] <- adjusted_top_k_genres[,"pop"] & !(adjusted_top_k_genres[,"latino"] | adjusted_top_k_genres[,"christmas"])
+  
   # Predict the genre based on the most common genre among the top k similar songs
-  predicted_genre <- colnames(top_k_genres)[apply(top_k_genres, 2, sum) == max(apply(top_k_genres, 2, sum))]
+  predicted_genre <- colnames(adjusted_top_k_genres)[apply(adjusted_top_k_genres, 2, sum) == max(apply(adjusted_top_k_genres, 2, sum))]
   return(predicted_genre[1])  # Return the first genre if there are ties
 }
