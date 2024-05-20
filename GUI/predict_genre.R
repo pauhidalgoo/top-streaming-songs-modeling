@@ -1,3 +1,23 @@
+prepare_lsa_space <- function() {
+  corpus <- Corpus(VectorSource(unique_translated$lyrics))
+  clean_corpus_data <- clean_corpus(corpus)
+  track_names <- unique_translated$track_name
+  td.mat <- TermDocumentMatrix(clean_corpus_data)
+  min_freq <- ceiling(0.1 * length(track_names))
+  terms_freq <- findFreqTerms(td.mat, lowfreq = min_freq)
+  td.mat_freq <- td.mat[terms_freq, ]
+  td.mat <- as.matrix(td.mat_freq)
+  
+  td.mat.lsa <- lw_bintf(td.mat) * gw_idf(td.mat)
+  lsaSpace <- lsa(td.mat.lsa)
+  
+  return(list(lsaSpace = lsaSpace, terms_freq = terms_freq, td.mat = td.mat))
+}
+
+lsa_prep <- prepare_lsa_space()
+
+
+
 # Function to predict genre based on KNN using LSA
 predict_genre <- function(song_lyrics, k = 5, lsa_prep) {
   # Preprocess the song lyrics
