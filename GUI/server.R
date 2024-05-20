@@ -39,13 +39,14 @@ server <- function(input, output, session) {
   playlist <- reactive({
     # Change when the "playlist" button is pressed...
     input$playlist
+    
     # ...but not for anything else
     req(input$playlist)
     isolate({
       withProgress({
         setProgress(message = "Creating playlist...")
         print(input$text)
-        top_similar_docs <- perform_lsa(input$text, n=30)
+        top_similar_docs <- perform_lsa(input$text, input$request, n=30)
         top_similar_ids1 <- top_similar_docs$ids
         top_similar_docs <- top_similar_docs$documents
         print(top_similar_docs)
