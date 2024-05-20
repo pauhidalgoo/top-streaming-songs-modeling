@@ -2,3 +2,5 @@
 .Rhistory
 .Ruserdata
 .RData
+.RDataTmp
+.httr-oauth
