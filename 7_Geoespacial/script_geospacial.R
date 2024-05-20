@@ -84,8 +84,8 @@ data <- data %>%
 
 View(data)
 
-data_coordenades <- as.data.frame(data)
-save(data_coordenades, file = "./7_Geoespacial/data_coordenades.RData")
+data <- as.data.frame(data)
+save(data, file = "./7_Geoespacial/data_coordenades.RData")
 
 
 #### ANNA CASANOVAS I ABRIL RISSO
