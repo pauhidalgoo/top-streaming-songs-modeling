@@ -217,3 +217,37 @@ perform_lsa <- function(phrase, request, n = 5) {
   llista <- list("documents" = top_n_df$track_name, "ids" = top_n_df$track_id) 
   return(llista)
 }
+
+
+
+
+library("spotifyr")
+
+
+# Sys.setenv(SPOTIFY_CLIENT_ID = 'XXXXXXXXXXXXXXXX')
+# Sys.setenv(SPOTIFY_CLIENT_SECRET = 'XXXXXXXXXXXXXXXX')
+
+
+create_new_playlist <- function(track_ids, playlist_name, user_id) {
+  print("hello, its me")
+  # Authenticate with Spotify API
+  my_token <- spotifyr::get_spotify_authorization_code(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                                       client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"),
+                                                       scope = 'playlist-modify-public playlist-read-private')
+  my_token
+  # Create a new playlist
+  new_playlist <- create_playlist(user_id = user_id,
+                                  name = playlist_name,
+                                  public = TRUE,
+                                  collaborative = FALSE,
+                                  description = "Playlist created with LSA for PMAAD",
+                                  authorization  = my_token)
+  
+  # Add tracks to the playlist
+  add_tracks_to_playlist(playlist_id = new_playlist$id,
+                         uris = track_ids,
+                         position = NULL,
+                         authorization = my_token)
+  
+  cat("Playlist", playlist_name, "created successfully!\n")
+}

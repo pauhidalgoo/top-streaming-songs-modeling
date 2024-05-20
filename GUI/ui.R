@@ -28,7 +28,11 @@ ui <- navbarPage(
              sidebarPanel(
                textInput("text", "Enter text:"),
                textInput("request", "Enter some requeriments:"),
-               actionButton("playlist", "Create")
+               actionButton("playlist", "Create"),
+               textInput("user_id", "Enter your user ID:"),
+               textInput("playlist_name", "Enter the playlist name:"),
+               actionButton("spotify", "Add to Spotify"),
+               uiOutput("spotify_done")
              ),
              
              mainPanel(

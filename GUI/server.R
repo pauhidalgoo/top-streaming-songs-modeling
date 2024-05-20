@@ -48,6 +48,7 @@ server <- function(input, output, session) {
         print(input$text)
         top_similar_docs <- perform_lsa(input$text, input$request, n=30)
         top_similar_ids1 <- top_similar_docs$ids
+        saveRDS(top_similar_ids1, "./GUI/playlist_ids.rds")
         top_similar_docs <- top_similar_docs$documents
         print(top_similar_docs)
         top_similar_ids1
@@ -84,6 +85,29 @@ server <- function(input, output, session) {
     
     # Return the playlist container
     playlist_container
+  })
+  
+  spotify_publish <- reactive({
+    # Change when the "playlist" button is pressed...
+    input$spotify
+    # ...but not for anything else
+    req(input$spotify)
+    req(input$playlist_name)
+    req(input$user_id)
+    playlist_data <- readRDS("./GUI/playlist_ids.rds")
+    isolate({
+      withProgress({
+        setProgress(message = "Publishing playlist to spotify...")
+        print(input$playlist_name)
+        create_new_playlist(playlist_data, input$playlist_name, input$user_id)
+      })
+    })
+    
+  })
+  
+  output$spotify_done <- renderUI({
+    a <- spotify_publish()
+    tags$h3("Playlist created successfully!")
   })
   
   
