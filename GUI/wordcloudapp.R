@@ -2,6 +2,7 @@ library(shiny)
 source("./GUI/global.R")
 source("./GUI/predict_playlist.R")
 source("./GUI/predict_genre.R")
+source("./GUI/geospatial_example.R")
 
 # Define UI
 source("./GUI/ui.R")

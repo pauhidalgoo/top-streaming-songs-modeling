@@ -49,5 +49,29 @@ ui <- navbarPage(
                actionButton("genre", "Predict genre")
              )
            )
+  ),
+  
+  tags$head(
+    tags$style(HTML("
+      #map {
+        height: calc(100vh - 80px) !important;
+      }
+    "))
+  ),
+  
+  tabPanel("Artists locations",
+           sidebarLayout(
+             sidebarPanel(
+                 h4("Filter by Genre"),
+                 checkboxGroupInput("genres", "Genres:",
+                                    choices = genre_columns,
+                                    selected = genre_columns)  # Default to all selected
+               
+             ),
+             
+             mainPanel(
+               leafletOutput("map")
+             )
+           )
   )
 )

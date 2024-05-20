@@ -107,5 +107,23 @@ server <- function(input, output, session) {
     genre_name <- genre()  # Assuming playlist() returns a list of track indices
     tags$h2(genre_name)
   })
+  
+  artists_data <- readRDS("./7_Geoespacial/artists_data.rds")
+  filtered_data <- reactive({
+    req(input$genres)  # Ensure there is at least one genre selected
+    
+    filtered_df <- artists_data %>%
+      filter_at(vars(input$genres), any_vars(. == TRUE))
+  })
+  
+  output$map <- renderLeaflet({
+    data <- filtered_data()
+    
+    leaflet(data) %>%
+      addTiles() %>%
+      addMarkers(~longitude, ~latitude, popup = ~as.character(city), label = ~as.character(city), clusterOptions = markerClusterOptions()) %>%
+      setView(lng = mean(range(data$longitude, na.rm = TRUE)), 
+              lat = mean(range(data$latitude, na.rm = TRUE)), zoom = 3)
+  })
 }
 
