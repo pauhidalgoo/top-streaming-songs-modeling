@@ -1,10 +1,10 @@
 ui <- navbarPage(
-  "Multi-page App",
+  "Spotify PMAAD App",
   
   tabPanel("Word Cloud",
            sidebarLayout(
              sidebarPanel(
-               selectInput("selection", "Choose a book:",
+               selectInput("selection", "Choose a song:",
                            choices = books),
                actionButton("update", "Change"),
                hr(),
@@ -23,10 +23,11 @@ ui <- navbarPage(
            )
   ),
   
-  tabPanel("Text Input",
+  tabPanel("Playlist Creator",
            sidebarLayout(
              sidebarPanel(
                textInput("text", "Enter text:"),
+               textInput("request", "Enter some requeriments:"),
                actionButton("playlist", "Create")
              ),
              
