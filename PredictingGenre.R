@@ -99,7 +99,7 @@ evaluate_model <- function(test_lyrics, test_genres, k = 5, lsa_prep) {
 }
 
 # Small test dataset
-set.seed(123)  # For reproducibility
+set.seed(42)  # For reproducibility
 test_indices <- sample(1:nrow(unique_translated), 100)  # Randomly sample 10 songs
 test_lyrics <- unique_translated$lyrics[test_indices]
 test_genres <- unique_translated[test_indices, c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino")]
