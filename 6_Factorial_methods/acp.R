@@ -104,7 +104,7 @@ psi = pc1$x[, 1:num_comp] # ENS QUEDEM NOMÉS AMB LES DIMENSIONS QUE HEM TRIAT (
 dim(psi)
 
 data_psi <- as.data.frame(psi)
-save(data_psi, file = "./6_Facorial_methods/acp_data.RData")
+save(data_psi, file = "./6_Factorial_methods/acp_data.RData")
 
 # Càlcul dels percentatges de variació explicada per els dos primers components
 perc_var1 <- round(perc_varianza[1], 2)

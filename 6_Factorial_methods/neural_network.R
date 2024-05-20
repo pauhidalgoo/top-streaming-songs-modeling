@@ -26,7 +26,7 @@ library(tidyr)
 # Prepare the data
 
 # Load acp & acm merged data
-load("./6_Facorial_methods/data_merged_acp_acm.RData")
+load("./6_Factorial_methods/data_merged_acp_acm.RData")
 data_merged_acp_acm <- data
 
 # Load full data
