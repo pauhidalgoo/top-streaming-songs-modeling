@@ -1,6 +1,6 @@
 library(shiny)
 library(leaflet)
-
+source("./GUI/api_configuration.R")
 source("./GUI/global.R")
 source("./GUI/predict_playlist.R")
 source("./GUI/predict_genre.R")

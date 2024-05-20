@@ -242,10 +242,6 @@ perform_lsa <- function(phrase, request, n = 5) {
 library("spotifyr")
 
 
-# Sys.setenv(SPOTIFY_CLIENT_ID = 'XXXXXXXXXXXXXXXX')
-# Sys.setenv(SPOTIFY_CLIENT_SECRET = 'XXXXXXXXXXXXXXXX')
-
-
 create_new_playlist <- function(track_ids, playlist_name, user_id) {
   print("hello, its me")
   # Authenticate with Spotify API
