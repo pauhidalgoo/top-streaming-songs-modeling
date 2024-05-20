@@ -24,17 +24,17 @@ server <- function(input, output, session) {
   })
   
   output$artist_image <- renderUI({
+    v <- terms()
     selected_track <- images_unique[images_unique$track_name == input$selection, ]
     img_path <- selected_track$artist_img
-    if (!is.null(img_path)) {
+    if (!is.null(img_path) && img_path != "") {
       img_tag <- tags$img(src = img_path, width = "50%")
-      img_tag
-    }
-    else{
+    } else {
       img_tag <- tags$img(src = "./GUI/error.png", width = "50%")
-      img_tag
     }
+    tags$div(style = "text-align: center;", img_tag)
   })
+
   
   playlist <- reactive({
     # Change when the "playlist" button is pressed...
