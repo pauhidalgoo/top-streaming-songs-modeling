@@ -13,6 +13,11 @@ if(!require(keras)){
 if(!require(tidyverse)) install.packages("tidyverse")
 if(!require(caret)) install.packages("caret")
 
+# ACM
+library(FactoMineR)
+library(factoextra)
+
+# Neural Network
 library(tensorflow)
 library(keras3)
 library(rsample) # Data split (with stratify)
@@ -23,18 +28,54 @@ library(reshape2)
 library(tidyr)
 
 # ------------------------------------------------------------------------------
-# Prepare the data
+# Define the target variable (must be categorical)
+target_name <- "explicit"
 
-# Load acp & acm merged data
-load("./6_Facorial_methods/data_merged_acp_acm.RData")
-data_merged_acp_acm <- data
+load_acm_data = FALSE
 
-# Load full data
-load("final_d3_data.RData")
+# ------------------------------------------------------------------------------
+
+load('final_d3_data.RData')
 full_data <- data
 
+# Load ACP data
+load("./6_Facorial_methods/acp_data.RData")
+data_acp <- data_psi
+
+if (!load_acm_data){
+  # Prepare ACM data (depending on the target name chosen, to avoid data leakage)
+  data_logical <- Filter(is.logical, full_data)
+  data_factors <- Filter(is.factor, full_data)
+  categorical_data <- cbind(data_factors, data_logical)
+  categorical_data <- subset(categorical_data, select = -c(track_id, track_name, album_name, day_release, month_release, year_release, weekday_release, year_week, month_week, week_index))
+  categorical_data <- categorical_data[, !names(categorical_data) %in% target_name] # Remove target name
+  categorical_data <- subset(categorical_data, select = -c(artist_name))
+  categorical_data <- categorical_data
+    
+  res.mca <- MCA(categorical_data, ncp = Inf, graph = FALSE)
+  eig.val <- res.mca$eig
+  cumulative_variance <- cumsum(eig.val[, 2])
+  num_dimensions <- which(cumulative_variance >= 80)[1]
+  cat("ACM dimensions:", num_dimensions, "\n")
+  
+  data_acm <- as.data.frame(res.mca$ind$coord[, 1:num_dimensions])
+  save(data_acm, file = "./6_Facorial_methods/acm_data.RData")
+
+} else {
+  # Load a precalculated acm_data
+  load("./6_Facorial_methods/acm_data.RData")
+}
+
+# Merge datasets
+data_merged_acp_acm <- cbind(data_acp, data_acm)
+
+# Clean environment before starting
+rm(list = setdiff(ls(), c("data_merged_acp_acm", "full_data", "target_name")))
+
+# ------------------------------------------------------------------------------
+# Prepare the data
+
 # Split data by unique songs
-target_name <- "explicit"
 train_proportion <- 0.8
 
 # Concatenate columns to have the final dataset for the model
@@ -75,6 +116,9 @@ test_data <- select(test_data, -all_of(target_name))
 train_data <- as.matrix(train_data)
 test_data <- as.matrix(test_data)
 
+cat("Train target values:\n", table(train_labels))
+cat("Test target values:\n", table(test_labels))
+
 # ------------------------------------------------------------------------------
 # Set up and train the model
 
@@ -83,8 +127,8 @@ early_stop <- callback_early_stopping(monitor = "val_loss", patience = 5, restor
 
 # Main model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 64, activation = 'relu', input_shape = c(ncol(train_data))) %>%
-  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 256, activation = 'relu', input_shape = c(ncol(train_data))) %>%
+  layer_dense(units = 256, activation = 'relu') %>%
   layer_dense(units = 1, activation = 'sigmoid')
 
 model %>% compile(
@@ -98,7 +142,7 @@ history <- model %>% fit(
   x = train_data, 
   y = train_labels, 
   epochs = 100, 
-  batch_size = 5,
+  batch_size = 8,
   validation_split = 0.2, # Using part of training data as validation data
   callbacks = list(early_stop)
 )
@@ -118,21 +162,28 @@ history_perceptron <- perceptron %>% fit(
   x = train_data, 
   y = train_labels, 
   epochs = 100, 
-  batch_size = 5,
+  batch_size = 8,
   validation_split = 0.2, # Using part of training data as validation data
   callbacks = list(early_stop)
 )
 
 # ------------------------------------------------------------------------------
 # Plot learning curves
-plot_training_history <- function(history) {
+plot_training_history <- function(history, model_name) {
+  # Extract the metrics from the history object
+  epochs <- length(history$metrics$accuracy)
+  accuracy <- unlist(history$metrics$accuracy)
+  val_accuracy <- unlist(history$metrics$val_accuracy)
+  loss <- unlist(history$metrics$loss)
+  val_loss <- unlist(history$metrics$val_loss)
+  
   # Create a data frame from the training history
   history_data <- data.frame(
-    epoch = seq_along(history$metrics$acc),
-    accuracy = history$metrics$acc,
-    val_accuracy = history$metrics$val_acc,
-    loss = history$metrics$loss,
-    val_loss = history$metrics$val_loss
+    epoch = 1:epochs,
+    accuracy = accuracy,
+    val_accuracy = val_accuracy,
+    loss = loss,
+    val_loss = val_loss
   )
   
   # Melt the data frame to make it suitable for ggplot
@@ -147,7 +198,7 @@ plot_training_history <- function(history) {
   # Plot for Accuracy
   p_acc <- ggplot(accuracy_data, aes(x = epoch, y = value, color = metric)) +
     geom_line(linewidth = 1.25) +
-    labs(title = "Model Accuracy", x = "Epoch", y = "Accuracy") +
+    labs(title = paste(model_name, "Epoch Accuracy"), x = "Epoch", y = "Accuracy") +
     scale_color_manual(values = c("#1ED760", "#ff7b24"), labels = c("Training Accuracy", "Validation Accuracy")) +
     ylim(0, 1) +
     theme_minimal()
@@ -155,9 +206,8 @@ plot_training_history <- function(history) {
   # Plot for Loss
   p_loss <- ggplot(loss_data, aes(x = epoch, y = value, color = metric)) +
     geom_line(linewidth = 1.25) +
-    labs(title = "Model Loss", x = "Epoch", y = "Loss") +
+    labs(title = paste(model_name, "Epoch Loss"), x = "Epoch", y = "Loss") +
     scale_color_manual(values = c("#1ED760", "#ff7b24"), labels = c("Training Loss", "Validation Loss")) +
-    ylim(0, 1) +
     theme_minimal()
   
   # Print the plots
@@ -165,13 +215,13 @@ plot_training_history <- function(history) {
   print(p_loss)
 }
 
-plot_training_history(history=history)
-plot_training_history(history=history_perceptron)
+plot_training_history(history=history, model_name="MLP")
+plot_training_history(history=history_perceptron, model_name="Perceptron")
 
 # ------------------------------------------------------------------------------
 # Test and evaluation
 
-evaluate_model <- function(model, test_data, test_labels, target_name) {
+evaluate_model <- function(model, test_data, test_labels, target_name, model_name) {
   # Make predictions
   predictions_prob <- model %>% predict(test_data)
   predictions <- ifelse(predictions_prob >= 0.5, 1, 0) # Assuming binary classification and threshold of 0.5
@@ -202,7 +252,7 @@ evaluate_model <- function(model, test_data, test_labels, target_name) {
     geom_tile() +
     geom_text(aes(label = Frequency), color = "black", size = 4) +
     scale_fill_gradient(low = "white", high = "#1ED760") +
-    labs(title = paste("Confusion Matrix for variable", target_name), x = "Actual", y = "Predicted") +
+    labs(title = paste("Confusion Matrix: Target =", target_name, "& Model =", model_name), x = "Actual", y = "Predicted") +
     scale_x_continuous(breaks = unique(conf_matrix_df$Reference)) +
     scale_y_continuous(breaks = unique(conf_matrix_df$Prediction)) +
     theme_minimal()
@@ -210,7 +260,6 @@ evaluate_model <- function(model, test_data, test_labels, target_name) {
   print(conf_matrix_plot)
 }
 
-evaluate_model(model=model, test_data=test_data, test_labels=test_labels, target_name=target_name)
-
-evaluate_model(model=perceptron, test_data=test_data, test_labels=test_labels, target_name=target_name)
+evaluate_model(model=model, test_data=test_data, test_labels=test_labels, target_name=target_name, model_name="MLP")
+evaluate_model(model=perceptron, test_data=test_data, test_labels=test_labels, target_name=target_name, model_name="Perceptron")
 
