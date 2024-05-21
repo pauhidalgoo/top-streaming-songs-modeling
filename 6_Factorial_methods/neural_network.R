@@ -35,8 +35,8 @@ library(ROSE)
 target_name <- "explicit"
 
 # Define parameters for the execution
-load_acm_data <- TRUE
-balance_method <- "oversampling" 
+load_acm_data <- FALSE
+balance_method <- "weights" 
 # Possible values: "oversampling", "undersampling", weights"
 
 # ------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ early_stop <- callback_early_stopping(monitor = "val_loss", patience = 10, resto
 
 batch_size = 8
 
-activation_function = "relu"
+activation_function = "tanh"
 
 create_optimizer <- function(simple) {
   if (simple){
