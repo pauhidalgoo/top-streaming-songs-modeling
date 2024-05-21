@@ -1,6 +1,6 @@
 library(sf)
 
-load('data_coordenades.RData')
+load('./7_Geoespacial/data_coordenades.RData')
 my_sf <- st_read("./7_Geoespacial/ne_10m_populated_places.shp")
 plot(st_geometry(my_sf))
 
@@ -25,9 +25,10 @@ library(sf)
 library(ggplot2)
 library(leaflet)
 
-data_coordenades$full_address <- paste(data_coordenades$city, data_coordenades$nationality, sep = ", ")
-data_coords <- geocode(data_coordenades, address = full_address, method = "osm")
+data$full_address <- paste(data$city, data$nationality, sep = ", ")
+data_coords <- geocode(data, address = full_address, method = "osm")
 
+#Convertim el dataset a un objecte sf
 data_sf <- st_as_sf(data_coords, coords = c("longitude", "latitude"), crs = 4326, remove = FALSE)
 
 st_write(data_sf, "./7_Geoespacial/cities_shapefile.shp")
