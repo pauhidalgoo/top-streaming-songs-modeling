@@ -320,4 +320,40 @@ dev.off()
 
 # PROFILING USING WORDS --------------------
 
+library(tm)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 
+# Assuming td.mat is a TermDocumentMatrix object
+# Convert td.mat to a matrix
+td_mat <- as.matrix(td.mat)
+
+# Combine the term frequencies with the cluster information
+words_clusters <- cbind(cluster = unique_translated$textual_cluster, t(td_mat))
+
+# Convert the matrix to a data frame
+words_clusters_df <- as.data.frame(words_clusters)
+
+# Reshape the data frame to long format
+words_clusters_long <- pivot_longer(words_clusters_df, -cluster, names_to = "word", values_to = "frequency")
+
+# Summarize the frequencies by word and cluster
+top_words <- words_clusters_long %>%
+  group_by(cluster, word) %>%
+  summarize(total_frequency = sum(frequency), .groups = "drop") %>%
+  arrange(desc(total_frequency)) %>%
+  group_by(cluster) %>%
+  top_n(20)
+
+png(file=paste0(PATH_PLOTS, "/profiling_words_cluster.png"),
+    width=1920, height=1080, units="px", res=130)
+
+# Plot the top 20 words by cluster
+ggplot(top_words, aes(x = reorder(word, total_frequency), y = total_frequency, fill = factor(cluster))) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~cluster, scales = "free") +
+  coord_flip() +
+  labs(title = "Top 20 Most Frequent Words by Cluster", x = "Word", y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+dev.off()

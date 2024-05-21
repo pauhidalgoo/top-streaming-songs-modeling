@@ -1,9 +1,112 @@
+
+# BASICALLY A COPY OF Latent Semantic Baiges
+
+
 library(tm)
 library(lsa)
 library(LSAfun)
 library(SnowballC)
 
-load("./2_Descriptive_analysis/unique_tracks.RData")
+load("./8_Textual_analysis/unique_tracks_translated.RData")
+
+
+# Function to interpret user input and set filters
+interpret_request <- function(request) {
+  filters <- list()
+  
+  # Detect genre
+  genre_keywords <- list(
+    "pop" = "pop",
+    "hip_hop" = "hip hop|rap",
+    "rock" = "rock",
+    "electro" = "electro|electrónica|electronic",
+    "christmas" = "christmas",
+    "cinema" = "cinema",
+    "latino" = "latino|reggaetón|reggaeton"
+  )
+  
+  for (genre in names(genre_keywords)) {
+    if (grepl(genre_keywords[[genre]], tolower(request), ignore.case = TRUE)) {
+      filters$genre <- genre
+      break
+    }
+  }
+  
+  # Detect danceability
+  if (grepl("very danceable|muy bailable", request, ignore.case = TRUE)) {
+    filters$danceability <- 0.8
+  } else if (grepl("danceable|bailable", request, ignore.case = TRUE)) {
+    filters$danceability <- 0.65
+  }
+  
+  if (grepl("acoustic|acústica", request, ignore.case = TRUE)) {
+    filters$acousticness <- 0.3
+  }
+  
+  if (grepl("sad|triste", request, ignore.case = TRUE)) {
+    filters$valence <- 0.4
+  }
+  
+  # Detect explicit content
+  if (grepl("no explicit|not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
+    filters$explicit <- FALSE
+  } else if (grepl("explicit|explícita|explícito", request, ignore.case = TRUE)) {
+    filters$explicit <- TRUE
+  }
+  
+  # Detect country
+  unique_countries <- unique(unique_translated$nationality)
+  for (country in unique_countries) {
+    if (grepl(country, request, ignore.case = TRUE)) {
+      filters$country <- country
+      break
+    }
+  }
+  
+  # Detect artist
+  unique_artists <- unique(unique_translated$artist_name)
+  for (artist in unique_artists) {
+    if (grepl(artist, request, ignore.case = TRUE)) {
+      filters$artist <- artist
+      break
+    }
+  }
+  
+  # Detect gender
+  gender_keywords <- list(
+    "female" = "chica|mujer|girl|woman|female|chicas|mujeres|girls|women|females",
+    "male" = "chico|hombre|boy|man|male|chicos|hombres|boys|men|males",
+    "non-binary" = "non-binary|no binario|nonbinary|no binarios"
+  )
+  
+  for (gender in names(gender_keywords)) {
+    if (grepl(gender_keywords[[gender]], tolower(request), ignore.case = TRUE)) {
+      filters$gender <- gender
+      break
+    }
+  }
+  
+  # Detect language
+  language_keywords <- list(
+    "en" = "english|inglés|ingles",
+    "es" = "spanish|español|castellano|castellana",
+    "de" = "german|alemán|aleman",
+    "fr" = "french|francés|frances",
+    "ko" = "korean|coreano|coreana",
+    "ja" = "japanese|japonés|japones",
+    "kri" = "krio",
+    "pt" = "portuguese|portugués|portuguesa"
+  )
+  
+  for (language in names(language_keywords)) {
+    if (grepl(language_keywords[[language]], tolower(request), ignore.case = TRUE)) {
+      filters$language <- language
+      break
+    }
+  }
+  
+  return(filters)
+}
 
 # Function to clean the corpus
 clean_corpus <- function(corpus) {
@@ -26,11 +129,12 @@ extend_phrase <- function(phrase, min_length = 1500) {
 }
 
 # Main LSA function
-perform_lsa <- function(phrase, n = 5) {
-  track_names <- unique_tracks$track_name
-  uncleaned_corpus <- Corpus(VectorSource(unique_tracks$lyrics))
+perform_lsa <- function(phrase, request, n = 5) {
+  # Interpret the user request to set filters
+  filters <- interpret_request(request)
   
   # Clean the corpus
+  uncleaned_corpus <- Corpus(VectorSource(unique_translated$lyrics))
   clean_corpus_data <- clean_corpus(uncleaned_corpus)
   
   # Extend the phrase to the minimum length
@@ -42,7 +146,7 @@ perform_lsa <- function(phrase, n = 5) {
   
   # Create the term-document matrix
   td.mat <- TermDocumentMatrix(new_corpus)
-  min_freq <- ceiling(0.1 * length(track_names))
+  min_freq <- ceiling(0.1 * length(unique_translated$track_name))
   terms_freq_10 <- findFreqTerms(td.mat, lowfreq = min_freq)
   td.mat_freq_10 <- td.mat[terms_freq_10, ]
   td.mat <- as.matrix(td.mat_freq_10)
@@ -56,10 +160,108 @@ perform_lsa <- function(phrase, n = 5) {
   new_doc_vector <- results[, ncol(results)]
   similarities <- cosine(new_doc_vector, results[, -ncol(results)])
   
-  # Get top n most similar documents
-  top_n <- order(similarities, decreasing = TRUE)[1:n]
-  similar_docs <- track_names[top_n]
-  similar_ids <- unique_tracks$track_id[top_n]
-  llista <- list("documents" = similar_docs, "ids" = similar_ids) 
+  # Create a data frame with similarities and track details
+  similarity_df <- data.frame(
+    track_name = unique_translated$track_name,
+    track_id = unique_translated$track_id,
+    artist_name = unique_translated$artist_name,
+    acousticness = unique_translated$acousticness,
+    valence = unique_translated$valence,
+    similarity = similarities,
+    danceability = unique_translated$danceability,
+    explicit = unique_translated$explicit,
+    country = unique_translated$nationality,
+    gender = unique_translated$gender,
+    language = unique_translated$lyrics_language,
+    stringsAsFactors = FALSE
+  )
+  
+  # Add genre columns to similarity_df
+  genre_keywords <- list(
+    "pop" = "pop",
+    "hip_hop" = "hip hop|rap",
+    "rock" = "rock",
+    "electro" = "electro",
+    "christmas" = "christmas",
+    "cinema" = "cinema",
+    "latino" = "latino|reggaetón|reggaeton"
+  )
+  
+  for (genre in names(genre_keywords)) {
+    similarity_df[[genre]] <- unique_translated[[genre]]
+  }
+  
+  # Apply filters to the similarity data frame
+  if (!is.null(filters$genre)) {
+    similarity_df <- similarity_df[similarity_df[[filters$genre]] == TRUE, ]
+  }
+  
+  if (!is.null(filters$danceability)) {
+    similarity_df <- similarity_df[similarity_df$danceability >= filters$danceability, ]
+  }
+  
+  if (!is.null(filters$acousticness)) {
+    similarity_df <- similarity_df[similarity_df$acousticness >= filters$acousticness, ]
+  }
+  
+  if (!is.null(filters$valence)) {
+    similarity_df <- similarity_df[similarity_df$valence <= filters$valence, ]
+  }
+  
+  if (!is.null(filters$explicit)) {
+    similarity_df <- similarity_df[similarity_df$explicit == filters$explicit, ]
+  }
+  
+  if (!is.null(filters$country)) {
+    similarity_df <- similarity_df[similarity_df$country == filters$country, ]
+  }
+  
+  if (!is.null(filters$artist)) {
+    similarity_df <- similarity_df[similarity_df$artist_name == filters$artist, ]
+  }
+  
+  if (!is.null(filters$gender)) {
+    similarity_df <- similarity_df[similarity_df$gender == filters$gender, ]
+  }
+  
+  if (!is.null(filters$language)) {
+    similarity_df <- similarity_df[similarity_df$language == filters$language, ]
+  }
+  
+  # Order by similarity and get top n
+  similarity_df <- similarity_df[order(similarity_df$similarity, decreasing = TRUE), ]
+  top_n_df <- head(similarity_df, n)
+  
+  llista <- list("documents" = top_n_df$track_name, "ids" = top_n_df$track_id) 
   return(llista)
+}
+
+
+
+
+library("spotifyr")
+
+
+create_new_playlist <- function(track_ids, playlist_name, user_id) {
+  print("hello, its me")
+  # Authenticate with Spotify API
+  my_token <- spotifyr::get_spotify_authorization_code(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                                       client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"),
+                                                       scope = 'playlist-modify-public playlist-read-private')
+  my_token
+  # Create a new playlist
+  new_playlist <- create_playlist(user_id = user_id,
+                                  name = playlist_name,
+                                  public = TRUE,
+                                  collaborative = FALSE,
+                                  description = "Playlist created with LSA for PMAAD",
+                                  authorization  = my_token)
+  
+  # Add tracks to the playlist
+  add_tracks_to_playlist(playlist_id = new_playlist$id,
+                         uris = track_ids,
+                         position = NULL,
+                         authorization = my_token)
+  
+  cat("Playlist", playlist_name, "created successfully!\n")
 }

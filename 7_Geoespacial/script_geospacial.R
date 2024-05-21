@@ -84,6 +84,9 @@ data <- data %>%
 
 View(data)
 
+data <- as.data.frame(data)
+save(data, file = "./7_Geoespacial/data_coordenades.RData")
+
 
 #### ANNA CASANOVAS I ABRIL RISSO
 #### ModelizaciÃ³n de Datos Geoespaciales
@@ -105,65 +108,24 @@ rm(list.of.packages, new.packages)
 if (!require("rgdal")) install.packages("rgdal")
 
 library(rgdal)
+library("sp")
+library("sf")
 
-
-###MANEJO DE DATOS PARA ASIGNACION DE UTM usados en librerÃ­as de R
-### Ejemplo 1:
-### Convertir un punto con lat y long hacia el sistema UTM
-lat<-38.90
-lon<-(-120.71)
-### Punto ubicado en California, USA.
-cord.dec<-SpatialPoints(cbind(lon,lat),proj4string=CRS("+proj=longlat"))
-cord.dec
-cord.dec2<-coordinates(spTransform(cord.dec,CRS("+init=epsg:32610")))
-cord.dec2
-###epsg igual a 32610 es el cÃ³digo asociado que incluye el condado de el Dorado, CA-USA
-### http://www.gisandbeers.com/equivalencia-codigos-epsg-sistemas-referencia/#:~:text=El%20EPSG%204326%20corresponde%20al,obsoleto%20en%20la%20Pen%C3%ADnsula%20Ib%C3%A9rica.
-### Lo anterior puede usarse con un vector/tabla de latitudes y longitudes para
-
-### Ejemplo 2:
-# create data with coordinates given by longitude and latitude
-d <- data.frame(long = rnorm(100, 0, 1), lat = rnorm(100, 0, 1))
-coordinates(d) <- c("long", "lat")
-
-# assign CRS WGS84 longitude/latitude
-proj4string(d) <- CRS("+proj=longlat +ellps=WGS84
-                      +datum=WGS84 +no_defs")
-
-# reproject data from longitude/latitude to UTM zone 35 south
-d_new <- spTransform(d, CRS("+proj=utm +zone=35 +ellps=WGS84
-                      +datum=WGS84 +units=m +no_defs +south"))
-d_new$UTMx <- coordinates(d_new)[, 1]
-d_new$UTMy <- coordinates(d_new)[, 2]
-
-###Ejemplo 3:
-states <- data.frame(state.x77, state.center)
-head(states)
-states <- states[states$x > -121,]
-coordinates(states) <- c("x", "y")
-proj4string(states) <- CRS("+proj=longlat +ellps=clrk66")
-summary(states)
-state.ll83 <- spTransform(states, CRS("+proj=longlat +ellps=GRS80"))
-summary(state.ll83)
-state.merc <- spTransform(states, CRS=CRS("+proj=merc +ellps=GRS80"))
-state.merc <- spTransform(states, CRS=CRS("+proj=merc +ellps=GRS80 +units=us-mi"))
-summary(state.merc)
+load('data_coordenades.RData')
 
 ###### MODELADO Datos Tipo I : GeoestadÃ­stica (Variogramas & Kriging)
 #########Ejemplo 1
-data(meuse)
-str(meuse) # Study focus on ZINC
-hist(meuse$zinc, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
-meuse$logZn <- log10(meuse$zinc)
-hist(meuse$logZn, breaks = 16)
+hist(data$artist_followers, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
+#data$logartist_followers <- log10(data$artist_followers)
+#hist(data$logartist_followers, breaks = 16)
 
-coordinates(meuse) <- c("x", "y")
-class(meuse)
-str(meuse)
+coordinates(data) <- c("latitude", "longitude")
+class(data)
+str(data)
 
 #Visualizar datos. Los puntos no estÃ¡n regularmente distribuidos, 
 #sino que son mas densos en la cercanÃ­a del rÃ­o.
-plot(meuse, asp = 1, pch = 1) #asp=1 las dos escalas son iguales
+plot(data, asp = 1, pch = 1) #asp=1 las dos escalas son iguales
 #cargar otro conjunto de datos llamado meuse.riv que contiene lineas de las mÃ¡rgenes del rÃ­o.
 data(meuse.riv)
 lines(meuse.riv)

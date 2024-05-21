@@ -24,29 +24,31 @@ server <- function(input, output, session) {
   })
   
   output$artist_image <- renderUI({
+    v <- terms()
     selected_track <- images_unique[images_unique$track_name == input$selection, ]
     img_path <- selected_track$artist_img
-    if (!is.null(img_path)) {
+    if (!is.null(img_path) && img_path != "") {
       img_tag <- tags$img(src = img_path, width = "50%")
-      img_tag
-    }
-    else{
+    } else {
       img_tag <- tags$img(src = "./GUI/error.png", width = "50%")
-      img_tag
     }
+    tags$div(style = "text-align: center;", img_tag)
   })
+
   
   playlist <- reactive({
     # Change when the "playlist" button is pressed...
     input$playlist
+    
     # ...but not for anything else
     req(input$playlist)
     isolate({
       withProgress({
         setProgress(message = "Creating playlist...")
         print(input$text)
-        top_similar_docs <- perform_lsa(input$text, n=30)
+        top_similar_docs <- perform_lsa(input$text, input$request, n=30)
         top_similar_ids1 <- top_similar_docs$ids
+        saveRDS(top_similar_ids1, "./GUI/playlist_ids.rds")
         top_similar_docs <- top_similar_docs$documents
         print(top_similar_docs)
         top_similar_ids1
@@ -83,6 +85,78 @@ server <- function(input, output, session) {
     
     # Return the playlist container
     playlist_container
+  })
+  
+  spotify_publish <- reactive({
+    # Change when the "playlist" button is pressed...
+    input$spotify
+    # ...but not for anything else
+    req(input$spotify)
+    req(input$playlist_name)
+    req(input$user_id)
+    playlist_data <- readRDS("./GUI/playlist_ids.rds")
+    isolate({
+      withProgress({
+        setProgress(message = "Publishing playlist to spotify...")
+        print(input$playlist_name)
+        create_new_playlist(playlist_data, input$playlist_name, input$user_id)
+      })
+    })
+    
+  })
+  
+  output$spotify_done <- renderUI({
+    a <- spotify_publish()
+    tags$h3("Playlist created successfully!")
+  })
+  
+  
+  genre <- reactive({
+    # Change when the "playlist" button is pressed...
+    input$genre
+    
+    # ...but not for anything else
+    req(input$genre)
+    isolate({
+      withProgress({
+        setProgress(message = "Predicting genre...")
+        print(input$genre_text)
+        predicted_genre <- predict_genre(input$genre_text, 5, lsa_prep)
+        predicted_genre
+      })
+    })
+  })
+  
+  output$genre_output <- renderUI({
+    genre_name <- genre()  # Assuming playlist() returns a list of track indices
+    tags$h2(genre_name)
+  })
+  
+  
+  filtered_data <- reactive({
+    req(input$genres)  # Ensure there is at least one genre selected
+    
+    filtered_df <- artists_data %>%
+      filter_at(vars(genre_columns), any_vars(. == TRUE))
+    
+  })
+  
+  
+  output$map <- renderLeaflet({
+    data <- filtered_data()
+    
+    
+    leafIcons <- icons(
+      iconUrl = data$artist_image,
+      iconWidth = 50, iconHeight = 50
+    )
+    
+    
+    leaflet(data) %>%
+      addTiles() %>%
+      addMarkers(~longitude, ~latitude, popup = ~as.character(city), label = ~as.character(artist_name), clusterOptions = markerClusterOptions(), icon = leafIcons) %>%
+      setView(lng = mean(range(data$longitude, na.rm = TRUE)), 
+              lat = mean(range(data$latitude, na.rm = TRUE)), zoom = 3)
   })
 }
 
