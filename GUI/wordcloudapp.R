@@ -1,5 +1,7 @@
 library(shiny)
 library(leaflet)
+library(dplyr)
+library(sf)
 source("./GUI/api_configuration.R")
 source("./GUI/global.R")
 source("./GUI/predict_playlist.R")

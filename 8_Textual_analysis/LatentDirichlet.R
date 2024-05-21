@@ -62,7 +62,7 @@ corpus <- preprocess(uncleaned_corpus)
 # Creación  de la TermDocMatrix
 corpus
 
-td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(global = c(5, Inf))))
+td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(bounds = list(global = c(10, Inf)))))
 dim(td.mat)
 
 td.mat
@@ -285,9 +285,32 @@ as.data.frame(years, topics)
 
 
 
+# PAU ----------------------------
+
+matriu <- as.matrix(ap_topics)
 
 
+doc_topics <- tidy(ap_lda, matrix = "gamma")
+ap_topics
 
+matriu <- as.matrix(doc_topics)
+
+dist.mat.lsa <- dist((as.textmatrix(matriu))) # compute distance matrix
+dist.mat.lsa # check distance matrix for TERMS
+fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
+points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
+
+
+png(file=paste0(PATH_PLOTS, "/words_space.png"),
+    width=1920, height=1080, units="px", res=130)
+
+
+ggplot(points,aes(x=x, y=y)) + 
+  geom_point(data=points,aes(x=x, y=y)) + 
+  geom_text(data=points,aes(x=x, y=y-0.2, label=row.names(points)))
+points <- data.frame(x=fit)
+
+dev.off()
 
 
 

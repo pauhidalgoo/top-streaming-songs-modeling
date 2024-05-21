@@ -38,7 +38,7 @@ clean_corpus <- tm_map(clean_corpus, stripWhitespace)
 
 old_clean_corpus <- clean_corpus
 # Customize your own list of words for removal
-clean_corpus <- tm_map(clean_corpus, removeWords, c("tis"))
+clean_corpus <- tm_map(clean_corpus, removeWords, c("yeah"))
 
 writeLines(head(strwrap(clean_corpus[[1]]), 7))
 
@@ -112,6 +112,8 @@ multicos(list1,tvectors = results)
 # trace(plot_doclist, edit = T) (he canviat la funció de la llibreria)
 # canvia els noms dels documents i la funció de plot
 
+lsaSpace$tk
+
 
 doc_texts <- sapply(old_clean_corpus, paste, collapse = " ")
 
@@ -125,11 +127,110 @@ plot_doclist(doc_texts, tvectors=results_with_names, method="MDS", dims=2)
 
 dev.off()
 
+
+dist.mat <- dist(t(as.matrix(td.mat)))
+fit <- cmdscale(dist.mat, eig=TRUE, k=2)
+points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
+
+png(file=paste0(PATH_PLOTS, "/distances_tdm_all.png"),
+    width=1920, height=1080, units="px", res=130)
+
+points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
+ggplot(points,aes(x=x, y=y)) + 
+  geom_point(data=points,aes(x=x, y=y, color=points$view)) + 
+  geom_text(data=points,aes(x=x, y=y-0.2, label=track_names))
+
+dev.off()
+
+png(file=paste0(PATH_PLOTS, "/lsa_default_space.png"),
+    width=1920, height=1080, units="px", res=130)
+plot(lsaSpace$dk[, 1], lsaSpace$dk[, 2], type = "n")
+text(lsaSpace$dk[, 1], lsaSpace$dk[, 2], labels = track_names)
+dev.off()
+
+png(file=paste0(PATH_PLOTS, "/lsa_default_space_words.png"),
+    width=1920, height=1080, units="px", res=130)
+plot(lsaSpace$tk[, 1], lsaSpace$tk[, 2], type = "n")
+text(lsaSpace$tk[, 1], lsaSpace$tk[, 2], labels = rownames(td.mat))
+dev.off()
+
+# TOPICS 
+document_vectors <- as.data.frame(lsaSpace$dk)
+term_vectors <- as.data.frame(lsaSpace$tk)
+rownames(document_vectors) <- track_names
+library(tidytext)
+library(dplyr)
+library(SnowballC)
+library(tm)
+library(SnowballC)
+library(lsa)
+library(ggplot2)
+library(tidyr)
+
+terms_matrix <- as.data.frame(lsaSpace$tk)
+colnames(terms_matrix) <- paste0("Topic", 1:ncol(terms_matrix))
+terms_matrix$term <- rownames(terms_matrix)
+
+lsaSpace$sk
+
+terms_long <- terms_matrix %>%
+  gather(topic, value, -term) %>%
+  mutate(topic = as.integer(gsub("Topic", "", topic))) %>%
+  filter(topic <= 9)  %>%
+  group_by(topic) %>%
+  top_n(10, abs(value)) %>%
+  ungroup() %>%
+  arrange(topic, -abs(value))
+
+terms_long$term <- reorder_within(terms_long$term, terms_long$value, terms_long$topic)
+
+png(file=paste0(PATH_PLOTS, "/lsa_topics_1_9.png"),
+    width=1920, height=1080, units="px", res=130)
+
+terms_long %>%
+  ggplot(aes(x = value, y = term, fill = topic)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(title = "Top Terms in Each Topic",
+       x = "Contribution",
+       y = "Term")
+dev.off()
+
+
+# Gather data for ggplot
+terms_long <- terms_matrix %>%
+  gather(topic, value, -term) %>%
+  mutate(topic = as.integer(gsub("Topic", "", topic))) %>%
+  filter(topic <= 22) %>%
+  filter(topic > 10) %>%
+  group_by(topic) %>%
+  top_n(10, abs(value)) %>%
+  ungroup() %>%
+  arrange(topic, -abs(value))
+
+terms_long$term <- reorder_within(terms_long$term, terms_long$value, terms_long$topic)
+
+png(file=paste0(PATH_PLOTS, "/lsa_topics_10_22.png"),
+    width=1920, height=1080, units="px", res=130)
+
+terms_long %>%
+  ggplot(aes(x = value, y = term, fill = topic)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered() +
+  labs(title = "Top Terms in Each Topic",
+       x = "Contribution",
+       y = "Term")
+
+dev.off()
+
+
 library(ggrepel)
 
 dist.mat.lsa <- dist(t(as.textmatrix(lsaSpace))) # compute distance matrix
 dist.mat.lsa # check distance matrix for DOCUMENTS
-fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=2)
+fit <- cmdscale(dist.mat.lsa, eig=TRUE, k=9)
 points <- data.frame(x=fit$points[, 1], y=fit$points[, 2])
 
 png(file=paste0(PATH_PLOTS, "/distances_all.png"),
@@ -154,6 +255,22 @@ ggplot(points, aes(x=x, y=y)) +
   theme_minimal()
 
 dev.off()
+
+png(file=paste0(PATH_PLOTS, "/distances_outliers_34.png"),
+    width=1920, height=1080, units="px", res=130)
+
+points34 <- data.frame(x=fit$points[, 3], y=fit$points[, 4])
+ggplot(points34, aes(x=x, y=y)) + 
+  geom_point(aes(color=points34$view)) + 
+  geom_text_repel(aes(label=track_names), 
+                  nudge_y = -0.2, 
+                  box.padding = 0.3, 
+                  point.padding = 0.3, 
+                  segment.color = 'grey50') +
+  theme_minimal()
+
+dev.off()
+
 
 png(file=paste0(PATH_PLOTS, "/distances_readable.png"),
     width=1920, height=1080, units="px", res=130)

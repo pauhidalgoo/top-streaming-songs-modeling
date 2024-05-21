@@ -1,93 +1,3 @@
-load('final_d3_data.RData')
-library(httr)
-library(jsonlite)
-library(dplyr) # para manipulación de dataframes
-
-###### MANUALMENT, ARREGLEM ELS UNKNOWNS i LES NO DETECTADES COM A CIUTAT #######
-
-data$city <- as.character(data$city)
-data$nationality <- as.character(data$nationality)
-
-data$nationality <- ifelse(data$nationality == "Puerto Rico", "PuertoRico", data$nationality)
-data$city <- ifelse(data$city == "Edwards Air Force Base", "Edwards", data$city)
-data$city <- ifelse(data$city == "Teton County", "Jackson", data$city)
-data$city <- ifelse(data$city == "Jasper County", "Rensselaer", data$city)
-
-unknown_city_artists <- data %>%
-  filter(city == "Unknown") %>%
-  select(artist_name, nationality) %>%
-  distinct()
-print(unknown_city_artists)
-
-correct_info <- data.frame(
-  artist_name = c("Band Aid", "Tyler, The Creator", "Dan + Shay", "NAV", "DripReport", "StaySolidRocky", "Internet Money", "ATB"),
-  city = c("London", "Los Angeles", "Nashville", "Toronto", "Atlanta", "Richmond", "Los Angeles", "Freiburg"),
-  nationality = c("United Kingdom", "United States", "United States", "Canada", "United States", "United States", "United States", "Germany"),
-  stringsAsFactors = FALSE
-)
-
-data$artist_name <- as.character(data$artist_name)
-
-data <- data %>%
-  left_join(correct_info, by = "artist_name", suffix = c("", ".corrected")) %>%
-  mutate(
-    city = ifelse(!is.na(city.corrected), city.corrected, city),
-    nationality = ifelse(!is.na(nationality.corrected), nationality.corrected, nationality)
-  ) %>%
-  select(-city.corrected, -nationality.corrected)
-
-####################### LATITUD I LONGITUD ############################
-
-api_key <- "XAv1H8bp0iD+snw9znO3XA==g8KXgtstezF2zl2A"
-
-# Crear un conjunto único de combinaciones city, nationality
-unique_locations <- data %>%
-  select(city, nationality) %>%
-  distinct()
-
-# Añadir columnas para latitud y longitud
-unique_locations$latitude <- NA
-unique_locations$longitude <- NA
-
-# Obtener coordenadas para combinaciones únicas
-for (i in 1:nrow(unique_locations))  {
-  city <- as.character(unique_locations$city[i])
-  country <- as.character(unique_locations$nationality[i])
-  city <- URLencode(city)
-  country <- URLencode(country)  # Asegúrate de que la columna se llama 'nationality'
-  
-  api_url <- sprintf('https://api.api-ninjas.com/v1/geocoding?city=%s&country=%s', city, country)
-  
-  # Realizar la solicitud GET
-  response <- GET(url = api_url, add_headers(`X-Api-Key` = api_key))
-  
-  # Verificar el estado de la respuesta y procesar el JSON
-  if (status_code(response) == 200) {
-    dades <- fromJSON(content(response, "text", encoding = "UTF-8"))
-    if (length(dades) > 0) {  # Comprobar que la respuesta contiene datos
-      first_proposal <- dades[1,]  # Tomar la primera propuesta
-      unique_locations$latitude[i] <- first_proposal$latitude
-      unique_locations$longitude[i] <- first_proposal$longitude
-    } else {
-      print(sprintf("No data returned for row %s: city = %s, country = %s", i, city, country))
-    }
-  } else {
-    print(sprintf("Error in row %s: %s %s", i, status_code(response), content(response, "text", encoding = "UTF-8")))
-  }
-  
-  #Sys.sleep(1)
-}
-
-# Unir las coordenadas con el dataframe original
-data <- data %>%
-  left_join(unique_locations, by = c("city", "nationality"))
-
-View(data)
-
-data <- as.data.frame(data)
-save(data, file = "./7_Geoespacial/data_coordenades.RData")
-
-
 #### ANNA CASANOVAS I ABRIL RISSO
 #### ModelizaciÃ³n de Datos Geoespaciales
 
@@ -107,9 +17,23 @@ rm(list.of.packages, new.packages)
 
 if (!require("rgdal")) install.packages("rgdal")
 
-library(rgdal)
+install.packages("rgdal")
+
+library("rgdal")
 library("sp")
 library("sf")
+
+# Instalar paquetes si no están instalados
+if (!require("sf")) install.packages("sf")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("dplyr")) install.packages("dplyr")
+
+# Cargar los paquetes
+library(sf)
+library(ggplot2)
+library(dplyr)
+
+
 
 load('data_coordenades.RData')
 
@@ -123,38 +47,63 @@ coordinates(data) <- c("latitude", "longitude")
 class(data)
 str(data)
 
-#Visualizar datos. Los puntos no estÃ¡n regularmente distribuidos, 
-#sino que son mas densos en la cercanÃ­a del rÃ­o.
-plot(data, asp = 1, pch = 1) #asp=1 las dos escalas son iguales
-#cargar otro conjunto de datos llamado meuse.riv que contiene lineas de las mÃ¡rgenes del rÃ­o.
-data(meuse.riv)
-lines(meuse.riv)
+# AQUÍ VA LA VISUALITZAR EL MAPA DEL MON I ELS PUNTS QUE APAREIXEN ALLÀ DE COLOR VERD
 
-#Otra visualizaciÃ³n con sÃ­mbolos proporcionales
-plot(meuse, asp = 1, cex = 4 * meuse$zinc/max(meuse$zinc),pch = 1) 
-#cex tamaÃ±o de circulos proporcionales al valor
-lines(meuse.riv)
+library(sf)
+library(ggplot2)
+library(dplyr)
 
-#La dependencia espacial local significa que cuanto mas cerca estÃ©n los puntos en el espacio geogrÃ¡fico,
-# mas cerca tambiÃ©n lo estÃ¡n en el espacio de atributos. Esto se llama autocorrelaciÃ³n.
-#Los valores de un atributo pueden estar correlacionados con si mismos, y la fuerza de esta correlaciÃ³n
-#depende de la distancia de separaciÃ³n entre puntos.
-#Cada par de puntos, estarÃ¡ separado por una distancia en el espacio geogrÃ¡fico
-#y una semivarianza en el espacio de atributos.
+# Cargar los datos
+load('./7_Geoespacial/data_coordenades.RData')
+
+# Ruta a los archivos del shapefile
+world_cities <- st_read(dsn = "./7_Geoespacial", layer = "countries_map")
+
+# Asegurarse de que world_cities tiene un CRS definido
+if (is.na(st_crs(world_cities))) {
+  st_crs(world_cities) <- 4326  # Asignar CRS WGS 84 si no está definido
+}
+
+# Preparar los datos de coordenadas en formato sf
+spotify_data <- data  # Asumiendo que 'data' es tu dataframe
+
+# Verificar y asignar CRS a data_sf
+data_sf <- st_as_sf(spotify_data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+
+# Asegurarse de que ambos objetos sf tienen el mismo CRS
+world_cities <- st_transform(world_cities, crs = st_crs(data_sf))
+
+# Crear el mapa con ggplot2
+ggplot() +
+  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuja el shapefile
+  geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Añade los puntos sobre el mapa
+  theme_minimal() +
+  labs(title = "Mapa con Puntos de Datos")
 
 #Calcule cuÃ¡ntos pares de puntos hay en el dataset meuse.
-n <- length(meuse$logZn)
+n <- length(data$artist_followers)
 n * (n - 1)/2
 
-#calcule la distancia y semivarianza entre los dos puntos primeros puntos del dataset
-coordinates(meuse)[1, ]#punto 1
-coordinates(meuse)[2, ]#punto 2
-sep <- dist(coordinates(meuse)[1:2, ])
-sep #distancia
-gamma <- 0.5 * (meuse$logZn[1] - meuse$logZn[2])^2 # semivarianza, unidades log(mg kg-1)^2
-gamma
+coordinates(data) <- ~longitude + latitude
+head(coordinates(data))
 
-ve <- variogram(logZn ~ 1, meuse, cutoff = 1300,width = 90)
+# Coordenadas de los dos primeros puntos
+coord1 <- coordinates(data)[1, ]
+coord2 <- coordinates(data)[2, ]
+
+# Calcular la distancia entre los dos primeros puntos
+sep <- dist(rbind(coord1, coord2))
+print(sep) # distancia
+
+# Calcular la semivarianza entre los valores de artist_followers
+gamma <- 0.5 * (data$artist_followers[1] - data$artist_followers[2])^2
+print(gamma)
+
+ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
+print(ve)
+
+plot(ve)
+
 #variogram: genera la nube de variograma. logZn ~ 1: logZn es dependiente de si misma â€“> autocorrelaciÃ³n.
 #Por defecto (si no se especifica cutoff y with) el cutoff es 1/3
 #de la mÃ¡xima distancia (diagonal del bbox). Esto es dividido en 15
@@ -188,6 +137,147 @@ plot(ve, pl = T, model = vt)
 va <- fit.variogram(ve, vt) 
 va
 plot(ve, pl = T, model = va)
+
+######### COM EM DONA RARO HO REPETEIXO
+
+summary(data$artist_followers)
+boxplot(data$artist_followers, main = "Boxplot de artist_followers")
+plot(data$longitude, data$latitude, main = "Distribución espacial de los datos", xlab = "Longitud", ylab = "Latitud")
+
+data$artist_followers_scaled <- scale(data$artist_followers)
+
+ve_scaled <- variogram(artist_followers_scaled ~ 1, data, cutoff = 1300, width = 90)
+plot(ve_scaled)
+
+va <- fit.variogram(ve_scaled, model = vgm(1, "Sph", 300, 1))
+plot(ve_scaled, model = va)
+data$log_artist_followers <- log10(data$artist_followers)
+ve_log <- variogram(log_artist_followers ~ 1, data, cutoff = 1300, width = 90)
+plot(ve_log)
+
+
+
+################# ALTRES COSES (no funciona)
+# Cargar los paquetes necesarios
+install.packages("sp")
+install.packages("gstat")
+library(sp)
+library(gstat)
+
+# Supongamos que ya tienes tu conjunto de datos cargado en 'data'
+# data <- read.csv("path_to_your_data.csv")
+
+# Convertir 'data' a un objeto 'SpatialPointsDataFrame'
+coordinates(data) <- ~longitude + latitude
+
+# Verificar las coordenadas
+head(coordinates(data))
+
+# Crear una malla regular para la interpolación con una resolución más baja
+long_range <- range(data$longitude)
+lat_range <- range(data$latitude)
+
+# Definir una resolución de malla más baja
+resolution <- 0.1 # Ajusta según sea necesario, aumentando el valor reduce el número de puntos
+
+# Crear la malla
+long_seq <- seq(long_range[1], long_range[2], by = resolution)
+lat_seq <- seq(lat_range[1], lat_range[2], by = resolution)
+grid <- expand.grid(longitude = long_seq, latitude = lat_seq)
+
+# Convertir la malla en un objeto SpatialPixelsDataFrame
+coordinates(grid) <- ~longitude + latitude
+gridded(grid) <- TRUE
+
+# Verificar la estructura de la malla
+str(grid)
+
+# Calcular el semivariograma y ajustar un modelo
+ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
+va <- fit.variogram(ve, model = vgm(1, "Sph", 300, 1))
+plot(ve, model = va)
+
+# Realizar kriging ordinario
+ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = va)
+ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
+str(ok)
+
+# Visualización
+pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$artist_followers / max(data$artist_followers))
+print(spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
+             main = "Predicción OK, Artist Followers", sp.layout = list(pts.s)), 
+      split = c(1, 1, 2, 1), more = TRUE)
+pts.s <- list("sp.points", data, col = "black", pch = 20)
+print(spplot(ok, zcol = "var1.var", col.regions = rev(gray(seq(0, 1, .01))), asp = 1,
+             main = "Varianza OK, Artist Followers^2", sp.layout = list(pts.s)), 
+      split = c(2, 1, 2, 1), more = FALSE)
+
+
+
+
+
+load('data_coordenades.RData')
+
+install.packages("sp")
+install.packages("gstat")
+library(sp)
+library(gstat)
+
+coordinates(data) <- ~longitude + latitude
+
+# Crear una malla regular para la interpolación
+long_range <- range(data$longitude)
+lat_range <- range(data$latitude)
+
+# Definir la resolución de la malla (ajusta según sea necesario)
+resolution <- 0.01 # Grados, ajusta según sea necesario
+
+# Crear la malla
+long_seq <- seq(long_range[1], long_range[2], by = resolution)
+lat_seq <- seq(lat_range[1], lat_range[2], by = resolution)
+grid <- expand.grid(longitude = long_seq, latitude = lat_seq)
+
+coordinates(grid) <- ~longitude + latitude
+gridded(grid) <- TRUE
+
+ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
+# Ajustar un modelo a los datos del variograma
+va <- fit.variogram(ve, model = vgm(1, "Sph", 300, 1))
+
+# Realizar kriging ordinario
+ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = va)
+ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
+str(ok)
+
+# Visualización
+pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$artist_followers / max(data$artist_followers))
+print(spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
+             main = "Predicción OK, Artist Followers", sp.layout = list(pts.s)), 
+      split = c(1, 1, 2, 1), more = TRUE)
+pts.s <- list("sp.points", data, col = "black", pch = 20)
+print(spplot(ok, zcol = "var1.var", col.regions = rev(gray(seq(0, 1, .01))), asp = 1,
+             main = "Varianza OK, Artist Followers^2", sp.layout = list(pts.s)), 
+      split = c(2, 1, 2, 1), more = FALSE)
+ok.cv.a <- krige.cv(artist_followers ~ 1, locations = data, model = va)
+print(plot(var1.pred ~ observed, ok.cv.a, main = "OK"), split = c(3, 1, 2, 1), more = FALSE)
+print(cor(ok.cv.a$var1.pred, ok.cv.a$observed)) # Idealmente cercano a 1
+print(mean(ok.cv.a$residual)) # Idealmente cercano a 0
+print(sd(ok.cv.a$residual)) # Idealmente pequeño
+boxplot(ok.cv.a$residual, main = "Modelo en la variable llamado como OK")
+
+# MSPE (mean square predictor error), idealmente pequeño
+print(mean(ok.cv.a$residual^2))
+
+# Error medio cuadrático (RMSE) es una medida general. Idealmente pequeño
+print(sqrt(sum(ok.cv.a$residual^2) / length(ok.cv.a$residual)))
+print(var(ok.cv.a$residual, na.rm = TRUE)) # Idealmente pequeño
+
+
+
+
+
+
+
 ####InterpolaciÃ³n
 ###################     Kriging ordinario
 
@@ -386,38 +476,40 @@ spersp(xx, yy, ko.wls$predict, theta=-60, phi=40)
 #https://kevintshoemaker.github.io/NRES-746/sppm.html
 #https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
 
+
+
+
+
 #### EXAMPLE with a transactional report of crimes in USA
 ### MODELLING DENSITY and INTENSITY
 
-data(crime)
-head(crime)
-crime <- crime[complete.cases(crime), ]
-ggplot(crime, aes(x = lon, y = lat)) + 
+
+# Crear un objeto sf para tus datos
+data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
+
+# Crear el mapa de fondo y añadir tus datos
+ggplot() +
+  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuja el shapefile
+  stat_density2d(aes(x = longitude, y = latitude, fill = ..level..), 
+                 alpha = .5, geom = "polygon", data = data) + 
+  scale_fill_viridis_c() + 
+  coord_sf() + 
+  theme_minimal() +
+  labs(title = "Mapa con Puntos de Datos", x = "Longitude", y = "Latitude") +
+  theme(legend.position = 'none')
+
+library(ggplot2)
+head(data)
+# treure NA
+ggplot(data, aes(x = longitude, y = latitude)) + 
   coord_equal() + 
   xlab('Longitude') + 
   ylab('Latitude') + 
   stat_density2d(aes(fill = ..level..), alpha = .5,
-                 geom = "polygon", data = crime) + 
+                 geom = "polygon", data = data) + 
   scale_fill_viridis_c() + 
   theme(legend.position = 'none')
 
-ggplot(crime, aes(x = lon, y = lat)) + 
-  coord_equal() + 
-  xlab('Longitude') + 
-  ylab('Latitude') + 
-  stat_density2d(aes(fill = ..level..), alpha = .5,
-                 h = .02, n = 300,
-                 geom = "polygon", data = crime) + 
-  scale_fill_viridis_c() + 
-  theme(legend.position = 'none')
-
-ggplot(crime, aes(x = lon, y = lat)) + 
-  geom_point(size = 0.1, alpha = 0.05) + 
-  coord_equal() + 
-  xlab('Longitude') + 
-  ylab('Latitude') + 
-  coord_cartesian(xlim = c(-95.1, -95.7), 
-                  ylim = c(29.5, 30.1))
 
 # plot a ggmap basemap
 ## us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
@@ -425,7 +517,19 @@ ggplot(crime, aes(x = lon, y = lat)) +
 ## plot(map)
 ## scatterplot_murder <- qmplot(x=lon,y=lat,data=filter(crime,offense=="murder"),legend="none",color=I("darkred"))
 ## plot(scatterplot_murder)
+install.packages("ggplot2")
+install.packages("sf")
+install.packages("viridis")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
 
+library(ggplot2)
+library(sf)
+library(viridis)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+data(crime)
 us <- map_data("state")
 murder_data <- filter(crime, offense == "murder")
 # Crear el mapa base con ggplot2
@@ -466,3 +570,62 @@ basemap <- get_map(location = "Houston, TX", zoom = 9)
 # and use same code and also examples in https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
 
 ####################################################
+
+
+
+####################################################
+## MAPA INTERACTIU QUE ET DIU LA INTENSITAT DE ARTIST_FOLLOWERS
+####################################################
+
+
+# Supongamos que tus datos están en un data.frame llamado 'spotify_data'
+# Asegúrate de que contiene las columnas 'longitude', 'latitude', 'artist', 'artist_popularity'
+# Aquí hay un ejemplo simplificado de tus datos
+
+install.packages("viridis")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("leaflet")
+library(ggplot2)
+library(sf)
+library(viridis)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(leaflet)
+spotify_data <- data.frame(
+  artist = c("Artist1", "Artist2", "Artist3"),
+  artist_popularity = c(85, 78, 90),
+  longitude = c(-3.7038, -0.1276, 2.3522),
+  latitude = c(40.4168, 51.5074, 48.8566)
+)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+# Crear un objeto sf para tus datos
+spotify_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
+
+# Crear el mapa
+ggplot() +
+  geom_sf(data = world, fill = "white", color = "black") +  # Dibuja el mapa de fondo
+  geom_sf(data = spotify_sf, aes(size = artist_popularity, color = artist_popularity), alpha = 0.6) + 
+  scale_color_viridis_c() + 
+  coord_sf() + 
+  theme_minimal() +
+  labs(title = "Mapa de Popularidad de Artistas", x = "Longitude", y = "Latitude") +
+  theme(legend.position = 'right')
+
+# Mapa interactivo con leaflet
+leaflet(data = spotify_sf) %>%
+  addTiles() %>%
+  addCircleMarkers(~longitude, ~latitude,
+                   radius = ~artist_popularity / 10,
+                   color = ~viridis::viridis(100)[artist_popularity],
+                   popup = ~paste("Artist:", artist, "<br>Popularity:", artist_popularity),
+                   fillOpacity = 0.7)
+leaflet(data = spotify_sf) %>%
+  addTiles() %>%
+  addCircleMarkers(
+    radius = ~artist_popularity / 10,
+    color = ~viridis::viridis(100)[artist_popularity],
+    popup = ~paste("Artist:", artist, "<br>Popularity:", artist_popularity),
+    fillOpacity = 0.7
+  )
+
