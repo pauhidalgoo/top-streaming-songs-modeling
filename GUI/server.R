@@ -132,20 +132,29 @@ server <- function(input, output, session) {
     tags$h2(genre_name)
   })
   
-  artists_data <- readRDS("./7_Geoespacial/artists_data.rds")
+  
   filtered_data <- reactive({
     req(input$genres)  # Ensure there is at least one genre selected
     
     filtered_df <- artists_data %>%
-      filter_at(vars(input$genres), any_vars(. == TRUE))
+      filter_at(vars(genre_columns), any_vars(. == TRUE))
+    
   })
+  
   
   output$map <- renderLeaflet({
     data <- filtered_data()
     
+    
+    leafIcons <- icons(
+      iconUrl = data$artist_image,
+      iconWidth = 50, iconHeight = 50
+    )
+    
+    
     leaflet(data) %>%
       addTiles() %>%
-      addMarkers(~longitude, ~latitude, popup = ~as.character(city), label = ~as.character(city), clusterOptions = markerClusterOptions()) %>%
+      addMarkers(~longitude, ~latitude, popup = ~as.character(city), label = ~as.character(artist_name), clusterOptions = markerClusterOptions(), icon = leafIcons) %>%
       setView(lng = mean(range(data$longitude, na.rm = TRUE)), 
               lat = mean(range(data$latitude, na.rm = TRUE)), zoom = 3)
   })
