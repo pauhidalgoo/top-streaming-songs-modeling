@@ -135,31 +135,40 @@ document_topics$predominant_topic <- as.integer(document_topics$predominant_topi
 document_topics$year_release <- as.numeric(as.character(unique_tracks$year_release))
 document_topics$month_release <- as.numeric(as.character(unique_tracks$month_release))
 
+View(document_topics)
 
-document_topics <- document_topics %>%
-  mutate(season = case_when(
-    month_release %in% c(3, 4, 5) ~ "P",
-    month_release %in% c(6, 7, 8) ~ "V",
-    month_release %in% c(9, 10, 11) ~ "O",
-    TRUE ~ "I"
-  ))
+dc_cpy <- document_topics
+
+
+
+dc_cpy <- dc_cpy %>% 
+  mutate(
+  year_season = ifelse(month_release %in% c(12), year_release + 1, year_release)
+  )
+
+dc_cpy <- dc_cpy %>%  mutate(season = case_when(
+  month_release %in% c(1, 2, 12) ~ "1",
+  month_release %in% c(3, 4, 5) ~ "2",
+  month_release %in% c(6, 7, 8) ~ "3",
+  month_release %in% c(9,10,11) ~ "4"
+))
 
 
 
 
 # Paso 1: Contar la cantidad de productos por año y tópico
-count_data <- document_topics %>%
-  dplyr::count(year_release, month_release, predominant_topic, name = "count")
+count_data <- dc_cpy %>%
+  dplyr::count(year_season, season, predominant_topic, name = "count")
 
 count_data$predominant_topic <- as.factor(count_data$predominant_topic)
 
-count_data <- count_data[count_data[,"year_release"]>2015,]
+count_data <- count_data[count_data[,"year_season"]>2015,]
 
 
 my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#eebb44", "#bcbd22")
 
 
-ggplot(data=count_data, aes(x=paste(year_release, month_release, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
   geom_line(size=0.6) +
   theme_minimal() +
   scale_color_manual(values = my_colors) 
@@ -167,7 +176,49 @@ ggplot(data=count_data, aes(x=paste(year_release, month_release, sep="-"), y=cou
 #, color=predominant_topic)
 
 
+#-------------------------------------------------------------------------------
+# Estudio según año/mes/época en la que fueron populares los tópicos
 
+load("./3_Preprocessing/data_knn_imputed_unknown.RData")
+weekly_data <- data %>% select(track_name, year_week, month_week)
+weekly_data$track_name <- as.factor(weekly_data$track_name)
+
+songs_to_topics <- dc_cpy %>% select(document, predominant_topic)
+names(songs_to_topics) <- c("track_name", "predominant_topic")
+
+merged_data <- weekly_data %>%
+  left_join(songs_to_topics, by = "track_name")
+
+merged_data$year_week <- as.numeric(as.character(merged_data$year_week))
+merged_data$month_week <- as.numeric(as.character(merged_data$month_week))
+
+merged_data <- merged_data %>% 
+  mutate(
+    year_season = ifelse(month_week %in% c(12), year_week + 1, year_week)
+  )
+
+merged_data <- merged_data %>%  mutate(season = case_when(
+  month_week %in% c(1, 2, 12) ~ "1",
+  month_week %in% c(3, 4, 5) ~ "2",
+  month_week %in% c(6, 7, 8) ~ "3",
+  month_week %in% c(9,10,11) ~ "4"
+))
+
+
+
+count_data <- merged_data %>%
+  dplyr::count(year_season, season, predominant_topic, name = "count")
+
+count_data$predominant_topic <- as.factor(count_data$predominant_topic)
+
+
+my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#eebb44", "#bcbd22")
+
+
+ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+  geom_line(size=0.6) +
+  theme_minimal() +
+  scale_color_manual(values = my_colors) 
 
 
 

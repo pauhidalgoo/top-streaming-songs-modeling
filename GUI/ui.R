@@ -28,7 +28,11 @@ ui <- navbarPage(
              sidebarPanel(
                textInput("text", "Enter text:"),
                textInput("request", "Enter some requeriments:"),
-               actionButton("playlist", "Create")
+               actionButton("playlist", "Create"),
+               textInput("user_id", "Enter your user ID:"),
+               textInput("playlist_name", "Enter the playlist name:"),
+               actionButton("spotify", "Add to Spotify"),
+               uiOutput("spotify_done")
              ),
              
              mainPanel(
@@ -47,6 +51,30 @@ ui <- navbarPage(
                tags$style(type="text/css", "textarea {width:95%; height: 50vh; resize:none;}") ,
                tags$textarea(id="genre_text", rows=5,placeholder =  "Add the lyrics of the song", ""), 
                actionButton("genre", "Predict genre")
+             )
+           )
+  ),
+  
+  tags$head(
+    tags$style(HTML("
+      #map {
+        height: calc(100vh - 80px) !important;
+      }
+    "))
+  ),
+  
+  tabPanel("Artists locations",
+           sidebarLayout(
+             sidebarPanel(
+                 h4("Filter by Genre"),
+                 checkboxGroupInput("genres", "Genres:",
+                                    choices = genre_columns,
+                                    selected = genre_columns)  # Default to all selected
+               
+             ),
+             
+             mainPanel(
+               leafletOutput("map")
              )
            )
   )

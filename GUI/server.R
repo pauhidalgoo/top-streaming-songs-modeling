@@ -24,17 +24,17 @@ server <- function(input, output, session) {
   })
   
   output$artist_image <- renderUI({
+    v <- terms()
     selected_track <- images_unique[images_unique$track_name == input$selection, ]
     img_path <- selected_track$artist_img
-    if (!is.null(img_path)) {
+    if (!is.null(img_path) && img_path != "") {
       img_tag <- tags$img(src = img_path, width = "50%")
-      img_tag
-    }
-    else{
+    } else {
       img_tag <- tags$img(src = "./GUI/error.png", width = "50%")
-      img_tag
     }
+    tags$div(style = "text-align: center;", img_tag)
   })
+
   
   playlist <- reactive({
     # Change when the "playlist" button is pressed...
@@ -48,6 +48,7 @@ server <- function(input, output, session) {
         print(input$text)
         top_similar_docs <- perform_lsa(input$text, input$request, n=30)
         top_similar_ids1 <- top_similar_docs$ids
+        saveRDS(top_similar_ids1, "./GUI/playlist_ids.rds")
         top_similar_docs <- top_similar_docs$documents
         print(top_similar_docs)
         top_similar_ids1
@@ -86,6 +87,29 @@ server <- function(input, output, session) {
     playlist_container
   })
   
+  spotify_publish <- reactive({
+    # Change when the "playlist" button is pressed...
+    input$spotify
+    # ...but not for anything else
+    req(input$spotify)
+    req(input$playlist_name)
+    req(input$user_id)
+    playlist_data <- readRDS("./GUI/playlist_ids.rds")
+    isolate({
+      withProgress({
+        setProgress(message = "Publishing playlist to spotify...")
+        print(input$playlist_name)
+        create_new_playlist(playlist_data, input$playlist_name, input$user_id)
+      })
+    })
+    
+  })
+  
+  output$spotify_done <- renderUI({
+    a <- spotify_publish()
+    tags$h3("Playlist created successfully!")
+  })
+  
   
   genre <- reactive({
     # Change when the "playlist" button is pressed...
@@ -106,6 +130,24 @@ server <- function(input, output, session) {
   output$genre_output <- renderUI({
     genre_name <- genre()  # Assuming playlist() returns a list of track indices
     tags$h2(genre_name)
+  })
+  
+  artists_data <- readRDS("./7_Geoespacial/artists_data.rds")
+  filtered_data <- reactive({
+    req(input$genres)  # Ensure there is at least one genre selected
+    
+    filtered_df <- artists_data %>%
+      filter_at(vars(input$genres), any_vars(. == TRUE))
+  })
+  
+  output$map <- renderLeaflet({
+    data <- filtered_data()
+    
+    leaflet(data) %>%
+      addTiles() %>%
+      addMarkers(~longitude, ~latitude, popup = ~as.character(city), label = ~as.character(city), clusterOptions = markerClusterOptions()) %>%
+      setView(lng = mean(range(data$longitude, na.rm = TRUE)), 
+              lat = mean(range(data$latitude, na.rm = TRUE)), zoom = 3)
   })
 }
 

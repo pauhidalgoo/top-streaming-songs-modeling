@@ -17,7 +17,7 @@ interpret_request <- function(request) {
   # Detect genre
   genre_keywords <- list(
     "pop" = "pop",
-    "hip hop" = "hip hop|rap",
+    "hip_hop" = "hip hop|rap",
     "rock" = "rock",
     "electro" = "electro|electrónica|electronic",
     "christmas" = "christmas",
@@ -39,8 +39,16 @@ interpret_request <- function(request) {
     filters$danceability <- 0.65
   }
   
+  if (grepl("acoustic|acústica", request, ignore.case = TRUE)) {
+    filters$acousticness <- 0.3
+  }
+  
+  if (grepl("sad|triste", request, ignore.case = TRUE)) {
+    filters$valence <- 0.4
+  }
+  
   # Detect explicit content
-  if (grepl("not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
+  if (grepl("no explicit|not explicit|no explícita|no explícito", request, ignore.case = TRUE)) {
     filters$explicit <- FALSE
   } else if (grepl("explicit|explícita|explícito", request, ignore.case = TRUE)) {
     filters$explicit <- TRUE
@@ -157,6 +165,8 @@ perform_lsa <- function(phrase, request, n = 5) {
     track_name = unique_translated$track_name,
     track_id = unique_translated$track_id,
     artist_name = unique_translated$artist_name,
+    acousticness = unique_translated$acousticness,
+    valence = unique_translated$valence,
     similarity = similarities,
     danceability = unique_translated$danceability,
     explicit = unique_translated$explicit,
@@ -169,7 +179,7 @@ perform_lsa <- function(phrase, request, n = 5) {
   # Add genre columns to similarity_df
   genre_keywords <- list(
     "pop" = "pop",
-    "hip hop" = "hip hop|rap",
+    "hip_hop" = "hip hop|rap",
     "rock" = "rock",
     "electro" = "electro",
     "christmas" = "christmas",
@@ -188,6 +198,14 @@ perform_lsa <- function(phrase, request, n = 5) {
   
   if (!is.null(filters$danceability)) {
     similarity_df <- similarity_df[similarity_df$danceability >= filters$danceability, ]
+  }
+  
+  if (!is.null(filters$acousticness)) {
+    similarity_df <- similarity_df[similarity_df$acousticness >= filters$acousticness, ]
+  }
+  
+  if (!is.null(filters$valence)) {
+    similarity_df <- similarity_df[similarity_df$valence <= filters$valence, ]
   }
   
   if (!is.null(filters$explicit)) {
@@ -216,4 +234,34 @@ perform_lsa <- function(phrase, request, n = 5) {
   
   llista <- list("documents" = top_n_df$track_name, "ids" = top_n_df$track_id) 
   return(llista)
+}
+
+
+
+
+library("spotifyr")
+
+
+create_new_playlist <- function(track_ids, playlist_name, user_id) {
+  print("hello, its me")
+  # Authenticate with Spotify API
+  my_token <- spotifyr::get_spotify_authorization_code(client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
+                                                       client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET"),
+                                                       scope = 'playlist-modify-public playlist-read-private')
+  my_token
+  # Create a new playlist
+  new_playlist <- create_playlist(user_id = user_id,
+                                  name = playlist_name,
+                                  public = TRUE,
+                                  collaborative = FALSE,
+                                  description = "Playlist created with LSA for PMAAD",
+                                  authorization  = my_token)
+  
+  # Add tracks to the playlist
+  add_tracks_to_playlist(playlist_id = new_playlist$id,
+                         uris = track_ids,
+                         position = NULL,
+                         authorization = my_token)
+  
+  cat("Playlist", playlist_name, "created successfully!\n")
 }

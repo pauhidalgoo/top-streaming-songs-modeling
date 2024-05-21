@@ -4,3 +4,5 @@
 .RData
 .httr-oauth
 .RDataTmp
+GUI/playlist_ids.rds
+GUI/api_configuration.R

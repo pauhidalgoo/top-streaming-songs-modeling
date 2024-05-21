@@ -1,0 +1,1 @@
+genre_columns <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino")
