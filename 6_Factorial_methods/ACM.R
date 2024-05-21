@@ -35,4 +35,4 @@ head(individual_coordinates)
 
 data_acm <- as.data.frame(individual_coordinates)
 
-save(data_acm, file = "./6_Facorial_methods/acm_data.RData")
+save(data_acm, file = "./6_Factorial_methods/acm_data.RData")
