@@ -44,7 +44,7 @@ target_name <- "explicit"
 # Define parameters for the execution
 load_acm_data <- FALSE
 balance_method <- "smote" 
-# Possible values: "oversampling", "undersampling", weights"
+# Possible values: "oversampling", "undersampling", weights", "smote"
 
 # ------------------------------------------------------------------------------
 
@@ -174,12 +174,25 @@ if (balance_method == "weights") {
 } else if (balance_method == "smote"){
   df <- as.data.frame(cbind(train_data, train_labels), method = "over")
   df$train_labels <- as.factor(df$train_labels)
-  oversampled_data <- SMOTE(train_labels ~ ., df, perc.over = 50, perc.under = 300)
-  oversampled_data$train_labels <- as.numeric(oversampled_data$train_labels)
+  # Calculate class distribution
+  class_distribution <- table(df$train_labels)
+  
+  # Identify the minority and majority classes
+  minority_class <- names(which.min(class_distribution))
+  majority_class <- names(which.max(class_distribution))
+  minority_count <- class_distribution[minority_class]
+  majority_count <- class_distribution[majority_class]
+  
+  # Calculate perc.over to balance the minority class to the majority class size
+  perc_over <- ((majority_count - minority_count) / minority_count) * 100
+  oversampled_data <- SMOTE(train_labels ~ ., df, perc_over = 50, perc.under = 300)
+  oversampled_data$train_labels <- as.numeric(oversampled_data$train_labels) -1
   train_data <- as.matrix(oversampled_data[, -ncol(oversampled_data)])
   train_labels <- oversampled_data[, ncol(oversampled_data)]
-  cat("Train target class values after oversampling:\n", table(train_labels), "\n")
+  cat("Train target class values after oversampling:\n", table(train_labels),"\n")
   
+  # Print the class distribution after oversampling
+  cat("Train target class values after SMOTE:\n", table(train_labels), "\n")
   
 } else if (balance_method == "undersampling") {
   # Perform random undersampling
@@ -218,10 +231,15 @@ create_optimizer <- function(simple) {
   optimizer_adam(learning_rate = lr_schedule)
 }
 
-
 # ---------- Main model ----------
 model <- keras_model_sequential() %>%
   layer_dense(units = 64, activation = activation_function, input_shape = c(ncol(train_data))) %>%
+  layer_activity_regularization(l2 = 0.01) %>%
+  layer_dense(units = 32, activation = activation_function) %>%
+  layer_activity_regularization(l2 = 0.01) %>%
+  layer_dense(units = 16, activation = activation_function) %>%
+  layer_activity_regularization(l2 = 0.01) %>%
+  layer_dense(units = 8, activation = activation_function) %>%
   layer_activity_regularization(l2 = 0.01) %>%
   layer_dense(units = 1, activation = 'sigmoid')
 
@@ -346,7 +364,7 @@ evaluate_model <- function(model, test_data, test_labels, target_name, model_nam
     geom_tile() +
     geom_text(aes(label = Frequency), color = "black", size = 4) +
     scale_fill_gradient(low = "white", high = "#1ED760") +
-    labs(title = paste("Confusion Matrix: Target =", target_name, "& Model =", model_name), x = "Actual", y = "Predicted") +
+    labs(title = paste("Confusion Matrix: Target =", target_name, "& Model =", model_name), x = "Predicted", y = "Actual") +
     scale_x_continuous(breaks = unique(conf_matrix_df$Reference)) +
     scale_y_continuous(breaks = unique(conf_matrix_df$Prediction)) +
     theme_minimal()
