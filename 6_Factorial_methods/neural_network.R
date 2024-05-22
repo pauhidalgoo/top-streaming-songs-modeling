@@ -15,9 +15,13 @@ if(!require(caret)) install.packages("caret")
 
 if (!require(ROSE)) install.packages("ROSE")
 
+if (!require(DMwR)) remotes::install_github("cran/DMwR")
+
+
 # ACM
 library(FactoMineR)
 library(factoextra)
+
 
 # Neural Network
 library(tensorflow)
@@ -30,13 +34,16 @@ library(reshape2)
 library(tidyr)
 library(ROSE)
 
+# SMOTE
+library(DMwR)
+
 # ------------------------------------------------------------------------------
 # Define the target variable (must be categorical)
 target_name <- "explicit"
 
 # Define parameters for the execution
 load_acm_data <- FALSE
-balance_method <- "weights" 
+balance_method <- "smote" 
 # Possible values: "oversampling", "undersampling", weights"
 
 # ------------------------------------------------------------------------------
@@ -163,6 +170,16 @@ if (balance_method == "weights") {
   train_data <- as.matrix(oversampled_data[, -ncol(oversampled_data)])
   train_labels <- oversampled_data[, ncol(oversampled_data)]
   cat("Train target class values after oversampling:\n", table(train_labels), "\n")
+  
+} else if (balance_method == "smote"){
+  df <- as.data.frame(cbind(train_data, train_labels), method = "over")
+  df$train_labels <- as.factor(df$train_labels)
+  oversampled_data <- SMOTE(train_labels ~ ., df, perc.over = 50, perc.under = 300)
+  oversampled_data$train_labels <- as.numeric(oversampled_data$train_labels)
+  train_data <- as.matrix(oversampled_data[, -ncol(oversampled_data)])
+  train_labels <- oversampled_data[, ncol(oversampled_data)]
+  cat("Train target class values after oversampling:\n", table(train_labels), "\n")
+  
   
 } else if (balance_method == "undersampling") {
   # Perform random undersampling
