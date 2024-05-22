@@ -9,6 +9,7 @@ library(textdata) # provides access to lexicon dictionaries
 library(knitr) # used to make kable tables
 
 
+load("./2_Descriptive_analysis/unique_tracks.RData")
 load("./8_Textual_analysis/unique_tracks_translated.RData")
 PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated",sep="")
 
@@ -46,6 +47,8 @@ tdm2 = as.matrix(tdm)
 words = sort(rowSums(tdm2), decreasing = TRUE)
 df = data.frame(word = names(words), freq = words)
 dim(df)
+
+head(df,10)
 
 set.seed(1000)
 
@@ -138,8 +141,12 @@ bing_sent <- df %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort=T) %>%
   ungroup()
+
 # Inner join words with Bing lexicon
 bing_df <- df %>% inner_join(bing_sent)
+
+
+
 # Plot positive and negative sentiments
 png(file=paste0(PATH_PLOTS, "/complete_word_senti_bing.png"),
     width=1920, height=1080, units="px", res=130)
@@ -395,3 +402,115 @@ fviz_ca_row(res.ca, axes = c(3, 4), repel = TRUE, title = "CA Column Plot (Dim 3
   scale_color_manual(values = c("red"))
 
 
+
+
+# MORE SENTIMENT -----------------------------
+
+load("./8_Textual_analysis/unique_tracks_translated.RData")
+
+
+# Step 1: Tokenize the lyrics and calculate sentiment for each word using Bing lexicon
+unique_translated <- unique_translated %>%
+  mutate(document = row_number())
+
+# Step 2: Tokenize the lyrics and join with Bing lexicon
+word_sentiments <- unique_translated %>%
+  unnest_tokens(word, translated_lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word")
+
+# Step 3: Calculate positive and negative word counts for each song
+song_sentiments <- word_sentiments %>%
+  group_by(document) %>%
+  summarize(positive = sum(sentiment == "positive"),
+            negative = sum(sentiment == "negative")) %>%
+  ungroup()
+# Calculate sentiment score for each song
+song_sentiments <- song_sentiments %>%
+  mutate(total = positive + negative,
+         score = case_when(
+           total == 0 ~ 0.5, # Neutral score if no sentiment words
+           TRUE ~ positive / total
+         )) %>%
+  select(document, score)
+
+# Join the scores back to the unique_translated dataframe
+unique_translated <- unique_translated %>%
+  mutate(document = row_number()) %>%
+  left_join(song_sentiments, by = "document") %>%
+  select(-document)
+
+# Display the dataframe with sentiment scores
+print(unique_translated$score)
+
+print(unique_translated[246,]$translated_lyrics)
+
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# Assuming unique_translated is the dataframe with sentiment scores and genre columns
+# Calculate the mean sentiment score for each genre
+
+# Genres: pop, hip_hop, rock, latino, electro, christmas, cinema
+genre_columns <- c("pop", "hip_hop", "rock", "latino", "electro", "christmas", "cinema")
+
+# Calculate mean sentiment scores for each genre
+mean_scores_by_genre <- unique_translated %>%
+  gather(genre, is_genre, all_of(genre_columns)) %>%
+  filter(is_genre == TRUE) %>%
+  group_by(genre) %>%
+  summarize(mean_score = mean(score, na.rm = TRUE)) %>%
+  ungroup()
+
+png(file=paste0(PATH_PLOTS, "/mean_sentiment_genre.png"),
+    width=1920, height=1080, units="px", res=130)
+# Plot the mean sentiment scores by genre
+ggplot(mean_scores_by_genre, aes(x = genre, y = mean_score, fill = genre)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Mean Sentiment Score by Genre",
+       x = "Genre",
+       y = "Mean Sentiment Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+dev.off()
+
+# Calculate average sentiment score per artist
+artist_sentiments <- unique_translated %>%
+  group_by(artist_name) %>%
+  summarize(average_score = mean(score, na.rm = TRUE)) %>%
+  arrange(desc(average_score))
+
+
+png(file=paste0(PATH_PLOTS, "/mean_sentiment_artist.png"),
+    width=1920, height=1080, units="px", res=130)
+
+# Plot average sentiment scores by artist
+ggplot(artist_sentiments, aes(x = reorder(artist_name, average_score), y = average_score)) +
+  geom_bar(stat = "identity", fill = "cyan") +
+  coord_flip() +
+  labs(title = "Average Sentiment Score by Artist",
+       x = "Artist",
+       y = "Average Sentiment Score") +
+  theme_minimal()
+
+dev.off()
+
+explicit_sentiments <- unique_translated %>%
+  group_by(explicit) %>%
+  summarize(average_score = mean(score, na.rm = TRUE)) %>%
+  arrange(desc(average_score))
+
+png(file=paste0(PATH_PLOTS, "/mean_sentiment_explicit.png"),
+    width=1920, height=1080, units="px", res=130)
+# Plot average sentiment scores by explicit
+ggplot(explicit_sentiments, aes(x = reorder(explicit, average_score), y = average_score, fill=explicit)) +
+  geom_bar(stat = "identity")+
+  labs(title = "Average Sentiment Score by Explicit",
+       x = "Explicit",
+       y = "Average Sentiment Score") +
+  theme_minimal()
+dev.off()
+
+
+mean(unique_translated$score, na.rm= TRUE)
