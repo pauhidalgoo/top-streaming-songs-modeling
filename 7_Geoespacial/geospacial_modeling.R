@@ -26,6 +26,21 @@ library(dplyr)
 
 load('./7_Geoespacial/data_coordenades.RData')
 
+# Treiem les files amb (artistes, cançons) repetides
+
+data <- data %>%
+  distinct(artist_name, .keep_all = TRUE)
+
+
+# 1. Eliminar duplicados para cada combinación única de artist_name y year_week
+data <- data %>%
+  distinct(artist_name, year_week, .keep_all = TRUE)
+
+# 2. Calcular la media de artist_followers para cada artist_name
+data <- data %>%
+  group_by(artist_name, latitude, longitude) %>%
+  summarize(artist_followers = mean(artist_followers, na.rm = TRUE))
+
 ###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
 # MAPA AMB ELS PUNTS DE LES DADES DEL DATASET
@@ -78,7 +93,7 @@ hist(distances, breaks = 50, main = "Histogram of Distances", xlab = "Distance (
 # CUTOFF =  distancia máxima que se considera al calcular el variograma
 # WIDTH = mida intervals en els que s'agrupen les parelles de punts
 
-ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width=35)
+ve <- variogram(logartist_followers ~ 1, data, cutoff = 5000, width=35)
 print(ve)
 plot(ve)
 
@@ -124,8 +139,8 @@ install.packages("gstat")
 
 # Crear una malla per a la interpolació
 
-long_range <- range(data$longitude)
-lat_range <- range(data$latitude)
+long_range <- range(data$longitude, na.rm = TRUE)
+lat_range <- range(data$latitude, na.rm = TRUE)
 resolution <- 1
 
 long_seq <- seq(long_range[1], long_range[2], by = resolution)
