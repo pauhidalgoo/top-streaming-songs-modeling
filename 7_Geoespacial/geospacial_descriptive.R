@@ -277,4 +277,49 @@ for (genre in genres) {
 }
 
 
+####################################################
+## MAPA INTERACTIU QUE ET DIU LA INTENSITAT DE ARTIST_FOLLOWERS
+####################################################
+
+install.packages("viridis")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("leaflet")
+library(ggplot2)
+library(sf)
+library(viridis)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(leaflet)
+
+spotify_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# MAPA ESTÀTIC
+ggplot() +
+  geom_sf(data = world, fill = "white", color = "black") +  # Dibuja el mapa de fondo
+  geom_sf(data = spotify_sf, aes(size = artist_popularity, color = artist_popularity), alpha = 0.6) + 
+  scale_color_viridis_c() + 
+  coord_sf() + 
+  theme_minimal() +
+  labs(title = "Mapa de Popularidad de Artistas", x = "Longitude", y = "Latitude") +
+  theme(legend.position = 'right')
+
+# MAPA INTERACTIU
+leaflet(data = spotify_sf) %>%
+  addProviderTiles(providers$OpenStreetMap) %>%
+  addCircleMarkers(
+    radius = ~artist_popularity / 10,
+    color = ~viridis::viridis_pal(option = "C")(100)[artist_popularity],
+    popup = ~paste("Artist:", artist_name, "<br>Popularity:", artist_popularity),
+    fillOpacity = 0.7
+  )
+
+# Podem afegir el gènere més fet de cada artista
+
+
+
+########## NOMÉS FALTA EL MAPA DE DENSITAT
+
+
 
