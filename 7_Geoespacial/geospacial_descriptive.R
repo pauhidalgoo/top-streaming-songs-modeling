@@ -3,62 +3,46 @@ library(sf)
 library(ggplot2)
 library(dplyr)
 
-
-# Ruta a los archivos del shapefile
+# Obrim el shapefile
 world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
 
-# Visualizar el shapefile
+# Visualitzem el mapa del món
 ggplot() +
   geom_sf(data = world_cities, fill = "white", color = "black") +
   theme_minimal() +
-  labs(title = "Mapa de Ciudades del Mundo")
+  labs(title = "Mapa del món")
 
-# Asumiendo que 'data' es tu dataframe con latitudes, longitudes y artist_followers
 data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
 
-
 ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuja el shapefile
-  geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Añade los puntos sobre el mapa
+  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuixem el shapefile
+  geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Afegim els punts
   theme_minimal() +
-  labs(title = "Mapa con Puntos de Datos")
+  labs(title = "Mapa amb els punts de dades")
 
-
-#############################
-# EVITANDO LOS DUPLICADOS
-##############################
-
-library(sf)
-library(dplyr)
-library(ggplot2)
-
-# Cargar los datos
-load('./7_Geoespacial/data_coordenades.RData')
-
-# Suponiendo que 'data' es tu dataframe y ya se ha cargado
-# Asegurarse de que el CRS coincide
 st_crs(world_cities) <- 4326
 View(data)
 
+# Les coordenades estan segons artistes, així agrupem pel nom d'artista. 
 data_grouped <- data %>%
-  group_by(artist_name) %>%
+  group_by(artist_name) %>% 
   summarize(
     artist_followers = mean(artist_followers, na.rm = TRUE),
-    longitude = mean(longitude, na.rm = TRUE),  # Promedio de longitud, si es aplicable
-    latitude = mean(latitude, na.rm = TRUE),   # Promedio de latitud, si es aplicable
+    longitude = mean(longitude, na.rm = TRUE),  
+    latitude = mean(latitude, na.rm = TRUE),
     .groups = "drop"
   )
+
 View(data_grouped)
 
 data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
-View(data_sf)
+
 data_joined <- st_join(world_cities, data_sf, join = st_intersects)
-View(data_joined)
+
 data_summarized <- data_joined %>%
   group_by(name) %>%
   summarize(avg_followers = mean(artist_followers), .groups = "drop")
 
-# Verificar la presencia de datos
 print(head(data_summarized))
 
 # Crear el mapa de calor
