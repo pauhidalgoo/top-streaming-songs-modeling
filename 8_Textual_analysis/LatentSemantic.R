@@ -56,18 +56,20 @@ td.mat_freq_10 <- td.mat[terms_freq_10, ]
 td.mat <- as.matrix(td.mat_freq_10)
 
 td.mat.lsa <- lw_bintf(td.mat) * gw_idf(td.mat) # weighting
+
 lsaSpace <- lsa(td.mat.lsa) # create LSA space
 as.textmatrix(lsaSpace)
 head(as.textmatrix(lsaSpace))
 #EXPLORING RESULTS
 results<- as.textmatrix(lsaSpace)
-head(results)
+(results["love",])
 
 # compare two terms with the cosine measure ##ALSO AVAILABLE FOR ALL TERMS
-cosine(results["love",], results["baby",])
+cosine(results["love",], results["star",])
 
+track_names[750]
 # compare two documents with pearson ### ALSO AVAILABLR FOR ALL DOCUMENTS
-cor(results[,1], results[,2], method="pearson")
+cor(results[,750], results[,104], method="pearson")
 
 # calc associations for "water"
 associate(results, "lover")
