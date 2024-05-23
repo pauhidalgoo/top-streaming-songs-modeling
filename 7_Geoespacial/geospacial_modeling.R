@@ -1,9 +1,8 @@
-#### ANNA CASANOVAS I ABRIL RISSO
-#### ModelizaciÃ³n de Datos Geoespaciales
+######################################
+## MODELADO CON DATOS GEOESPACIALES ##
+######################################
 
-###MODELADO CON DATOS GEOESPACIALES
-#### Paquetes necesarios
-# Load the packages
+# Descarregar paquets necessàris
 
 list.of.packages = c("geoR", "sm", "sp", "gstat", "npsp", "geohashTools",
                      "rgdal", "ggmap", "ggplot2", "dplyr", "gridExtra", "maps", 
@@ -15,241 +14,175 @@ if(length(new.packages) > 0) {
 lapply(list.of.packages, require, character.only = T)
 rm(list.of.packages, new.packages)
 
-if (!require("rgdal")) install.packages("rgdal")
-
-install.packages("rgdal")
-
 library("rgdal")
 library("sp")
 library("sf")
 
-# Instalar paquetes si no están instalados
-if (!require("sf")) install.packages("sf")
-if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("dplyr")) install.packages("dplyr")
-
-# Cargar los paquetes
 library(sf)
 library(ggplot2)
 library(dplyr)
 
-
+# Carreguem el dataset amb les coordenades (latitude i longitude)
 
 load('./7_Geoespacial/data_coordenades.RData')
 
-###### MODELADO Datos Tipo I : GeoestadÃ­stica (Variogramas & Kriging)
-#########Ejemplo 1
+###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
-# AQUÍ VA LA VISUALITZAR EL MAPA DEL MON I ELS PUNTS QUE APAREIXEN ALLÀ DE COLOR VERD
+# MAPA AMB ELS PUNTS DE LES DADES DEL DATASET
 
-# Obrim el shapefile
 world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
-
-# Visualitzem el mapa del món
-ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") +
-  theme_minimal() +
-  labs(title = "Mapa del món")
 
 data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
 
 ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuixem el shapefile
-  geom_sf(data = data_sf, color = "darkgreen", size = 1) +  # Afegim els punts
+  geom_sf(data = world_cities, fill = "white", color = "black") + 
+  geom_sf(data = data_sf, color = "darkgreen", size = 1) +  
   theme_minimal() +
   labs(title = "Mapa amb els punts de dades")
 
-st_crs(world_cities) <- 4326
-View(data)
 
-hist(data$artist_followers, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
+#################
+#  VARIOGRAMA  #
+#################
+
+hist(data$artist_followers, breaks = 16) 
 data$logartist_followers <- log10(data$artist_followers +1)
 hist(data$logartist_followers, breaks = 16)
 
-coordinates(data) <- c("latitude", "longitude")
-class(data)
-str(data)
-
-
-#Calcule cuÃ¡ntos pares de puntos hay en el dataset meuse.
+# Quantitat de parelles de punts
 n <- length(data$logartist_followers)
 n * (n - 1)/2
 
 coordinates(data) <- ~longitude + latitude
 head(coordinates(data))
 
-# Coordenadas de los dos primeros puntos
+# Coordenades dels dos primers punts
 coord1 <- coordinates(data)[1, ]
 coord2 <- coordinates(data)[2, ]
 
-# Calcular la distancia entre los dos primeros puntos
+# Calcular la distancia entre els dos primers punts
 sep <- dist(rbind(coord1, coord2))
 print(sep) # distancia
 
-# Calcular la semivarianza entre los valores de artist_followers
+# Calcular la semivariança entre els valores d'artist_followers
 gamma <- 0.5 * (data$logartist_followers[1] - data$logartist_followers[2])^2
 print(gamma)
 
-
+# Distancies entre els punts de la nostra base de dades
 distances <- spDists(as.matrix(coordinates(data)), longlat = TRUE)
 hist(distances, breaks = 50, main = "Histogram of Distances", xlab = "Distance (km)")
 
 
-###TRIEM ELS PARÀMETRES CUTOFF I WIDTH
-#CUTOFF =  distancia máxima que se considera al calcular el variograma
-#WIDTH = mida intervals en els que s'agrupen les parelles de punts
-#triarem els que venen per defecte
+### TRIEM ELS PARÀMETRES CUTOFF I WIDTH
+
+# CUTOFF =  distancia máxima que se considera al calcular el variograma
+# WIDTH = mida intervals en els que s'agrupen les parelles de punts
 
 ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width=35)
 print(ve)
-
 plot(ve)
-
-#variogram: genera la nube de variograma. logZn ~ 1: logZn es dependiente de si misma â€“> autocorrelaciÃ³n.
-#Por defecto (si no se especifica cutoff y with) el cutoff es 1/3
-#de la mÃ¡xima distancia (diagonal del bbox). Esto es dividido en 15
-# clases igualmente espaciadas.
-
-#Â¿CuÃ¡l es la evidencia de dependencia espacial local? np=nÃºmero de pares de puntos para cada una de las 15 clases,
-# dist=distancia media, gamma=semivarianza media. A medida que la distancia aumenta,
-# tambiÃ©n lo hace la semivarianza, pero hasta una distancia determinada
-# donde la semivarianza se estabiliza.
 
 plot(ve, plot.numbers = T, asp=1)
 show.vgms()
 
-#CÃ³mo escoger el ajuste para el variograma empirico?
-#Ajuste visual
-#Range o rango: separaciÃ³n o distancia entre pares de puntos en la cual ya no hay dependencia espacial,
-## aprox 850m
-#Nugget o pepita: semivarianza a la separaciÃ³n de 0m. aprox 0.01
-#Total-sill o meseta: semivarianza a la distancia del rango. aprox 0.13
-#Partial-sill o meseta parcial: total sill - nugget. aprox 0.12
+# Ajustar diversos models de variograma
 
-#vgm genera el modelo de variograma
+#psill = sill - nugget = 1 - 0.5
 
-vt <- vgm(psill = 0.12, model = "Sph", range = 850,nugget = 0.01) 
-vt
-plot(ve, pl = T, model = vt)
+# Esfèric
+model_sph <- vgm(psill = 0.6, model = "Sph", range = 350, nugget = 0.4)
 
-#Ajuste automÃ¡tico
+# Exponencial
+model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
 
-#fit.variogram: ajuta el modelo de variograma a un variograma empÃ­rico.
+# Gaussià
+model_gau <- vgm(psill = 0.6, model = "Gau", range = 350, nugget = 0.4)
+
+# Graficar el variograma empíric amb els models ajustats
+plot(ve, model = model_sph, main = "Ajust del Model Esfèric")
+plot(ve, model = model_exp, main = "Ajust del Model Exponencial")
+plot(ve, model = model_gau, main = "Ajust del Model Gaussià")
+
+#Ajust automàtic
+#fit.variogram: ajusta el modelo de variograma a un variograma empírico.
+
 va <- fit.variogram(ve, vt) 
 va
 plot(ve, pl = T, model = va)
 
-summary(data$artist_followers)
-boxplot(data$artist_followers, main = "Boxplot de artist_followers")
-plot(data$longitude, data$latitude, main = "Distribución espacial de los datos", xlab = "Longitud", ylab = "Latitud")
 
-################# ALTRES COSES (no funciona)
+##############################
+#  INTERPOLACIÓ AMB KRIGING  #
+##############################
+
+# Predir valors en ubicacions no mostrejades basant-se en ubicacions mostrejades
+
 # Cargar los paquetes necesarios
 install.packages("sp")
 install.packages("gstat")
-library(sp)
-library(gstat)
 
-# Supongamos que ya tienes tu conjunto de datos cargado en 'data'
-# data <- read.csv("path_to_your_data.csv")
 
-# Convertir 'data' a un objeto 'SpatialPointsDataFrame'
-coordinates(data) <- ~longitude + latitude
+# Crear una malla per a la interpolació
 
-# Verificar las coordenadas
-head(coordinates(data))
-
-# Crear una malla regular para la interpolación con una resolución más baja
 long_range <- range(data$longitude)
 lat_range <- range(data$latitude)
+resolution <- 1
 
-# Definir una resolución de malla más baja
-resolution <- 0.1 # Ajusta según sea necesario, aumentando el valor reduce el número de puntos
-
-# Crear la malla
 long_seq <- seq(long_range[1], long_range[2], by = resolution)
 lat_seq <- seq(lat_range[1], lat_range[2], by = resolution)
 grid <- expand.grid(longitude = long_seq, latitude = lat_seq)
 
-# Convertir la malla en un objeto SpatialPixelsDataFrame
-coordinates(grid) <- ~longitude + latitude
-gridded(grid) <- TRUE
-
-# Verificar la estructura de la malla
-str(grid)
-
-# Calcular el semivariograma y ajustar un modelo
-ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
-va <- fit.variogram(ve, model = vgm(1, "Sph", 300, 1))
-plot(ve, model = va)
-
-# Realizar kriging ordinario
-ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = va)
-ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
-str(ok)
-
-# Visualización
-pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$artist_followers / max(data$artist_followers))
-print(spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-             main = "Predicción OK, Artist Followers", sp.layout = list(pts.s)), 
-      split = c(1, 1, 2, 1), more = TRUE)
-pts.s <- list("sp.points", data, col = "black", pch = 20)
-print(spplot(ok, zcol = "var1.var", col.regions = rev(gray(seq(0, 1, .01))), asp = 1,
-             main = "Varianza OK, Artist Followers^2", sp.layout = list(pts.s)), 
-      split = c(2, 1, 2, 1), more = FALSE)
-
-
-
-
-
-load('data_coordenades.RData')
-
-install.packages("sp")
-install.packages("gstat")
-library(sp)
-library(gstat)
-
-coordinates(data) <- ~longitude + latitude
-
-# Crear una malla regular para la interpolación
-long_range <- range(data$longitude)
-lat_range <- range(data$latitude)
-
-# Definir la resolución de la malla (ajusta según sea necesario)
-resolution <- 0.01 # Grados, ajusta según sea necesario
-
-# Crear la malla
-long_seq <- seq(long_range[1], long_range[2], by = resolution)
-lat_seq <- seq(lat_range[1], lat_range[2], by = resolution)
-grid <- expand.grid(longitude = long_seq, latitude = lat_seq)
+# Verificar la malla
+print(head(grid))
+print(dim(grid))
 
 coordinates(grid) <- ~longitude + latitude
 gridded(grid) <- TRUE
 
-ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
-# Ajustar un modelo a los datos del variograma
-va <- fit.variogram(ve, model = vgm(1, "Sph", 300, 1))
+print(str(grid))
 
-# Realizar kriging ordinario
-ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = va)
-ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
+num_punts <- nrow(as.data.frame(grid))
+cat("Número de puntos en la malla:", num_punts, "\n")
+
+
+# Calcular el semivariograma y ajustar un modelo (ja fet prèviament)
+
+ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width=35)
+model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
+plot(ve, model = model_exp)
+
+
+# Realitzar kriging ordinari amb el model ajustat
+
+#ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = model_exp)
+#ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
+#str(ok)
+
+ok <- krige(logartist_followers ~ 1, locations = data, newdata = grid, model = model_exp)
+ok$pred <- 10^(ok$var1.pred) 
 str(ok)
 
-# Visualización
-pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$artist_followers / max(data$artist_followers))
+# Visualització
+pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$logartist_followers / max(data$logartist_followers))
 print(spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-             main = "Predicción OK, Artist Followers", sp.layout = list(pts.s)), 
+             main = "Predicció OK, log-Artist Followers", sp.layout = list(pts.s)), 
       split = c(1, 1, 2, 1), more = TRUE)
 pts.s <- list("sp.points", data, col = "black", pch = 20)
 print(spplot(ok, zcol = "var1.var", col.regions = rev(gray(seq(0, 1, .01))), asp = 1,
-             main = "Varianza OK, Artist Followers^2", sp.layout = list(pts.s)), 
+             main = "Variança OK, log-Artist Followers^2", sp.layout = list(pts.s)), 
       split = c(2, 1, 2, 1), more = FALSE)
-ok.cv.a <- krige.cv(artist_followers ~ 1, locations = data, model = va)
-print(plot(var1.pred ~ observed, ok.cv.a, main = "OK"), split = c(3, 1, 2, 1), more = FALSE)
-print(cor(ok.cv.a$var1.pred, ok.cv.a$observed)) # Idealmente cercano a 1
-print(mean(ok.cv.a$residual)) # Idealmente cercano a 0
-print(sd(ok.cv.a$residual)) # Idealmente pequeño
-boxplot(ok.cv.a$residual, main = "Modelo en la variable llamado como OK")
+
+
+# Validació del Model (Opcional)
+ok.cv.a <- krige.cv(logartist_followers ~ 1, locations = data, model = model_exp)
+cor(ok.cv.a$var1.pred, ok.cv.a$observed)  # Correlació idealment propera a 1
+mean(ok.cv.a$residual)  # Promig dels residus idealment proper a 0
+sd(ok.cv.a$residual)  # Desviació estàndard dels residus idealment petita
+boxplot(ok.cv.a$residual, main = "Model en la variable cridat OK")
+mean(ok.cv.a$residual^2)  # MSPE (error quadràtic mitjà predictor), idealment petit
+sqrt(mean(ok.cv.a$residual^2))  # RMSE (error quadràtic mitjà arrel), idealment petit
+var(ok.cv.a$residual, na.rm = TRUE)  # Variància dels residus, idealment petita
+
 
 # MSPE (mean square predictor error), idealmente pequeño
 print(mean(ok.cv.a$residual^2))
@@ -264,42 +197,44 @@ print(var(ok.cv.a$residual, na.rm = TRUE)) # Idealmente pequeño
 
 
 
-####InterpolaciÃ³n
-###################     Kriging ordinario
 
-#Usualmente kriging se utiliza para predecir los pÃ­xeles (o nodos) de una malla regular que cubre la zona
-# de estudio. kriging ordinario â€œordinaryâ€ significa que (1) la variable es modelada a partir de si misma; 
-#(2) la media espacial no es conocida a priori, sino estimada de los datos.
+longitudes <- seq(from = -180, to = 180, by = 5)  # Longitudes de -180 a 180 grados
+latitudes <- seq(from = -90, to = 90, by = 5)     # Latitudes de -90 a 90 grados
 
-data(meuse.grid) #malla de 40m x 40m, disponible con el dataset meuse.
-coordinates(meuse.grid) <- c("x", "y")
-gridded(meuse.grid) <- T #indica que el conjunto de datos es un raster
+# Crear una malla combinando todas las combinaciones de coordenadas
+malla_mundo <- expand.grid(Longitude = longitudes, Latitude = latitudes)
 
-ok <- krige(logZn ~ 1, locations = meuse, newdata = meuse.grid, model = va) 
-ok$pred <- 10^(ok$var1.pred)#volver a valores originales
-str(ok)
+# Convertir la malla en un objeto SpatialPointsDataFrame
+coords <- cbind(malla_mundo$Longitude, malla_mundo$Latitude)
+malla_sp <- SpatialPointsDataFrame(coords, data = malla_mundo)
 
-pts.s <- list("sp.points", meuse, col="white",pch=1, cex=4*meuse$zinc/max(meuse$zinc))
-print(spplot(ok, "var1.pred", asp=1, col.regions=rev(heat.colors(50)),
-             main="PredicciÃ³n OK, log-ppm Zn",sp.layout = list(pts.s)), 
-      split=c(1,1,2,1), more=TRUE)
-pts.s <- list("sp.points", meuse, col="black", pch=20)
-print(spplot(ok, zcol="var1.var",col.regions=rev(gray(seq(0,1,.01))), asp=1,
-             main="Varianza OK, log-ppm Zn^2",sp.layout = list(pts.s)), 
-      split=c(2,1,2,1), more=FALSE)
+# Verificar la estructura de la malla
+print(head(malla_sp))
+print(dim(malla_sp))
 
-###ValidaciÃ³n Modelo
-ok.cv.a <- krige.cv(log10(zinc) ~ 1, locations = meuse, model = va)
-print(plot(var1.pred~observed,ok.cv.a, main="OK"), split=c(3,1,2,1), more=FALSE)
-cor(ok.cv.a$var1.pred,ok.cv.a$observed) ###ideal 1
-mean(ok.cv.a$residual) ###ideal cercana a 0
-sd(ok.cv.a$residual) ##ideal pequeÃ±a
-boxplot(ok.cv.a$residual, main="Modelo en la variable llamado como OK")
-# MSPE (mean square predictor error), idealmente pequeÃ±o
-mean(ok.cv.a$residual^2)
-#Error medio cuadrÃ¡tico (RMSE) es una medida general. Idealmente pequeÃ±o
-sqrt(sum(ok.cv.a$residual^2)/length(ok.cv.a$residual))
-var(ok.cv.a$residual, na.rm=T) #ideal pequeÃ±a
+# Número de puntos en la malla
+num_punts <- nrow(malla_sp)
+cat("Número de puntos en la malla:", num_punts, "\n")
+
+# Calcular el semivariograma y ajustar un modelo (ya hecho previamente)
+ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width = 35)
+model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
+plot(ve, model = model_exp)
+
+# Realizar kriging ordinario con la malla de resolución ajustada
+ok <- krige(logartist_followers ~ 1, locations = data, newdata = malla_sp, model = model_exp)
+ok$pred <- 10^(ok$var1.pred)  # Volver a valores originales después del kriging log-transformación
+print(str(ok))
+
+
+
+
+
+
+
+
+
+
 ######################
 ##EJEMPLO 2 - Variogramas & Kriging con Library(geoR)
 ###########################
