@@ -11,7 +11,7 @@ library(knitr) # used to make kable tables
 
 
 load("./8_Textual_analysis/unique_tracks_translated.RData")
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis",sep="")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated",sep="")
 
 
 track_names = unique_translated$track_name
@@ -43,9 +43,9 @@ sentimentOpinion <- syuzhet::get_nrc_sentiment(char_v = palabras, language = "en
 
 saveRDS(sentimentOpinion, file = "./8_textual_analysis/sentimentOpinion_translated.rds")
 
-readRDS(file = "./8_textual_analysis/sentimentOpinion_translated.rds")
+sentimentOpinion <- readRDS(file = "./8_textual_analysis/sentimentOpinion_translated.rds")
 
-head(sentimentOpinion)
+head(sentimentOpinion,10)
 
 ## Mostramos las emociones que podemos encontrarnos en la matriz
 Emotions <- sentimentOpinion %>% select(-negative,-positive) %>% names()
@@ -59,10 +59,15 @@ tblSentiment <- cbind(Emotions, Scoring) %>%
   mutate(Scoring = as.numeric(Scoring)) %>% 
   `rownames<-`( NULL )
 
+png(file=paste0(PATH_PLOTS, "/emotions_socring.png"),
+    width=1920, height=1080, units="px", res=130)
+
 ## Graficamos el sentimiento 
 ggpubr::ggbarplot(tblSentiment, x = "Emotions", y = "Scoring",
                   fill = "Emotions", color = "Emotions", palette = "rainbow",label=TRUE,
                   lab.pos = "out",lab.size=3.5, lab.col = "black")+theme(legend.position="none")
+
+dev.off()
 
 Assessment <- sentimentOpinion %>% select(negative, positive) %>% names()
 
@@ -119,10 +124,15 @@ head(cloud_TDM)
 # ------------------------------------------------------------------------------
 ## Realizamos la nube de palabras con las palabras que tenemos
 set.seed(123)
-wordcloud::comparison.cloud(cloud_TDM, random.order = FALSE,
-                            colors = c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#c9c365", "#336341","#66c2a5","#3288bd"),
-                            title.size = 1, max.words = 150, scale = c(1.35, 0.8), rot.per = 0.4)
 
+png(file=paste0(PATH_PLOTS, "/emotions_cloud.png"),
+    width=1920, height=1080, units="px", res=130)
+
+wordcloud::comparison.cloud(cloud_TDM, random.order = TRUE,
+                            colors = c("#d53e4f", "#f46d43", "#fdae61", "#fee08b", "#c9c365", "#336341","#66c2a5","#3288bd"),
+                            title.size = 1, max.words = 200, scale = c(1.15, 0.8), rot.per = 0.1)
+
+dev.off()
 
 
 track_emotion_scores_df <- data.frame(track_id = numeric(),
@@ -183,5 +193,7 @@ for (i in 1:nrow(unique_translated)) {
 track_emotion_scores_df <- subset(track_emotion_scores_df, select = -track_id)
 
 emotions_df <- cbind(unique_translated, track_emotion_scores_df)
+
 save(emotions_df, file = "./8_textual_analysis/emotions_unique_translated.RData")
 
+sum(emotions_df$trust)
