@@ -12,7 +12,7 @@ library(knitr) # used to make kable tables
 
 load("./2_Descriptive_analysis/unique_tracks.RData")
 load("./8_Textual_analysis/unique_tracks_translated.RData")
-PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated",sep="")
+PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/CA",sep="")
 
 
 track_names = unique_translated$track_name
@@ -69,7 +69,7 @@ res.ca
 ########## EIGENVALUES
 res.ca$eig
 
-########## RESPONDENTS
+########## TRACKS
 names(res.ca$row)
 res.ca$row$coord
 res.ca$row$cos2
@@ -98,24 +98,102 @@ res.ca$col$contr[order(apply(res.ca$col$contr[,3:4],1,sum),decreasing=TRUE)[1:10
 
 library(factoextra)
 ########## CA PLOTS
+rotate_labels <- function(angle = 45) {
+  theme(axis.text.x = element_text(angle = angle, hjust = 1))
+}
+
+fviz_contrib(res.ca, axes = 1, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 1")+
+  rotate_labels()
+
+
+fviz_contrib(res.ca, axes = 2, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 2")+
+  rotate_labels()
+
+
+fviz_contrib(res.ca, axes = 3, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 3")+
+  rotate_labels()
+
+
+fviz_contrib(res.ca, axes = 4, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 4")+
+  rotate_labels()
+
+
+fviz_contrib(res.ca, axes = 1, choice = "col", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 1")+
+  rotate_labels()
+
+
+
+png(file=paste0(PATH_PLOTS, "/ca_words_12.png"),
+    width=1920, height=1080, units="px", res=130)
 fviz_ca_col(res.ca, repel = TRUE, title = "CA Row Plot", select.col = list(contrib = 20)) + # Show top 10 contributing columns
   theme_minimal() +
   labs(color = "Row Points") +
   scale_color_manual(values = c("blue"))
+dev.off()
+
+png(file=paste0(PATH_PLOTS, "/ca_documents_12.png"),
+    width=1920, height=1080, units="px", res=130)
 
 fviz_ca_row(res.ca, repel = TRUE, title = "CA Column Plot", select.row = list(contrib = 10)) + # Show top 10 contributing rows
   theme_minimal() +
   labs(color = "Column Points") +
   scale_color_manual(values = c("red"))
+dev.off()
 
 # Plot for dimensions 3 and 4 with row points and selectively visible column labels
+png(file=paste0(PATH_PLOTS, "/ca_words_34.png"),
+    width=1920, height=1080, units="px", res=130)
 fviz_ca_col(res.ca, axes = c(3, 4), repel = TRUE,  title = "CA Row Plot (Dim 3 and 4)", select.col = list(contrib = 20)) + # Show top 10 contributing columns
   theme_minimal() +
   labs(color = "Row Points") +
   scale_color_manual(values = c("blue"))
+
+dev.off()
+
+png(file=paste0(PATH_PLOTS, "/ca_documents_34.png"),
+    width=1920, height=1080, units="px", res=130)
 
 # Plot for dimensions 3 and 4 with column points and selectively visible row labels
 fviz_ca_row(res.ca, axes = c(3, 4), repel = TRUE, title = "CA Column Plot (Dim 3 and 4)", select.row = list(contrib = 10)) + # Show top 10 contributing rows
   theme_minimal() +
   labs(color = "Column Points") +
   scale_color_manual(values = c("red"))
+
+dev.off()
+
+
+# USING FACTOMINER CA-GALT
+
+subset <- unique_translated
+
+names(unique_translated)
+head(td.mat)
+GALT <- cbind(t(as.matrix(td.mat)), unique_translated[, c('danceability', 'streams', 'track_popularity', 'energy', 'acousticness', 'liveness', 'valence', 'duration')])
+
+rownames(GALT) <- unique_translated$track_name
+# Step 3: Perform Correspondence Analysis
+# Note: You might need to install the 'ca' package if you haven't already
+ca_output <- CA(GALT)
+
+# Step 4: Interpret the results
+summary(ca_output)
+
+fviz_contrib(ca_output, axes = 1, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 1")+
+  rotate_labels()
+
+fviz_contrib(ca_output, axes = 2, choice = "row", top=5) +
+  theme_minimal() +
+  ggtitle("Contribution to Dimension 1")+
+  rotate_labels()
