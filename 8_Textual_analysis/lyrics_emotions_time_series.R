@@ -13,7 +13,77 @@ library(knitr) # used to make kable tables
 load("./8_textual_analysis/emotions_unique_translated.RData")
 PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Emotions_ts",sep="")
 
+
+genres <- c("pop", "hip_hop", "latino", "electro", "christmas", "cinema", "rock")
+emotions <- c("anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust")
+
+all <- c(genres, emotions)
+library(reshape2)
+# Reshape the data from wide to long format
+
+df_long <- emotions_df[all] %>%
+  gather(genre, value, pop:rock)
+
+head(df_long)
+
+df_filtered <- df_long %>%
+  filter_all(any_vars(value == TRUE))
+
+head(df_filtered)
+# Group by genre and calculate mean emotions
+df_emotions <- df_filtered %>%
+  group_by(genre) %>%
+  summarise(
+    anger = mean(anger),
+    anticipation = mean(anticipation),
+    disgust = mean(disgust),
+    fear = mean(fear),
+    joy = mean(joy),
+    sadness = mean(sadness),
+    surprise = mean(surprise),
+    trust = mean(trust)
+  )
+
+mean(df_long$anger)
+
+head(df_emotions)
+
+# Reshape the data for plotting
+df_emotions_long <- df_emotions %>%
+  pivot_longer(cols = -genre, names_to = "emotion", values_to = "mean_value")
+
+
+png(file=paste0(PATH_PLOTS, "/mean_emotions_genre.png"),
+    width=1920, height=1080, units="px", res=130)
+# Plot each emotion distribution for each genre
+ggplot(df_emotions_long, aes(x = genre, y = mean_value, fill = emotion)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ emotion, scales = "free_y") +
+  labs(
+    title = "Emotion Distribution by Genre",
+    x = "Genre",
+    y = "Mean Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
 emotions_df$release_date <- as.Date(paste(emotions_df$year_release, emotions_df$month_release, "01", sep="-"), format="%Y-%m-%d")
+
+
+
 
 emotion_counts <- aggregate(cbind(anger, anticipation, disgust, fear, joy, sadness, surprise, trust) ~ release_date, data = emotions_df, sum)
 
