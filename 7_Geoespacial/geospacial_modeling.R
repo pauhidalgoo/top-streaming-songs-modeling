@@ -35,53 +35,44 @@ library(dplyr)
 
 
 
-load('data_coordenades.RData')
+load('./7_Geoespacial/data_coordenades.RData')
 
 ###### MODELADO Datos Tipo I : GeoestadÃ­stica (Variogramas & Kriging)
 #########Ejemplo 1
+
+# AQUÍ VA LA VISUALITZAR EL MAPA DEL MON I ELS PUNTS QUE APAREIXEN ALLÀ DE COLOR VERD
+
+# Obrim el shapefile
+world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
+
+# Visualitzem el mapa del món
+ggplot() +
+  geom_sf(data = world_cities, fill = "white", color = "black") +
+  theme_minimal() +
+  labs(title = "Mapa del món")
+
+data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+
+ggplot() +
+  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuixem el shapefile
+  geom_sf(data = data_sf, color = "darkgreen", size = 1) +  # Afegim els punts
+  theme_minimal() +
+  labs(title = "Mapa amb els punts de dades")
+
+st_crs(world_cities) <- 4326
+View(data)
+
 hist(data$artist_followers, breaks = 16) #DistribuciÃ³n no simÃ©trica, sesgada hacia la derecha
-#data$logartist_followers <- log10(data$artist_followers)
-#hist(data$logartist_followers, breaks = 16)
+data$logartist_followers <- log10(data$artist_followers +1)
+hist(data$logartist_followers, breaks = 16)
 
 coordinates(data) <- c("latitude", "longitude")
 class(data)
 str(data)
 
-# AQUÍ VA LA VISUALITZAR EL MAPA DEL MON I ELS PUNTS QUE APAREIXEN ALLÀ DE COLOR VERD
-
-library(sf)
-library(ggplot2)
-library(dplyr)
-
-# Cargar los datos
-load('./7_Geoespacial/data_coordenades.RData')
-
-# Ruta a los archivos del shapefile
-world_cities <- st_read(dsn = "./7_Geoespacial", layer = "countries_map")
-
-# Asegurarse de que world_cities tiene un CRS definido
-if (is.na(st_crs(world_cities))) {
-  st_crs(world_cities) <- 4326  # Asignar CRS WGS 84 si no está definido
-}
-
-# Preparar los datos de coordenadas en formato sf
-spotify_data <- data  # Asumiendo que 'data' es tu dataframe
-
-# Verificar y asignar CRS a data_sf
-data_sf <- st_as_sf(spotify_data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
-
-# Asegurarse de que ambos objetos sf tienen el mismo CRS
-world_cities <- st_transform(world_cities, crs = st_crs(data_sf))
-
-# Crear el mapa con ggplot2
-ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuja el shapefile
-  geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Añade los puntos sobre el mapa
-  theme_minimal() +
-  labs(title = "Mapa con Puntos de Datos")
 
 #Calcule cuÃ¡ntos pares de puntos hay en el dataset meuse.
-n <- length(data$artist_followers)
+n <- length(data$logartist_followers)
 n * (n - 1)/2
 
 coordinates(data) <- ~longitude + latitude
@@ -96,10 +87,20 @@ sep <- dist(rbind(coord1, coord2))
 print(sep) # distancia
 
 # Calcular la semivarianza entre los valores de artist_followers
-gamma <- 0.5 * (data$artist_followers[1] - data$artist_followers[2])^2
+gamma <- 0.5 * (data$logartist_followers[1] - data$logartist_followers[2])^2
 print(gamma)
 
-ve <- variogram(artist_followers ~ 1, data, cutoff = 1300, width = 90)
+
+distances <- spDists(as.matrix(coordinates(data)), longlat = TRUE)
+hist(distances, breaks = 50, main = "Histogram of Distances", xlab = "Distance (km)")
+
+
+###TRIEM ELS PARÀMETRES CUTOFF I WIDTH
+#CUTOFF =  distancia máxima que se considera al calcular el variograma
+#WIDTH = mida intervals en els que s'agrupen les parelles de punts
+#triarem els que venen per defecte
+
+ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width=35)
 print(ve)
 
 plot(ve)
@@ -138,24 +139,9 @@ va <- fit.variogram(ve, vt)
 va
 plot(ve, pl = T, model = va)
 
-######### COM EM DONA RARO HO REPETEIXO
-
 summary(data$artist_followers)
 boxplot(data$artist_followers, main = "Boxplot de artist_followers")
 plot(data$longitude, data$latitude, main = "Distribución espacial de los datos", xlab = "Longitud", ylab = "Latitud")
-
-data$artist_followers_scaled <- scale(data$artist_followers)
-
-ve_scaled <- variogram(artist_followers_scaled ~ 1, data, cutoff = 1300, width = 90)
-plot(ve_scaled)
-
-va <- fit.variogram(ve_scaled, model = vgm(1, "Sph", 300, 1))
-plot(ve_scaled, model = va)
-data$log_artist_followers <- log10(data$artist_followers)
-ve_log <- variogram(log_artist_followers ~ 1, data, cutoff = 1300, width = 90)
-plot(ve_log)
-
-
 
 ################# ALTRES COSES (no funciona)
 # Cargar los paquetes necesarios
@@ -570,62 +556,3 @@ basemap <- get_map(location = "Houston, TX", zoom = 9)
 # and use same code and also examples in https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
 
 ####################################################
-
-
-
-####################################################
-## MAPA INTERACTIU QUE ET DIU LA INTENSITAT DE ARTIST_FOLLOWERS
-####################################################
-
-
-# Supongamos que tus datos están en un data.frame llamado 'spotify_data'
-# Asegúrate de que contiene las columnas 'longitude', 'latitude', 'artist', 'artist_popularity'
-# Aquí hay un ejemplo simplificado de tus datos
-
-install.packages("viridis")
-install.packages("rnaturalearth")
-install.packages("rnaturalearthdata")
-install.packages("leaflet")
-library(ggplot2)
-library(sf)
-library(viridis)
-library(rnaturalearth)
-library(rnaturalearthdata)
-library(leaflet)
-spotify_data <- data.frame(
-  artist = c("Artist1", "Artist2", "Artist3"),
-  artist_popularity = c(85, 78, 90),
-  longitude = c(-3.7038, -0.1276, 2.3522),
-  latitude = c(40.4168, 51.5074, 48.8566)
-)
-world <- ne_countries(scale = "medium", returnclass = "sf")
-# Crear un objeto sf para tus datos
-spotify_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
-
-# Crear el mapa
-ggplot() +
-  geom_sf(data = world, fill = "white", color = "black") +  # Dibuja el mapa de fondo
-  geom_sf(data = spotify_sf, aes(size = artist_popularity, color = artist_popularity), alpha = 0.6) + 
-  scale_color_viridis_c() + 
-  coord_sf() + 
-  theme_minimal() +
-  labs(title = "Mapa de Popularidad de Artistas", x = "Longitude", y = "Latitude") +
-  theme(legend.position = 'right')
-
-# Mapa interactivo con leaflet
-leaflet(data = spotify_sf) %>%
-  addTiles() %>%
-  addCircleMarkers(~longitude, ~latitude,
-                   radius = ~artist_popularity / 10,
-                   color = ~viridis::viridis(100)[artist_popularity],
-                   popup = ~paste("Artist:", artist, "<br>Popularity:", artist_popularity),
-                   fillOpacity = 0.7)
-leaflet(data = spotify_sf) %>%
-  addTiles() %>%
-  addCircleMarkers(
-    radius = ~artist_popularity / 10,
-    color = ~viridis::viridis(100)[artist_popularity],
-    popup = ~paste("Artist:", artist, "<br>Popularity:", artist_popularity),
-    fillOpacity = 0.7
-  )
-
