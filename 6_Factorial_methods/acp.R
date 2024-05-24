@@ -77,7 +77,7 @@ p <- ggplot(df_varianza, aes(x = factor(Componente))) +
     panel.grid.major.x = element_blank()
   )
 
-#ggsave(plot = p, filename = paste('Percentatge_varianca_per_component', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Plots/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+ggsave(plot = p, filename = paste('Percentatge_varianca_per_component', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 
 
 perc_varianza_acum <- 100*cumsum(varianza[1:ncol(data_numerical)])/ncol(data_numerical)
@@ -138,7 +138,7 @@ p <- ggplot(df_psi, aes(x = PC1, y = PC2)) +
        title = "Projecció de totes les dades sobre els 2 primers Components Principals",
        subtitle = "Punts colorejats per nombre de fila (files ordenades per data de cada setmana)")
 
-#ggsave(plot = p, filename = paste('Data_C1_C2', '.png', sep = ""), bg = 'white', path = paste(getwd(), './Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+ggsave(plot = p, filename = paste('Data_C1_C2', '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 
 
 ################################################################################
@@ -177,7 +177,7 @@ for (eje1 in 1:(num_comp - 1)) {
     # Imprimir gràfic
     print(p)
     
-    #ggsave(plot = p, filename = paste('Num_C', eje1, '_C' , eje2, '.png', sep = ""), bg = 'white', path = paste(getwd(), './Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+    ggsave(plot = p, filename = paste('Num_C', eje1, '_C' , eje2, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
     
   }
 }
@@ -250,7 +250,7 @@ for (varcat_name in colnames(data_categorical)){
                       color = custom_red, size = 3.5, fontface = "bold")
   print(p2)
   
-  #ggsave(plot = p2, filename = paste('Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), './Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+  ggsave(plot = p2, filename = paste('Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
 }
 
 ################################################################################
@@ -313,4 +313,4 @@ p <- ggplot() +
 
 print(p)
 
-#ggsave(plot = p, filename = paste('All_Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), './Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
+ggsave(plot = p, filename = paste('All_Cat_C1_C2_', varcat_name, '.png', sep = ""), bg = 'white', path = paste(getwd(), '/Media/ACP', sep = ""), width = 8, height = 6, dpi = 300)
