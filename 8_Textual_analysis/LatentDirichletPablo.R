@@ -4,9 +4,14 @@ library(tm)
 library(quanteda)
 library(MASS)
 library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(tidytext)
+library(gridExtra)
+
 
 load("./2_Descriptive_analysis/unique_tracks.RData")
-
+PATH_PLOTS <- "./Media/Textual_Analysis/LDA"
 
 track_names = unique_tracks$track_name
 
@@ -54,18 +59,10 @@ preprocess <- function(input_corpus){
 corpus <- preprocess(uncleaned_corpus)
 
 
-
-
-
-
-
 #-------------------------------------------------------------------------------
 
-# Creación  de la TermDocMatrix
-corpus
-
-td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(global = c(5, Inf))))
-
+# Creación  de la TermDocMatrix (3% de frecuencia)
+td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(bounds=list(global = c(3, Inf)))))
 
 
 # Finetunning para escoger el número de topics
@@ -78,25 +75,22 @@ result <- ldatuning::FindTopicsNumber(
   verbose = TRUE
 )
 
+png(file=paste0(PATH_PLOTS, "/lda_finetunning.png"),
+    width=1920, height=1080, units="px", res=130)
+
 FindTopicsNumber_plot(result)
+# Se ve que el 6 o 8 serían buenas métricas
+dev.off()
 
-# Se ve que el 9, 15 e incluso 20 podrían ser buenos números en función de las métricas
 
 
-
-ap_lda <- LDA(t(td.mat), k = 9, control = list(seed = 42), lowfreq=50)
+# MODELO LDA TRAS ESCOGER LA K
+ap_lda <- LDA(t(td.mat), k = 6, control = list(seed = 42))
 ap_lda
 #Word-topic probabilities
 
-library(tidytext)
-
 ap_topics <- tidy(ap_lda, matrix = "beta")
 ap_topics
-
-
-
-library(ggplot2)
-library(dplyr)
 
 dimnames(td.mat)
 
@@ -106,23 +100,84 @@ ap_top_terms <- ap_topics %>%
   ungroup() %>%
   arrange(topic, -beta)
 
+
+png(file=paste0(PATH_PLOTS, "/lda_topics6.png"),
+    width=1920, height=1080, units="px", res=200)
+
 ap_top_terms %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
   ggplot(aes(beta, term, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~ topic, scales = "free") +
   scale_y_reordered()
+dev.off()
+topic_names <- c("alegria gen", "malsonant", "castellà", "amor 1", "amor 2", "nostàlgia")
+
+#-------------------------------------------------------------------------------
+
+# Profiling Por Género
+gammas <- posterior(ap_lda)$topics
+topics_prof <- as.data.frame(gammas)
+
+document_topics <- topics_prof %>%
+  mutate(predominant_topic = apply(gammas, 1, which.max))
+
+
+unique_tracks$LDA_topic <- as.factor(document_topics$predominant_topic)
+
+# Función para crear gráficos de barras
+create_bar_plot <- function(data, topic_col, categoric_col) {
+  ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
+    geom_bar(position = "fill") +
+    labs(y = "Proportion", fill = categoric_col) +
+    scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#cf2a25", "#d46c06", "#205633"))
+}
+
+# Lista de las variables binarias
+binary_vars <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino", "explicit", "gender")#, "collab", "explicit")
+
+# Crear gráficos para cada variable binaria
+plots <- lapply(binary_vars, function(var) {
+  create_bar_plot(unique_tracks, "LDA_topic", var)
+})
+
+# Mostrar los gráficos
+
+
+png(file=paste0(PATH_PLOTS, "/profiling_genres.png"),
+    width=1920, height=1580, units="px", res=200)
+do.call(grid.arrange, c(plots, ncol = 2))
+
+dev.off()
+
+numeric_vars <- c("artist_popularity", "artist_followers", "danceability", "energy", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams")
+
+
+
+
+
+
+
+
+
+
+class_colors <- c("#1db954", "#ff7b24", "#df75ff")
+modality_colors <- c("#1db954", "#191414", "#3229da", "#c325cf", "#cf2a25", "#d46c06", "#205633", "#444444", "#67b1ff", "#8b329c" ,"#cf2555", "#d4ab06")
+
+
+barplot <- ggplot(data=unique_tracks , aes(LDA_topic, y=Freq, fill=Modalitat)) + 
+  geom_bar(stat = "identity", position=position_dodge()) +
+  scale_fill_manual(values=paleta_modalidades) +
+  ylab("Freqüència") +
+  ggtitle(title_barplot) + 
+  theme(plot.title = element_text(hjust = 0.5))
 
 
 #-------------------------------------------------------------------------------
 
-
-
 # Obtener las probabilidades de las palabras en cada tema
 betas <- t(posterior(ap_lda)$terms)
-
-
-
+betas
 # Calcular la matriz de distancia (usamos distancia euclidiana)
 dist_matrix <- dist(betas)
 
@@ -143,13 +198,55 @@ ggplot(mds_df, aes(x = Dim1, y = Dim2, label = word)) +
   ylab("Dimension 2") +
   theme_minimal()
 
+ggplot(mds_df, aes(x = Dim1, y = Dim2, label = word)) +
+  geom_point(color = "blue") +
+  geom_text(vjust = 1, hjust = 1) +
+  ggtitle("MDS Plot of Words based on LDA Topics") +
+  xlab("Dimension 1") +
+  ylab("Dimension 2") +
+  xlim(c(-0.03,0.0)) + 
+  ylim(c(-0.02, 0.01))
+  theme_minimal()
 
 
+  
 
 
+gammas <- posterior(ap_lda)$topics
+gammas
+doc_names <- as.character(unique_tracks$track_name)
+
+#ddd <- data.frame(gammas)
+
+dist_mat <- dist(gammas)
+View(dist_mat)
+mds_result <- cmdscale(dist_mat, k = 2)
+
+mds_df <- as.data.frame(mds_result)
+colnames(mds_df) <- c("Dim1", "Dim2")
+mds_df$word <- unique_tracks$track_name
 
 
+mds_red <- mds_df %>% sample_frac(0.1)
+# Plotear las palabras utilizando ggplot2
+ggplot(mds_red, aes(x = Dim1, y = Dim2, label = word)) +
+  geom_point(color = "blue") +
+  geom_text(vjust = 1, hjust = 1) +
+  ggtitle("MDS Plot of Words based on LDA Topics") +
+  xlab("Dimension 1") +
+  ylab("Dimension 2") +
+  theme_minimal()
 
+
+mds_df_genres <- mds_df
+mds_df_genres$gender <- unique_tracks$latino
+
+ggplot(mds_df_genres, aes(x = Dim1, y = Dim2, color = gender)) +
+  geom_point() +
+  ggtitle("MDS Plot of Words based on LDA Topics") +
+  xlab("Dimension 1") +
+  ylab("Dimension 2") +
+  theme_minimal()
 
 
 
@@ -209,6 +306,13 @@ ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, grou
   geom_line(size=0.6) +
   theme_minimal() +
   scale_color_manual(values = my_colors) 
+
+# Plot separado por tópico predominante
+ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+  geom_line(size=0.6) +
+  theme_minimal() +
+  scale_color_manual(values = my_colors) +
+  facet_wrap(~predominant_topic, ncol = 2)
 
 #, color=predominant_topic)
 
