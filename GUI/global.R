@@ -6,6 +6,7 @@ library(memoise)
 
 load("./8_Textual_analysis/unique_tracks_translated.RData")
 load("./GUI/unique_images.RData")
+
 PATH_PLOTS = paste(getwd(),"./Media/Textual_Analysis/Analysis/Translated",sep="")
 
 
@@ -59,7 +60,6 @@ getTermMatrix <- memoise(function(book) {
 
 track_info_from_index <- memoise(function(track_id){
   row = images_unique[images_unique$track_id == track_id, ]
-  print(row)
   row
 })
 
