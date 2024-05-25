@@ -122,7 +122,7 @@ plot(ve, model = model_gau, main = "Ajust del Model Gaussià")
 #Ajust automàtic
 #fit.variogram: ajusta el modelo de variograma a un variograma empírico.
 
-va <- fit.variogram(ve, vt) 
+va <- fit.variogram(ve, model_sph) 
 va
 plot(ve, pl = T, model = va)
 
