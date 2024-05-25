@@ -27,7 +27,7 @@ server <- function(input, output, session) {
     v <- terms()
     selected_track <- images_unique[images_unique$track_name == input$selection, ]
     img_path <- selected_track$artist_img
-    if (!is.null(img_path) && img_path != "") {
+    if (!is.null(img_path) && img_path != " ") {
       img_tag <- tags$img(src = img_path, width = "50%")
     } else {
       img_tag <- tags$img(src = "./GUI/error.png", width = "50%")
@@ -45,12 +45,10 @@ server <- function(input, output, session) {
     isolate({
       withProgress({
         setProgress(message = "Creating playlist...")
-        print(input$text)
         top_similar_docs <- perform_lsa(input$text, input$request, n=30)
         top_similar_ids1 <- top_similar_docs$ids
         saveRDS(top_similar_ids1, "./GUI/playlist_ids.rds")
         top_similar_docs <- top_similar_docs$documents
-        print(top_similar_docs)
         top_similar_ids1
       })
     })
@@ -64,6 +62,7 @@ server <- function(input, output, session) {
       track_info <- track_info_from_index(track_id)  # You need to implement this function
       
       # Create HTML elements for displaying track info
+      print(track_info)
       track_name <- tags$h2(track_info$track_name)
       artist_name <- tags$p(track_info$artist_name)
       album_image <- tags$img(src = track_info$album_img, width = "50%")
