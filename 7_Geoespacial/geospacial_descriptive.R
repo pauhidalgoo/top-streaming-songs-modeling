@@ -90,7 +90,7 @@ ggplot(data = data_summarized) +
   facet_wrap(~year_week) +
   theme_bw() +
   scale_fill_viridis(name = "Followers") +
-  labs(title = "Mapa de Seguidores de Artistas por Año", fill = "Artist Followers") +
+  labs(title = "Mapa d'Artist_followers per anys", fill = "Artist Followers") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 View(data_summarized)
@@ -174,8 +174,8 @@ for (i in seq_along(plots)) {
   print(plots[[i]])  # Mostrar el plot
   
   # Guardar el plot
-  #ggsave(filename = paste("heatmap_", generos[i], ".png", sep = ""),
-         #plot = plots[[i]], width = 10, height = 8)
+  ggsave(filename = paste("heatmap_", generos[i], ".png", sep = ""),
+         plot = plots[[i]], width = 10, height = 8)
 }
 
 #### VISUALITZACIÓ DE QUIN GÈNERE PREDOMINA A CADA PAÍS
@@ -355,4 +355,271 @@ leaflet(data = spotify_sf) %>%
 
 ########## NOMÉS FALTA EL MAPA DE DENSITAT PER CONTINENTS
 
+##EEUU
 
+
+###### MODELADO Datos Tipo II : Procesos Puntuales
+######### Se aconsejan estos links
+#Points/Punctual Process in R--LIBRARY(spatstat)
+#############  https://spatstat.org/
+#https://kevintshoemaker.github.io/NRES-746/sppm.html
+#https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
+
+#### EXAMPLE with a transactional report of crimes in USA
+### MODELLING DENSITY and INTENSITY
+
+###MODELADO CON DATOS GEOESPACIALES
+#### Paquetes necesarios
+# Load the packages
+list.of.packages = c("geoR", "sm", "sp", "gstat", "npsp", "geohashTools",
+                     "rgdal", "ggmap", "ggplot2", "dplyr", "gridExtra", "maps", 
+                     "rnaturalearth", "rnaturalearthdata", "osmdata") 
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) {
+  install.packages(new.packages)
+}
+lapply(list.of.packages, require, character.only = T)
+rm(list.of.packages, new.packages)
+data(crime)
+head(crime)
+crime <- crime[complete.cases(crime), ]
+ggplot(crime, aes(x = lon, y = lat)) + 
+  coord_equal() + 
+  xlab('Longitude') + 
+  ylab('Latitude') + 
+  stat_density2d(aes(fill = ..level..), alpha = .5,
+                 geom = "polygon", data = crime) + 
+  scale_fill_viridis_c() + 
+  theme(legend.position = 'none')
+
+ggplot(crime, aes(x = lon, y = lat)) + 
+  coord_equal() + 
+  xlab('Longitude') + 
+  ylab('Latitude') + 
+  stat_density2d(aes(fill = ..level..), alpha = .5,
+                 h = .02, n = 300,
+                 geom = "polygon", data = crime) + 
+  scale_fill_viridis_c() + 
+  theme(legend.position = 'none')
+
+ggplot(crime, aes(x = lon, y = lat)) + 
+  geom_point(size = 0.1, alpha = 0.05) + 
+  coord_equal() + 
+  xlab('Longitude') + 
+  ylab('Latitude') + 
+  coord_cartesian(xlim = c(-95.1, -95.7), 
+                  ylim = c(29.5, 30.1))
+
+# plot a ggmap basemap
+## us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+## map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite",legend="none")
+## plot(map)
+## scatterplot_murder <- qmplot(x=lon,y=lat,data=filter(crime,offense=="murder"),legend="none",color=I("darkred"))
+## plot(scatterplot_murder)
+
+us <- map_data("state")
+names(data)
+data_eeuu <- dplyr::filter(data, nationality == "United States")
+
+data_eeuu <- filter(data, nationality == "United States")
+# Crear el mapa base con ggplot2
+us_map <- ggplot() +
+  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  coord_fixed(1.3) +
+  theme_void()
+print(us_map)
+
+
+scatterplot_murder <- us_map +
+  geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "darkred", size = 1, alpha = 0.6) +
+  theme(legend.position = "none")
+print(scatterplot_murder)
+
+### Comments about distribution patterns
+## The experiment above could be repeated by using other levels for "offense")
+
+# create other types of plots with the ggmap package
+densityplot_murder <- qmplot(x=longitude, y=latitude,data = filter(data,nationality=="United States"), 
+                             geom = "blank",  
+                             darken = .7, egend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                                                                                geom = "polygon",alpha = .5,
+                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                                                   high = "red")
+plot(densityplot_murder)
+####
+#### Repeat the analysis by putting a third dimension --> to use date data
+#### to filter temporal patterns and compare month by month in order to
+#### find out if there are relationships between time and space.
+
+
+
+remove.packages("ggmap")
+install.packages("devtools")
+devtools::install_github("stadiamaps/ggmap")
+library("ggmap")
+register_stadiamaps(key = "740eec49-70d9-4974-b3f3-1928c7795f7f")
+atlCan <- get_stadiamap(bbox = c(left   = -70.2, 
+                                 bottom = 43.0,
+                                 right  = -49.8,
+                                 top    = 54.5), 
+                        zoom = 3, maptype = "stamen_terrain_background")
+atlCan <- get_stadiamap(bbox = c(left   = -125.0, 
+                                 bottom = 24.5,
+                                 right  = -66.9,
+                                 top    = 49.0), 
+                        zoom = 3, maptype = "stamen_terrain_background")
+
+print(atlCan)
+ggmap::ggmap(atlCan)
+
+hola <- qmplot(longitude, latitude, data = data_eeuu, geom = "blank", maptype = "toner-background", 
+               darken = .7, legend = "topright")
+# create other types of plots with the ggmap package
+plot(hola)
+densityplot_murder <- qmplot(x=longitude, y=latitude,data_eeuu, 
+                             geom = "blank", maptype = "toner-background", 
+                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                                                                                geom = "polygon",alpha = .5,
+                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                                                  high = "red")
+plot(densityplot_murder)
+get_stadiamap()
+ggmap::ggmap(get_stadiamap())
+hola <- qmplot(longitude, latitude, data = data_eeuu, geom = "blank", maptype = "terrain", 
+               darken = .7, legend = "topright")
+
+library(ggplot2)
+
+scatterplot_murder <- us_map + ggplot(data_eeuu, aes(x = longitude, y = latitude)) +
+  geom_blank() +
+  stat_density2d(aes(fill = after_stat(level)), geom = "polygon", alpha = 0.5) +
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
+
+scatterplot_murder <- us_map +
+  geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "darkred", size = 1, alpha = 0.6) +
+  theme(legend.position = "none")
+
+library(ggplot2)
+library(maps)
+
+# Cargar los datos del mapa
+us <- map_data("state")
+
+us_map <- ggplot() +
+  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  coord_fixed(1.3) +
+  theme_void()
+
+# Crear el mapa base con ggplot2
+us_map <- ggplot(data = us, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", color = "black") +  # Define las características del polígono
+  coord_fixed(1.3) +  # Fijar la proporción de aspecto para el mapa de USA
+  theme_void()  # Remover elementos adicionales como texto y etiquetas de los ejes
+
+# Agregar la densidad de los datos sobre el mapa
+scatterplot_murder <- us_map + 
+  geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(level)), alpha = 0.5) +
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
+
+us_map <- ggplot(data = us, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", color = "black") +
+  coord_fixed(1.3) +
+  theme_void()
+
+# Agregar la densidad de los datos sobre el mapa
+scatterplot_murder <-ggplot() + geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(density)), alpha = 0.5)+
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
+
+# Mostrar el gráfico
+print(scatterplot_murder)
+
+
+
+
+########## VAAA AMB EL PUTU MAPA
+
+library(ggmap)
+min_longitude <- min(data_eeuu$longitude, na.rm = TRUE)
+max_longitude <- max(data_eeuu$longitude, na.rm = TRUE)
+min_latitude <- min(data_eeuu$latitude, na.rm = TRUE)
+max_latitude <- max(data_eeuu$latitude, na.rm = TRUE)
+
+bbox <- c(left = min_longitude, bottom = min_latitude, right = max_longitude, top = max_latitude)
+
+atlCan <- get_stadiamap(bbox = bbox, 
+                        zoom = 6, maptype = "stamen_terrain_background")
+base_map <- ggmap(atlCan)
+base_map
+
+library(ggplot2)
+data_eeuu <- data_eeuu[!is.na(data_eeuu$longitude) & !is.na(data_eeuu$latitude),]
+
+enhanced_map <- base_map + 
+  geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(level)), alpha = 0.5) +
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red") +
+  labs(fill = "Density Level")
+
+enhanced_map <- base_map + 
+  stat_density_2d(geom = "polygon", contour = TRUE,
+                  aes(fill = after_stat(level)), colour = "black",
+                  bins = 5)+
+  geom_point()+
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  theme_classic()
+
+verification_map <- base_map + 
+  geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "red", size = 1)
+# Asumiendo que base_map es tu mapa base generado previamente
+enhanced_map <- base_map + 
+  geom_density_2d_filled(
+    data = data_eeuu, 
+    aes(x = longitude, y = latitude, fill = after_stat(density)),  # Usando density
+    alpha = 0.5
+  ) +
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red") +
+  labs(fill = "Density Level")
+
+# Mostrar el mapa con los puntos
+print(verification_map)
+# Mostrar el gráfico mejorado
+print(enhanced_map)
+
+
+########us <- map_data("state")
+murder_data <- filter(crime, offense == "murder")
+# Crear el mapa base con ggplot2
+us_map <- ggplot() +
+  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  coord_fixed(1.3) +
+  theme_void()
+
+scatterplot_murder <- us_map +
+  geom_point(data = murder_data, aes(x = lon, y = lat), color = "darkred", size = 1, alpha = 0.6) +
+  theme(legend.position = "none")
+print(scatterplot_murder)
+
+### Comments about distribution patterns
+## The experiment above could be repeated by using other levels for "offense")
+
+# create other types of plots with the ggmap package
+densityplot_murder <- qmplot(x=lon, y=lat,data = filter(crime,offense=="murder"), 
+                             geom = "blank", maptype = "toner-background", 
+                             darken = .7, egend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                                                                                geom = "polygon",alpha = .5,
+                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                                                   high = "red")
+plot(densityplot_murder)
+# plot a ggmap basemap
+us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+
+data(crime)
+head(crime)
+crime <- crime[complete.cases(crime), ]
+
+map <- get_stadiamap(us, zoom = 5, maptype = "stamen_terrain_background",legend="none")
+plot(map)
+sum(crime$offense == "murder", na.rm = TRUE)
+dato=filter(crime,offense=="murder", na.rm = TRUE)
+scatterplot_murder <- qmplot(x=lon,y=lat,data=filter(crime,offense=="murder"),legend="none",color=I("darkred"))
+plot(scatterplot_murder)
+View(crime)
