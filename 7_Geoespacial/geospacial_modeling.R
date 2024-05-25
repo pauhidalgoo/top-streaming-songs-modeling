@@ -106,13 +106,13 @@ show.vgms()
 #psill = sill - nugget = 1 - 0.5
 
 # Esfèric
-model_sph <- vgm(psill = 0.6, model = "Sph", range = 350, nugget = 0.4)
+model_sph <- vgm(psill = 0.34, model = "Sph", range = 245.43, nugget = 0.34)
 
 # Exponencial
-model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
+model_exp <- vgm(psill = 0.34, model = "Exp", range = 245.43, nugget = 0.34)
 
 # Gaussià
-model_gau <- vgm(psill = 0.6, model = "Gau", range = 350, nugget = 0.4)
+model_gau <- vgm(psill = 0.34, model = "Gau", range = 245.43, nugget = 0.34)
 
 # Graficar el variograma empíric amb els models ajustats
 plot(ve, model = model_sph, main = "Ajust del Model Esfèric")
@@ -122,7 +122,7 @@ plot(ve, model = model_gau, main = "Ajust del Model Gaussià")
 #Ajust automàtic
 #fit.variogram: ajusta el modelo de variograma a un variograma empírico.
 
-va <- fit.variogram(ve, vt) 
+va <- fit.variogram(ve, model_sph) 
 va
 plot(ve, pl = T, model = va)
 
@@ -206,6 +206,74 @@ print(mean(ok.cv.a$residual^2))
 # Error medio cuadrático (RMSE) es una medida general. Idealmente pequeño
 print(sqrt(sum(ok.cv.a$residual^2) / length(ok.cv.a$residual)))
 print(var(ok.cv.a$residual, na.rm = TRUE)) # Idealmente pequeño
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#codi copilot NO VA
+# Crear una malla per a la interpolació
+grd <- expand.grid(x = seq(min(data$longitude), max(data$longitude), length.out = 100),
+                   y = seq(min(data$latitude), max(data$latitude), length.out = 100))
+
+coordinates(grd) <- ~x + y
+gridded(grd) <- TRUE
+
+plot(grd)
+
+# Interpolació amb kriging
+kriging <- krige(logartist_followers ~ 1, data, grd, model = model_sph)
+plot(kriging)
+
+# Crear un mapa amb les prediccions
+ggplot() +
+  geom_sf(data = world_cities, fill = "white", color = "black") + 
+  geom_tile(data = as.data.frame(kriging), aes(x = x, y = y, fill = var1.pred)) +
+  scale_fill_gradient(low = "white", high = "darkgreen") +
+  theme_minimal() +
+  labs(title = "Mapa amb les prediccions de kriging")
+
+# Validació del model
+set.seed(123)
+data <- data[sample(nrow(data)), ]
+train <- data[1:round(0.7 * nrow(data)), ]
+test <- data[(round(0.7 * nrow(data)) + 1):nrow(data), ]
+
+# con ok.cv.a
+ok.cv.a <- krige.cv(logartist_followers ~ 1, data = data, model = model_exp, nfold = 5)
+print(ok.cv.a)
+
+# correlacio
+cor.test(ok.cv.a$observed, ok.cv.a$predicted)
+
+#promig residus
+mean(ok.cv.a$residuals)
+
+#MSPE i RMSE i variança residus
+mean(ok.cv.a$residuals^2)
+sqrt(mean(ok.cv.a$residuals^2))
+var(ok.cv.a$residuals)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
