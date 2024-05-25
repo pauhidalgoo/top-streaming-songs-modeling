@@ -8,7 +8,7 @@ library(LSAfun)
 library(SnowballC)
 
 load("./8_Textual_analysis/unique_tracks_translated.RData")
-
+load("./8_Textual_analysis/unique_translated_2024.RData")
 
 # Function to interpret user input and set filters
 interpret_request <- function(request) {
@@ -105,6 +105,12 @@ interpret_request <- function(request) {
     }
   }
   
+  if (grepl("2024", request, ignore.case = TRUE)) {
+    filters$new_data <- TRUE
+  } else {
+    filters$new_data <- FALSE
+  }
+  
   return(filters)
 }
 
@@ -133,10 +139,18 @@ perform_lsa <- function(phrase, request, n = 5) {
   # Interpret the user request to set filters
   filters <- interpret_request(request)
   
-  # Clean the corpus
-  uncleaned_corpus <- Corpus(VectorSource(unique_translated$lyrics))
+  if (filters$new_data == TRUE){
+    print("yess")
+    dataset <- combined_df
+    
+  } else {
+    print("no")
+    dataset <- unique_translated
+    
+  }
+  uncleaned_corpus <- Corpus(VectorSource(dataset$lyrics))
   clean_corpus_data <- clean_corpus(uncleaned_corpus)
-  
+
   # Extend the phrase to the minimum length
   phrase <- extend_phrase(phrase)
   
@@ -146,7 +160,7 @@ perform_lsa <- function(phrase, request, n = 5) {
   
   # Create the term-document matrix
   td.mat <- TermDocumentMatrix(new_corpus)
-  min_freq <- ceiling(0.1 * length(unique_translated$track_name))
+  min_freq <- ceiling(0.1 * length(dataset$track_name))
   terms_freq_10 <- findFreqTerms(td.mat, lowfreq = min_freq)
   td.mat_freq_10 <- td.mat[terms_freq_10, ]
   td.mat <- as.matrix(td.mat_freq_10)
@@ -162,19 +176,21 @@ perform_lsa <- function(phrase, request, n = 5) {
   
   # Create a data frame with similarities and track details
   similarity_df <- data.frame(
-    track_name = unique_translated$track_name,
-    track_id = unique_translated$track_id,
-    artist_name = unique_translated$artist_name,
-    acousticness = unique_translated$acousticness,
-    valence = unique_translated$valence,
+    track_name = dataset$track_name,
+    track_id = dataset$track_id,
+    artist_name = dataset$artist_name,
+    acousticness = dataset$acousticness,
+    valence = dataset$valence,
     similarity = similarities,
-    danceability = unique_translated$danceability,
-    explicit = unique_translated$explicit,
-    country = unique_translated$nationality,
-    gender = unique_translated$gender,
-    language = unique_translated$lyrics_language,
+    danceability = dataset$danceability,
+    explicit = dataset$explicit,
+    country = dataset$nationality,
+    gender = dataset$gender,
+    language = dataset$lyrics_language,
     stringsAsFactors = FALSE
   )
+  
+  print(similarity_df[similarity_df$artist_name == "SZA", ])
   
   # Add genre columns to similarity_df
   genre_keywords <- list(
@@ -188,7 +204,7 @@ perform_lsa <- function(phrase, request, n = 5) {
   )
   
   for (genre in names(genre_keywords)) {
-    similarity_df[[genre]] <- unique_translated[[genre]]
+    similarity_df[[genre]] <- dataset[[genre]]
   }
   
   # Apply filters to the similarity data frame
