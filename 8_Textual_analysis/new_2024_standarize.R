@@ -39,11 +39,29 @@ top50_tracks_lyrics$year_release <- as.numeric(format(as.Date(top50_tracks_lyric
 
 load("8_Textual_analysis/unique_tracks_translated.RData")
 # Add missing columns with FALSE
+genre_columns <- c("pop", "hip _hop", "rock", "electro", "christmas", "cinema","latino")
+top50_tracks_lyrics[genre_columns] <- FALSE
+
 missing_columns <- setdiff(names(unique_translated), names(top50_tracks_lyrics))
-top50_tracks_lyrics[missing_columns] <- FALSE
+top50_tracks_lyrics[missing_columns] <- NA
 
 # Select and reorder columns to match unique_translated
 top50_tracks_lyrics <- top50_tracks_lyrics %>%
   select(names(unique_translated))
 
 save(top50_tracks_lyrics, file="./8_Textual_analysis/2024_global_tracks.RData")
+
+
+top50_tracks_lyrics$"explicit" <- as.logical(top50_tracks_lyrics$"explicit")
+
+top50_tracks_lyrics$key <- as.factor(top50_tracks_lyrics$key)
+top50_tracks_lyrics$time_signature <- as.factor(top50_tracks_lyrics$time_signature)
+top50_tracks_lyrics$year_release <- as.factor(top50_tracks_lyrics$year_release)
+
+
+top50_tracks_lyrics[c("nationality", "gender")] <- "Unknown"
+
+combined_df <- bind_rows(unique_translated, top50_tracks_lyrics)
+
+
+save(combined_df, file="./8_Textual_analysis/unique_translated_2024.RData")
