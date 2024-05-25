@@ -14,6 +14,7 @@ if(length(new.packages) > 0) {
 lapply(list.of.packages, require, character.only = T)
 rm(list.of.packages, new.packages)
 
+install.packages("rgdal")
 library("rgdal")
 library("sp")
 library("sf")
@@ -25,12 +26,12 @@ library(dplyr)
 # Carreguem el dataset amb les coordenades (latitude i longitude)
 
 load('./7_Geoespacial/data_coordenades.RData')
-
+View(data)
 # Treiem les files amb (artistes, cançons) repetides
 
 data <- data %>%
   distinct(artist_name, .keep_all = TRUE)
-
+View(data)
 
 # 1. Eliminar duplicados para cada combinación única de artist_name y year_week
 data <- data %>%
@@ -43,18 +44,12 @@ data <- data %>%
 
 ###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
-# MAPA AMB ELS PUNTS DE LES DADES DEL DATASET
+# SHAPEFILE
 
 world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
 
-data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
-
-ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") + 
-  geom_sf(data = data_sf, color = "darkgreen", size = 1) +  
-  theme_minimal() +
-  labs(title = "Mapa amb els punts de dades")
-
+plot(world_cities$geometry)
+points(data, col = 'red', pch = 20)
 
 #################
 #  VARIOGRAMA  #
@@ -93,7 +88,7 @@ hist(distances, breaks = 50, main = "Histogram of Distances", xlab = "Distance (
 # CUTOFF =  distancia máxima que se considera al calcular el variograma
 # WIDTH = mida intervals en els que s'agrupen les parelles de punts
 
-ve <- variogram(logartist_followers ~ 1, data, cutoff = 5000, width=35)
+ve <- variogram(logartist_followers ~ 1, data, cutoff = 5000, width=300)
 print(ve)
 plot(ve)
 
@@ -105,13 +100,13 @@ show.vgms()
 #psill = sill - nugget = 1 - 0.5
 
 # Esfèric
-model_sph <- vgm(psill = 0.6, model = "Sph", range = 350, nugget = 0.4)
+model_sph <- vgm(psill = 0.2, model = "Sph", range = 3000, nugget = 0.4)
 
 # Exponencial
-model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
+model_exp <- vgm(psill = 0.2, model = "Exp", range = 3000, nugget = 0.4)
 
 # Gaussià
-model_gau <- vgm(psill = 0.6, model = "Gau", range = 350, nugget = 0.4)
+model_gau <- vgm(psill = 0.2, model = "Gau", range = 3000, nugget = 0.4)
 
 # Graficar el variograma empíric amb els models ajustats
 plot(ve, model = model_sph, main = "Ajust del Model Esfèric")
@@ -121,7 +116,7 @@ plot(ve, model = model_gau, main = "Ajust del Model Gaussià")
 #Ajust automàtic
 #fit.variogram: ajusta el modelo de variograma a un variograma empírico.
 
-va <- fit.variogram(ve, vt) 
+va <- fit.variogram(ve, model_sph) 
 va
 plot(ve, pl = T, model = va)
 
@@ -132,60 +127,38 @@ plot(ve, pl = T, model = va)
 
 # Predir valors en ubicacions no mostrejades basant-se en ubicacions mostrejades
 
-# Cargar los paquetes necesarios
-install.packages("sp")
-install.packages("gstat")
+# Crear una cuadrícula para la interpolación
+r <- raster(ncol = 100, nrow = 100, 
+            xmn = min(data@coords[,1]), xmx = max(data@coords[,1]),
+            ymn = min(data@coords[,2]), ymx = max(data@coords[,2]))
+values(r) <- 1:ncell(r)  # Asignar valores al raster
+grid <- as(r, "SpatialPixelsDataFrame")
+proj4string(grid) <- CRS(proj4string(data))
 
 
-# Crear una malla per a la interpolació
+ok <- krige(logartist_followers ~ 1, locations = data, newdata = grid, model = model_sph)
+ok$pred <- 10^(ok$var1.pred)
 
-long_range <- range(data$longitude, na.rm = TRUE)
-lat_range <- range(data$latitude, na.rm = TRUE)
-resolution <- 1
+summary(ok)
+ok_df <- as.data.frame(ok)
+head(ok_df)
 
-long_seq <- seq(long_range[1], long_range[2], by = resolution)
-lat_seq <- seq(lat_range[1], lat_range[2], by = resolution)
-grid <- expand.grid(longitude = long_seq, latitude = lat_seq)
-
-# Verificar la malla
-print(head(grid))
-print(dim(grid))
-
-coordinates(grid) <- ~longitude + latitude
-gridded(grid) <- TRUE
-
-print(str(grid))
-
-num_punts <- nrow(as.data.frame(grid))
-cat("Número de puntos en la malla:", num_punts, "\n")
-
-
-# Calcular el semivariograma y ajustar un modelo (ja fet prèviament)
-
-ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width=35)
-model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
-plot(ve, model = model_exp)
-
-
-# Realitzar kriging ordinari amb el model ajustat
-
-#ok <- krige(artist_followers ~ 1, locations = data, newdata = grid, model = model_exp)
-#ok$pred <- ok$var1.pred # Asumiendo que no necesitas transformar de nuevo
-#str(ok)
-
-ok <- krige(logartist_followers ~ 1, locations = data, newdata = grid, model = model_exp)
-ok$pred <- 10^(ok$var1.pred) 
-str(ok)
-
-# Visualització
+# Crear puntos para superponer en el gráfico
 pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$logartist_followers / max(data$logartist_followers))
-print(spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-             main = "Predicció OK, log-Artist Followers", sp.layout = list(pts.s)), 
-      split = c(1, 1, 2, 1), more = TRUE)
-pts.s <- list("sp.points", data, col = "black", pch = 20)
-print(spplot(ok, zcol = "var1.var", col.regions = rev(gray(seq(0, 1, .01))), asp = 1,
-             main = "Variança OK, log-Artist Followers^2", sp.layout = list(pts.s)), 
-      split = c(2, 1, 2, 1), more = FALSE)
+
+# Visualizar los resultados de la interpolación
+spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
+       main = "Interpolación Kriging de logartist_followers", sp.layout = list(pts.s))
+
+# Visualización detallada con ggplot2
+library(ggplot2)
+ggplot(ok_df, aes(x = x1, y = x2, fill = pred)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = rev(heat.colors(50))) +
+  geom_point(data = as.data.frame(data), aes(x = longitude, y = latitude, size = logartist_followers), color = "white") +
+  labs(title = "Interpolación Kriging de logartist_followers",
+       x = "Longitude", y = "Latitude", fill = "Predicción") +
+  theme_minimal()
 
 
 # Validació del Model (Opcional)
@@ -213,33 +186,10 @@ print(var(ok.cv.a$residual, na.rm = TRUE)) # Idealmente pequeño
 
 
 
-longitudes <- seq(from = -180, to = 180, by = 5)  # Longitudes de -180 a 180 grados
-latitudes <- seq(from = -90, to = 90, by = 5)     # Latitudes de -90 a 90 grados
 
-# Crear una malla combinando todas las combinaciones de coordenadas
-malla_mundo <- expand.grid(Longitude = longitudes, Latitude = latitudes)
 
-# Convertir la malla en un objeto SpatialPointsDataFrame
-coords <- cbind(malla_mundo$Longitude, malla_mundo$Latitude)
-malla_sp <- SpatialPointsDataFrame(coords, data = malla_mundo)
 
-# Verificar la estructura de la malla
-print(head(malla_sp))
-print(dim(malla_sp))
 
-# Número de puntos en la malla
-num_punts <- nrow(malla_sp)
-cat("Número de puntos en la malla:", num_punts, "\n")
-
-# Calcular el semivariograma y ajustar un modelo (ya hecho previamente)
-ve <- variogram(logartist_followers ~ 1, data, cutoff = 1300, width = 35)
-model_exp <- vgm(psill = 0.6, model = "Exp", range = 350, nugget = 0.4)
-plot(ve, model = model_exp)
-
-# Realizar kriging ordinario con la malla de resolución ajustada
-ok <- krige(logartist_followers ~ 1, locations = data, newdata = malla_sp, model = model_exp)
-ok$pred <- 10^(ok$var1.pred)  # Volver a valores originales después del kriging log-transformación
-print(str(ok))
 
 
 

@@ -1,8 +1,17 @@
 load('./7_Geoespacial/data_coordenades.RData')
+
+install.packages("viridis")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("leaflet")
+
+library(dplyr)
 library(sf)
 library(ggplot2)
-library(dplyr)
-library(viridis) 
+library(viridis)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(leaflet)
 
 # Obrim el shapefile
 world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
@@ -15,6 +24,7 @@ ggplot() +
 
 data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
 
+# Visualitzem els llocs on tenim dades (ubicació de cada artista)
 ggplot() +
   geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuixem el shapefile
   geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Afegim els punts
@@ -22,30 +32,26 @@ ggplot() +
   labs(title = "Mapa amb els punts de dades")
 
 st_crs(world_cities) <- 4326
-View(data)
 
-# Les coordenades estan segons artistes, així agrupem pel nom d'artista. 
+############# ARTIST_FOLLOWERS #############
+
+# Agrupem pel nom de l'artista, ja que les coordenades estan segons l'artista 
 data_grouped <- data %>%
   group_by(artist_name) %>% 
   summarize(
     artist_followers = mean(artist_followers, na.rm = TRUE),
     longitude = mean(longitude, na.rm = TRUE),  
     latitude = mean(latitude, na.rm = TRUE),
-    year_release = year_release,
     .groups = "drop"
   )
-
-View(data_grouped)
 
 data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
 
 data_joined <- st_join(world_cities, data_sf, join = st_intersects)
 
 data_summarized <- data_joined %>%
-  group_by(name, year_release) %>%
+  group_by(name) %>%
   summarize(avg_followers = mean(artist_followers), .groups = "drop")
-
-print(head(data_summarized))
 
 # Creem un mapa de calor segons els followers dels artistes
 ggplot(data = data_summarized) +
@@ -55,49 +61,33 @@ ggplot(data = data_summarized) +
        fill = "Avg Followers") +
   theme_minimal()
 
-#######################################
-###### PARA HACER EL DE GÈNERES #######
-#######################################
+#########################################
+# VISUALITZAR ARTIST_FOLLOWERS PER ANYS #
+#########################################
 
-# Cargar los datos de los países
-world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
+data_grouped <- data %>%
+  group_by(artist_name, year_week) %>% 
+  summarize(
+    artist_followers = mean(artist_followers, na.rm = TRUE),
+    longitude = mean(longitude, na.rm = TRUE),  
+    latitude = mean(latitude, na.rm = TRUE),
+    .groups = "drop"
+  )
 
-data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
-View(data_sf)
+data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
 
 data_joined <- st_join(world_cities, data_sf, join = st_intersects)
-View(data_joined)
-
-data_summarized <- data_joined %>%
-  group_by(name, hip_hop) %>%
-  summarize(songs_per_genre = n(), .groups = "drop")
-
-print(head(data_summarized))
-
-create_heatmap <- function(data, genre_column) {
-  ggplot(data = data %>% filter(!!sym(genre_column) == 1)) +
-    geom_sf(aes(fill = songs_per_genre), color = "grey") +
-    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
-    labs(title = paste("Mapa de Calor de Canciones por Género:", genre_column),
-         fill = "Número de Canciones") +
-    theme_minimal()
-}
-
-map_hip_hop <- create_heatmap(data_summarized, "hip_hop")
-
-print(map_hip_hop)
-
-########################
-# VISUALITZAR PER ANYS #
-########################
 
 data_summarized <- data_joined %>%
   group_by(name) %>%
   summarize(songs_per_genre = n(), .groups = "drop")
+data_summarized <- data_joined %>%
+  group_by(name, year_week) %>%
+  summarize(avg_followers = mean(artist_followers), .groups = "drop")
 
 ggplot(data = data_summarized) +
-  geom_sf(aes(fill = artist_followers)) +
-  facet_wrap(~year_weak) +
+  geom_sf(aes(fill = avg_followers)) +
+  facet_wrap(~year_week) +
   theme_bw() +
   scale_fill_viridis(name = "Followers") +
   labs(title = "Mapa de Seguidores de Artistas por Año", fill = "Artist Followers") +
@@ -105,15 +95,94 @@ ggplot(data = data_summarized) +
 
 View(data_summarized)
 
+# Com es veu molt petit fem els plots per separat:
+
+data_per_anys <- data %>%
+  group_by(nationality, year_week, latitude, longitude) %>%
+  summarize(mean_followers = mean(artist_followers, na.rm = TRUE), .groups = 'drop')
+
+data_sf <- st_as_sf(data_per_anys, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+data_joined <- st_join(world_cities, data_sf, join = st_intersects)
+
+data_summarized <- data_joined %>%
+  group_by(name, year_week) %>%
+  summarize(avg_followers = mean(mean_followers), .groups = "drop")
+
+plot_heatmap_per_year <- function(year) {
+  ggplot(data = filter(data_summarized, year == year)) +
+    geom_sf(aes(fill = avg_followers), color = "grey") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+    labs(title = paste("Mapa de Calor de Artist_followers por País en el Año", year),
+         fill = "Avg Followers") +
+    theme_minimal()
+}
+
+unique_years <- unique(data_summarized$year_week)
+plots <- lapply(unique_years, plot_heatmap_per_year)
+
+for (i in seq_along(plots)) {
+  print(plots[[i]])
+  
+  # Para guardar cada plot como archivo de imagen
+  #ggsave(filename = paste("heatmap_", unique_years[i], ".png", sep = ""),
+  #plot = plots[[i]], width = 10, height = 8)
+}
+
 #########################################################
-# VISUALITZAR QUIN GÈNERE ÉS EL PREDOMINANT A CADA PAIS #
+######################## GÈNERES ########################
 #########################################################
 
-genre_colors <- c("Pop" = "red", "Rock" = "blue", "Hip Hop" = "lightgreen", "Christmas" = "gold",
+#### NOMBRE DE CANÇONS QUE HI HA DE CADA GÈNERE A CADA PAÍS
+
+# Recordar que això s'ha de filtrar per cancons, sinó les contarà repetides
+
+generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
+
+plot_genre_heatmap <- function(genre) {
+  # Agrupem i sumem la variable per nacionalitat
+  data_grouped <- data %>%
+    group_by(nationality) %>%
+    summarize(
+      count = sum(!!sym(genre), na.rm = TRUE),
+      longitude = mean(longitude, na.rm = TRUE),
+      latitude = mean(latitude, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Convertim a sf object
+  data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+  
+  # Unió geospacial
+  data_joined <- st_join(world_cities, data_sf, join = st_intersects)
+  
+  # Per país (name)
+  data_summarized <- data_joined %>%
+    group_by(name) %>%
+    summarize(sum_genre = sum(count), .groups = "drop")
+  
+  ggplot(data = data_summarized) +
+    geom_sf(aes(fill = sum_genre), color = "grey") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+    labs(title = paste("Mapa de Calor del número de canciones de", genre),
+         fill = paste("Sum", genre)) +
+    theme_minimal()
+}
+
+plots <- lapply(generos, plot_genre_heatmap)
+
+for (i in seq_along(plots)) {
+  print(plots[[i]])  # Mostrar el plot
+  
+  # Guardar el plot
+  #ggsave(filename = paste("heatmap_", generos[i], ".png", sep = ""),
+         #plot = plots[[i]], width = 10, height = 8)
+}
+
+#### VISUALITZACIÓ DE QUIN GÈNERE PREDOMINA A CADA PAÍS
+
+genre_colors <- c("Pop" = "gold", "Rock" = "blue", "Hip Hop" = "lightgreen", "Christmas" = "red",
                   "Cinema" = "purple", "Latino" = "orange", "Electro" = "pink", "Other" = "grey")
 st_crs(world_cities) <- 4326
-
-library(tidyr)
 
 data_grouped <- data %>%
   group_by(nationality) %>%
@@ -154,86 +223,65 @@ ggplot(data = data_joined) +
   labs(title = "Género Musical Más Popular por País", fill = "Género") +
   theme_minimal()
 
+##############################
 
-###################POP
+# 1. Porcentaje de Canciones de un Género por País
 
-data_grouped <- data %>%
-  group_by(nationality) %>%
-  summarize(
-    latino = sum(latino, na.rm = TRUE),
-    longitude = mean(longitude, na.rm = TRUE),
-    latitude = mean(latitude, na.rm = TRUE),
-    .groups = "drop"
-  )
+generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro", "collab")
 
-# Convertir a simple features para unir con el shapefile de países
-data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
-data_joined <- st_join(world_cities, data_sf, join = st_intersects)
-
-# Definir los colores para el mapa de calor
-scale_color <- scale_fill_viridis_c(
-  option = "C", 
-  na.value = "grey", 
-  guide = "colorbar",
-  name = "Popularity of Pop"
-)
-
-# Crear el mapa de calor para música pop
-ggplot(data = data_joined) +
-  geom_sf(aes(fill = latino), color = "black") +  # Pintar cada país según la cantidad de música pop
-  scale_color +
-  labs(title = "Popularity of Pop Music by Country", fill = "Number of Pop Songs") +
-  theme_minimal()
-
-
-############# PER TOTS ELS GENERES
-
-library(sf)
-library(dplyr)
-library(ggplot2)
-library(viridis)
-
-# Suponiendo que 'world_cities' ya está cargado
-genres <- c("pop", "rock", "hip_hop", "christmas", "cinema", "latino", "electro")
-
-# Asumiendo que 'data' ya está cargado
-for (genre in genres) {
-  # Agrupar y sumar por género
+for (genre in generos) {
   data_grouped <- data %>%
     group_by(nationality) %>%
     summarize(
-      total = sum(.data[[genre]], na.rm = TRUE),
+      total_songs = n(),
+      genre_count = sum(!!sym(genre), na.rm = TRUE),
+      genre_percentage = 100 * genre_count / total_songs,
       longitude = mean(longitude, na.rm = TRUE),
       latitude = mean(latitude, na.rm = TRUE),
       .groups = "drop"
     )
   
-  # Convertir a simple features
   data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
   data_joined <- st_join(world_cities, data_sf, join = st_intersects)
   
-  # Crear y mostrar el mapa de calor para el género actual
-  ggplot(data = data_joined) +
-    geom_sf(aes(fill = total), color = "black") +
-    scale_fill_viridis_c(
-      option = "C", 
-      na.value = "grey", 
-      guide = "colorbar",
-      name = "Popularity of " %>% paste(genre)
-    ) +
-    labs(title = paste("Popularity of", genre, "Music by Country"),
-         fill = paste("Number of", genre, "Songs")) +
+  p <- ggplot(data = data_joined) +
+    geom_sf(aes(fill = genre_percentage), color = "black") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar", name = "Percentage of Songs") +
+    labs(title = paste("Percentage of", genre, "Music by Country"), fill = "Percentage of Songs") +
     theme_minimal()
+  
+  print(p)
+}
+
+# 2. Porcentaje del Total Mundial de Canciones de un Género por País
+
+for (genre in generos) {
+  total_genre_songs_worldwide <- sum(data[[genre]], na.rm = TRUE)
+  
+  data_grouped_world <- data %>%
+    group_by(nationality) %>%
+    summarize(
+      genre_count = sum(!!sym(genre), na.rm = TRUE),
+      genre_world_percentage = 100 * genre_count / total_genre_songs_worldwide,
+      longitude = mean(longitude, na.rm = TRUE),
+      latitude = mean(latitude, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  data_sf_world <- st_as_sf(data_grouped_world, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+  data_joined_world <- st_join(world_cities, data_sf_world, join = st_intersects)
+  
+  p <- ggplot(data = data_joined_world) +
+    geom_sf(aes(fill = genre_world_percentage), color = "black") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar", name = "Global Percentage of Songs") +
+    labs(title = paste("Global Share of", genre, "Music by Country"), fill = "Percentage of World's Songs") +
+    theme_minimal()
+  
+  print(p)
 }
 
 ################
 # Visualitzar el percentatge de cancons de cada genere que estan a cada país
-
-
-library(dplyr)
-library(sf)
-library(ggplot2)
-library(viridis)
 
 # Suponiendo que 'world_cities' y 'data' ya están cargados
 genres <- c("pop", "rock", "hip_hop", "christmas", "cinema", "latino", "electro")
@@ -276,21 +324,9 @@ for (genre in genres) {
     theme_minimal()
 }
 
-
 ####################################################
 ## MAPA INTERACTIU QUE ET DIU LA INTENSITAT DE ARTIST_FOLLOWERS
 ####################################################
-
-install.packages("viridis")
-install.packages("rnaturalearth")
-install.packages("rnaturalearthdata")
-install.packages("leaflet")
-library(ggplot2)
-library(sf)
-library(viridis)
-library(rnaturalearth)
-library(rnaturalearthdata)
-library(leaflet)
 
 spotify_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
 world <- ne_countries(scale = "medium", returnclass = "sf")
@@ -315,11 +351,8 @@ leaflet(data = spotify_sf) %>%
     fillOpacity = 0.7
   )
 
-# Podem afegir el gènere més fet de cada artista
+# Al mapa interactiu podem posar la popularitat de l'artista i el gènere més fet per aquest artista
 
-
-
-########## NOMÉS FALTA EL MAPA DE DENSITAT
-
+########## NOMÉS FALTA EL MAPA DE DENSITAT PER CONTINENTS
 
 
