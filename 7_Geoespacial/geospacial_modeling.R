@@ -28,6 +28,11 @@ data <- data[!duplicated(data[c("artist_name", "track_name")]), ]
 # Seleccionar las columnas necesarias
 data <- data[, c("artist_name", "track_name", "latitude", "longitude", "energy")]
 
+
+data <- data %>%
+  group_by(latitude, longitude) %>%
+  summarize(across(everything(), mean, na.rm = TRUE), .groups = 'drop')
+
 ###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
 # SHAPEFILE
