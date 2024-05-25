@@ -4,6 +4,22 @@ library(ggplot2)
 library(dplyr)
 library(viridis) 
 
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(viridis)
+
+install.packages("viridis")
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+install.packages("leaflet")
+library(ggplot2)
+library(sf)
+library(viridis)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(leaflet)
+
 # Obrim el shapefile
 world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
 
@@ -31,7 +47,6 @@ data_grouped <- data %>%
     artist_followers = mean(artist_followers, na.rm = TRUE),
     longitude = mean(longitude, na.rm = TRUE),  
     latitude = mean(latitude, na.rm = TRUE),
-    year_release = year_release,
     .groups = "drop"
   )
 
@@ -42,7 +57,7 @@ data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 432
 data_joined <- st_join(world_cities, data_sf, join = st_intersects)
 
 data_summarized <- data_joined %>%
-  group_by(name, year_release) %>%
+  group_by(name) %>%
   summarize(avg_followers = mean(artist_followers), .groups = "drop")
 
 print(head(data_summarized))
@@ -229,12 +244,6 @@ for (genre in genres) {
 ################
 # Visualitzar el percentatge de cancons de cada genere que estan a cada país
 
-
-library(dplyr)
-library(sf)
-library(ggplot2)
-library(viridis)
-
 # Suponiendo que 'world_cities' y 'data' ya están cargados
 genres <- c("pop", "rock", "hip_hop", "christmas", "cinema", "latino", "electro")
 
@@ -281,17 +290,6 @@ for (genre in genres) {
 ## MAPA INTERACTIU QUE ET DIU LA INTENSITAT DE ARTIST_FOLLOWERS
 ####################################################
 
-install.packages("viridis")
-install.packages("rnaturalearth")
-install.packages("rnaturalearthdata")
-install.packages("leaflet")
-library(ggplot2)
-library(sf)
-library(viridis)
-library(rnaturalearth)
-library(rnaturalearthdata)
-library(leaflet)
-
 spotify_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
@@ -321,5 +319,71 @@ leaflet(data = spotify_sf) %>%
 
 ########## NOMÉS FALTA EL MAPA DE DENSITAT
 
+########## PER ANYS:
 
+library(dplyr)
+
+data_per_anys <- data %>%
+  group_by(nationality, year_week, latitude, longitude) %>%
+  summarize(mean_followers = mean(artist_followers, na.rm = TRUE), .groups = 'drop')
+
+# Visualizar los resultados
+View(data_per_anys)
+
+data_sf <- st_as_sf(data_per_anys, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+
+# Suponiendo que 'world_cities' es un sf object con ciudades y países, y que 'name' es el país
+data_joined <- st_join(world_cities, data_sf, join = st_intersects)
+
+# Agrupar por país y calcular la media de seguidores
+data_summarized <- data_joined %>%
+  group_by(name) %>%
+  summarize(avg_followers = mean(mean_followers), .groups = "drop")
+
+data_summarized <- data_joined %>%
+  group_by(name, year_week) %>%
+  summarize(avg_followers = mean(mean_followers), .groups = "drop")
+
+
+plot_heatmap_per_year <- function(year) {
+  ggplot(data = filter(data_summarized, year == year)) +
+    geom_sf(aes(fill = avg_followers), color = "grey") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+    labs(title = paste("Mapa de Calor de Artist_followers por País en el Año", year),
+         fill = "Avg Followers") +
+    theme_minimal()
+}
+
+# Aplicar la función a cada año y guardar o mostrar los mapas
+unique_years <- unique(data_summarized$year_week)
+plots <- lapply(unique_years, plot_heatmap_per_year)
+
+# Si deseas visualizar los plots uno por uno o guardarlos
+for (i in seq_along(plots)) {
+  print(plots[[i]])  # Mostrar en RStudio o en una interfaz gráfica
+  
+  # Para guardar cada plot como archivo de imagen
+  #ggsave(filename = paste("heatmap_", unique_years[i], ".png", sep = ""),
+         #plot = plots[[i]], width = 10, height = 8)
+}
+
+
+
+# Imprimir los primeros registros para verificar
+print(head(data_summarized))
+
+# Crear un mapa de calor usando ggplot2
+library(ggplot2)
+library(viridis)  # para la escala de colores viridis
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(viridis)
+
+ggplot(data = data_summarized) +
+  geom_sf(aes(fill = avg_followers), color = "grey") +
+  scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+  labs(title = "Mapa de Calor de Artist_followers por País",
+       fill = "Avg Followers") +
+  theme_minimal()
 

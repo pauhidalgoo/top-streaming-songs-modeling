@@ -14,6 +14,7 @@ if(length(new.packages) > 0) {
 lapply(list.of.packages, require, character.only = T)
 rm(list.of.packages, new.packages)
 
+install.packages("rgdal")
 library("rgdal")
 library("sp")
 library("sf")
@@ -25,12 +26,12 @@ library(dplyr)
 # Carreguem el dataset amb les coordenades (latitude i longitude)
 
 load('./7_Geoespacial/data_coordenades.RData')
-
+View(data)
 # Treiem les files amb (artistes, cançons) repetides
 
 data <- data %>%
   distinct(artist_name, .keep_all = TRUE)
-
+View(data)
 
 # 1. Eliminar duplicados para cada combinación única de artist_name y year_week
 data <- data %>%
