@@ -1,4 +1,4 @@
-universal_top_spotify_songs <- read.csv("~/Universitat/4rt Quatri/PMAAD_git/PMAAD_GIA/7_Geoespacial/universal_top_spotify_songs.csv")
+universal_top_spotify_songs <- read.csv("./7_Geoespacial/universal_top_spotify_songs.csv")
 
 
 top5 <- universal_top_spotify_songs[universal_top_spotify_songs$daily_rank <= 5,]

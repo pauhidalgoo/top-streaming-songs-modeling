@@ -1,6 +1,6 @@
 # DESCRIPTIVA ------------------------------------------------------------------
 
-load("./7_Geoespacial/2024_top40_countries.csv")
+load("./7_Geoespacial/2024_top40_countries.RData")
 
 names(data2024)
 #install.packages(c("ggplot2", "sf", "leaflet", "tidygeocoder"))
