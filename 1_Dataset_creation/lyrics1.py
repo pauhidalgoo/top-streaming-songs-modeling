@@ -3,18 +3,17 @@ import re
 import csv
 import os
 from lyricsgenius import Genius
-genius = Genius("C9k2o0iXz8nwhLHo5ihASBrwH6R36_XpIIRx9zPCPX5msSawlz-6gn-Mb9K5QIxl")
+genius = Genius("API-KEY")
 genius.response_format = 'plain'
 genius.retries = 10
 
-dataset = pd.read_csv('new_lyrics_spotify.csv')
-old_dataset = pd.read_csv('updated_lyrics_spotify.csv')
+dataset = pd.read_csv('./1_Dataset_creation/top50_global_lyrics2.csv')
+old_dataset = pd.read_csv('./1_Dataset_creation/top50_global_lyrics.csv')
 song_lyrics = {}
 
-for song in dataset["track_name"].unique():
-    artist_name = dataset.loc[dataset["track_name"] == song, "artist_name"].iloc[0]
-    lyrics = dataset.loc[dataset["track_name"] == song, "Lyrics"].iloc[0]
-    lyrics_old = old_dataset.loc[old_dataset["track_name"] == song, "Lyrics"].iloc[0]
+for song in dataset["name"].unique():
+    lyrics = dataset.loc[dataset["name"] == song, "lyrics"].iloc[0]
+    lyrics_old = old_dataset.loc[old_dataset["name"] == song, "lyrics"].iloc[0]
     if lyrics != lyrics_old:
         os.system('cls')
         print(song)
