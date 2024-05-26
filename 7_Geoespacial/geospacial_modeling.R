@@ -84,6 +84,22 @@ plot(ve, model = va_exp, main = "Ajust del Model Exponencial")
 plot(ve, model = va_gau, main = "Ajust del Model Gaussià")
 
 
+#########################
+#  VALIDACIÓN DEL MODELO  #
+#########################
+
+# Realizar validación cruzada con leave-one-out (LOOCV)
+kriging_cv <- krige.cv(energy ~ 1, data, model = va_exp, nfold = nrow(data), verbose = FALSE)
+
+# Calcular métricas de desempeño
+me <- mean(kriging_cv$residual)  # Error medio
+rmse <- sqrt(mean(kriging_cv$residual^2))  # Raíz del error cuadrático medio
+msre <- mean(kriging_cv$zscore^2)  # Error cuadrático medio de los z-scores
+
+cat("Error medio (ME):", me, "\n")
+cat("Raíz del error cuadrático medio (RMSE):", rmse, "\n")
+cat("Error cuadrático medio de los z-scores (MSRE):", msre, "\n")
+
 ##############################
 #  INTERPOLACIÓN CON KRIGING  #
 ##############################
@@ -105,181 +121,24 @@ points(data, col = 'red', pch = 20)
 # Realizar la interpolación Kriging con nmax para limitar el número de vecinos
 ok <- krige(energy ~ 1, locations = data, newdata = grid, model = va_sph, nmax = 30)
 
-# Verificar los resultados
-summary(ok)
+# Convertir el resultado de kriging a raster para aplicar la máscara
+ok_raster <- raster(ok, layer = "var1.pred")
+
+# Aplicar la máscara del shapefile
+masked_ok <- mask(ok_raster, st_as_sf(world_cities))
 
 # Convertir a data.frame para ggplot2
-ok_df <- as.data.frame(ok)
-head(ok_df)
+ok_df <- as.data.frame(masked_ok, xy = TRUE)
+names(ok_df) <- c("x", "y", "var1.pred")
+
+# Convertir a SpatialPixelsDataFrame para spplot
+masked_ok_sp <- as(masked_ok, "SpatialPixelsDataFrame")
 
 # Crear puntos para superponer en el gráfico
 pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$energy / max(data$energy))
 
-# Visualizar los resultados de la interpolación
-spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-       main = "Interpolación Kriging de Energy", sp.layout = list(pts.s))
-
-
-
-######################
-##EJEMPLO 2 - Variogramas & Kriging con Library(geoR)
-###########################
-# data()                    # lista todos los conjuntos de datos disponibles
-# data(package = "geoR")    # lista los conjuntos de datos en el paquete geoR
-
-data(wolfcamp)              # carga el archivo de datos wolfcamp
-help(wolfcamp)
-summary(wolfcamp)
-
-
-#Se pueden importar directamente un archivo de datos en formato texto:
-#ncep <- read.geodata('ncep.txt', header = FALSE, coords.col = 1:2, data.col = 4)
-# plot(ncep)
-# summary(ncep)
-
-#TambiÃ©n se puede convertir un data.frame a un objeto geodata:
-
-#ncep.df <- read.table('ncep.txt', header = FALSE)
-# names(ncep.df) <- c('x', 'y', 't', 'z')
-# str(ncep.df)
-# Nota: los datos son espacio-temporales, pero geoR sÃ³lo admite datos 2D
-#datgeo <- as.geodata(ncep.df, coords.col = 1:2, data.col = 4)
-# plot(datgeo)
-# summary(datgeo)
-
-###Data Analysis
-head(wolfcamp)
-plot(wolfcamp)
-
-#Los grÃ¡ficos de dispersiÃ³n de los datos frente a las coordenadas nos pueden
-# ayudar a determinar si hay una tendencia. TambiÃ©n, en lugar del histograma,
-# nos puede interesar un grÃ¡fico de dispersiÃ³n 3D
-
-plot(wolfcamp, lowess = TRUE, scatter3d = TRUE)
-
-#Si se asume que hay una tendencia puede interesar eliminarla:
-plot(wolfcamp, trend=~coords) 
-
-points(wolfcamp)
-points(wolfcamp, col = "gray", pt.divide = "equal")
-#pt.divide = c("data.proportional", "rank.proportional", "quintiles", "quartiles", "deciles", "equal")
-
-####Modelado de la dependencia (Nuevos DATOS ejemplo 3)
-
-##En la primera parte de esta secciÃ³n consideraremos un proceso espacial
-## sin tendencia:
-data(s100) # Cargar datos estacionarios
-summary(s100)
-plot(s100)
-###  Semiovariogramas Empiricos
-oldpar <- par(mfrow=c(1,2)) 
-plot(variog(s100))
-plot(variog(s100, max.dist = 0.6))
-par(oldpar)
-varior.b <- variog(s100, estimator.type = "modulus", max.dist=0.6)
-vario.60 <- variog(s100, max.dist = 0.6, direction = pi/3) #variograma en la direcciÃ³n de 60 grados
-vario.4 <- variog4(s100, max.dist = 0.6)
-oldpar <- par(mfrow=c(1,1)) 
-plot(vario.60)
-title(main = expression(paste("direccional, angulo = ", 60 * degree)))
-plot(vario.4, lwd = 1)
-par(oldpar)
-###Ajuste de un modelo de variograma
-vario.b <- variog(s100, max.dist=0.6) #discretizado
-vario.s <- variog(s100, max.dist=0.6,option = "smooth", kernel = "normal", band = 0.2)  #suavizado
-plot(vario.b)
-lines(vario.s, type = "l", lty = 2)
-lines.variomodel(cov.model = "exp", cov.pars = c(1,0.3), nugget = 0, max.dist = 0.6, lwd = 3)
-legend(0.3, 0.3, c("empirico", "suavizado", "modelo exponencial"), lty = c(1, 2, 1), lwd = c(1, 1, 3))
-###More options
-plot(vario.b)
-lines.variomodel(cov.model = "exp", cov.pars = c(0.9,0.3), nug = 0.1, max.dist = 0.6)
-lines.variomodel(cov.model = "mat", cov.pars = c(0.85,0.2), nug = 0.1, kappa = 1, max.dist = 0.6,lty = 2)
-lines.variomodel(cov.model = "sph", cov.pars = c(0.8,0.8), nug = 0.1, max.dist = 0.6, lwd = 2)
-
-#Cuando se utilizan las funciones variofit y likfit para la estimaciÃ³n de parÃ¡metros, el efecto pepita (nugget) puede ser estimado o establecido a un valor fijo. Lo mismo ocurre con los parÃ¡metros de suavidad, anisotropÃ­a y transformaciÃ³n de los datos. TambiÃ©n se dispone de opciones para incluir una tendencia. Las tendencias pueden ser polinomios en funciÃ³n de las coordenadas y/o funciones lineales de otras covariables.
-vario.ols <- variofit(vario.b, ini = c(1, 0.5), weights = "equal")  #ordinarios
-vario.wls <- variofit(vario.b, ini = c(1, 0.5), weights = "cressie")  #ponderados
-vario.wls
-summary(vario.wls)
-vario.ml <- likfit(s100, ini = c(1, 0.5)) #Modelo exponencial con par ini umbral y escala (1/3 rango)
-vario.reml <- likfit(s100, ini = c(1, 0.5), lik.method = "RML")
-plot(vario.b, main = "Estimador empÃ­rico y modelos ajustados")
-lines(vario.ml, max.dist = 0.6)
-lines(vario.reml, lwd = 2, max.dist = 0.6)
-lines(vario.ols, lty = 2, max.dist = 0.6)
-lines(vario.wls, lty = 2, lwd = 2, max.dist = 0.6)
-legend(0.3, 0.3, legend = c("ML", "REML", "OLS", "WLS"), lty = c(1, 1, 2, 2), lwd = c(0.5, 0,5,0.5,0.5)) 
-
-
-#####Para estudiar si hay una dependencia espacial â€œsignificativaâ€ se puede emplear tambiÃ©n la rutina sm.variogram del paquete sm. Estableciendo model = "independent" devuelve un p-valor para contrastar la hipÃ³tesis nula de independencia (i.e. se acepta que hay una dependencia espacial si pâ‰¤Î±=0.05) y un grÃ¡fico en el que se muestra el estimador empÃ­rico robusto, un estimador suavizado y una regiÃ³n de confianza
-## para el variograma suponiendo que el proceso es independiente (i.e. considerarÃ­amos que hay dependencia espacial
-## si el variograma suavizado no estÃ¡ contenido en esa regiÃ³n).
-sm.variogram(s100$coords, s100$data, model = "independent")
-### Revise el parÃ¡metro model ya que el comando anterior permite ver si un proceso es estacionario tambiÃ©n.
-###ValidaciÃ³n
-xv.wls <- xvalid(s100, model = vario.wls)
-summary(xv.wls)
-xv.reml <- xvalid(s100, model = vario.reml)
-summary(xv.reml)
-plot(xv.wls, ask = FALSE)
-
-###EstimaciÃ³n del variograma en procesos no estacionarios
-
-#Cuando el proceso no es estacionario (no se puede emplear directamente los estimadores empÃ­ricos)
-# hay que eliminar la tendencia para estimar el variograma:
-
-plot(variog(wolfcamp, max.dist = 200)) # Supone que el proceso es estacionario
-plot(variog(wolfcamp, trend = ~coords, max.dist = 200)) # Asume una tendencia lineal en las coordenadas
-
-#PredicciÃ³n espacial (kriging)
-
-#El paquete geoR dispone de opciones para los mÃ©todos kriging
-#tradicionales, que dependiendo de las suposiciones acerca de la funciÃ³n de tendencia
-#se clasifican en:
-#   Kriging simple (KS): media conocida
-#
-#   Kriging ordinario (KO): se supone que la media es constante y desconocida.
-
-#   Kriging universal (KU): tambiÃ©n denominado kriging con modelo de tendencia, se supone que la media es una combinaciÃ³n lineal (desconocida) de las coordenadas o de otras variables explicativas.
-
-# Rejilla regular 51x51 en cuadrado unidad
-xx <- seq(0, 1, l = 51)
-yy <- seq(0, 1, l = 51)
-pred.grid <- expand.grid(x = xx, y = yy) 
-plot(s100$coords, pch = 20)
-points(pred.grid, pch = 3, cex = 0.2)
-
-#Kriging ordinario
-ko.wls <- krige.conv(s100, loc = pred.grid, krige = krige.control(obj.m = vario.wls))
-names(ko.wls)
-image(ko.wls) #superficie de predicciÃ³n
-title("Predicciones")
-points(s100$coords, pch=20) #aÃ±adir posiciones datos
-contour(ko.wls,add=T) #aÃ±adir grÃ¡fico de contorno
-
-image(ko.wls, val = ko.wls$krige.var) #superficie de varianzas
-title("Superficie de varianzas")
-points(s100$coords, pch=20)
-contour(ko.wls,val=sqrt(ko.wls$krige.var),add=T)
-
-contour(ko.wls,filled = TRUE)
-fcol <- topo.colors(10)[cut(matrix(ko.wls$pred,nrow=51,ncol=51)[-1,-1],10,include.lowest=TRUE)]
-persp(ko.wls, theta=-60, phi=40, col=fcol)
-
-if(!require(plot3D)) 
-  stop('Required pakage `plot3D` not installed.') # install.packages('plot3D')
-
-# Loading required package: plot3D
-
-persp3D(xx, yy, matrix(ko.wls$predict, nrow = length(xx)), theta=-60, phi=40)
-spersp(xx, yy, ko.wls$predict, theta=-60, phi=40)
-
-
-###### MODELADO Datos Tipo II : Procesos Puntuales
-######### Se aconsejan estos links
-#Points/Punctual Process in R--LIBRARY(spatstat)
-#############  https://spatstat.org/
-#https://kevintshoemaker.github.io/NRES-746/sppm.html
-#https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
+# Visualizar los resultados de la interpolación con spplot
+spplot(masked_ok_sp, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
+       main = "Interpolación Kriging de Energy", sp.layout = list(pts.s, 
+                                                                  list("sp.polygons", as(world_cities, "Spatial"), col = "black")))
 
