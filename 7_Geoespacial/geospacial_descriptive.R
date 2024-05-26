@@ -61,6 +61,7 @@ ggplot(data = data_summarized) +
        fill = "Avg Followers") +
   theme_minimal()
 
+# Fer els ggsave per algun lloc que se m'ha oblidat
 #########################################
 # VISUALITZAR ARTIST_FOLLOWERS PER ANYS #
 #########################################
@@ -137,10 +138,10 @@ for (i in seq_along(plots)) {
 # Recordar que això s'ha de filtrar per cancons, sinó les contarà repetides
 
 generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
-
+data_per_cançons
 plot_genre_heatmap <- function(genre) {
   # Agrupem i sumem la variable per nacionalitat
-  data_grouped <- data %>%
+  data_grouped <- data_per_cançons %>%
     group_by(nationality) %>%
     summarize(
       count = sum(!!sym(genre), na.rm = TRUE),
@@ -659,18 +660,9 @@ city_counts <- dades_proba %>%
   group_by(city) %>%
   summarise(count = n(), .groups = "drop")  # '.groups = "drop"' elimina el agrupamiento después de summarise
 
-# Mostrar los resultados
-print(city_counts)
 
-
-data_europa <- dplyr::filter(data, nationality == "United Kingdom")
-çdata_europa <- dplyr::filter(data, city == "Glasgow")
-
-unique_artists <- çdata_europa %>%
-  distinct(track_name, .keep_all = TRUE)
-
-print(head(unique_artists))
-print(nrow(data_europa))
+#data_europa <- dplyr::filter(data, nationality == "United Kingdom")
+#çdata_europa <- dplyr::filter(data, city == "Glasgow")
 
 densityplot_europe <- qmplot(x=longitude, y=latitude,data = data_europa, 
                              geom = "blank", maptype = "stamen_toner_background", 
