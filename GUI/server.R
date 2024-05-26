@@ -136,7 +136,7 @@ server <- function(input, output, session) {
     req(input$genres)  # Ensure there is at least one genre selected
     
     filtered_df <- artists_data %>%
-      filter_at(vars(genre_columns), any_vars(. == TRUE))
+      filter_at(vars(input$genres), any_vars(. == TRUE))
     
   })
   
