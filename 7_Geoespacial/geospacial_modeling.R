@@ -102,7 +102,7 @@ cat("Error cuadrático medio de los z-scores (MSRE):", msre, "\n")
 
 
 ##############################
-#  INTERPOLACIÓN CON KRIGING  #
+#  INTERPOLACIÓ AMB KRIGING  #
 ##############################
 
 # Crear una cuadrícula global y filtrar puntos en tierra
@@ -149,6 +149,7 @@ kriged$var1.pred <- pmax(pmin(kriged$var1.pred, rangemax), rangemin)
 kriged_df <- as.data.frame(kriged)
 
 # Visualización con spplot
-spplot(kriged["var1.pred"], main = "Interpolación Kriging de Energy",
+spplot(kriged["var1.pred"], main = "Interpolació Kriging d'Energy",
        col.regions = rev(heat.colors(50)),
        sp.layout = list(list("sp.polygons", as(world, "Spatial"), col = "black")))
+
