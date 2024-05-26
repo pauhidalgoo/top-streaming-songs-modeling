@@ -613,13 +613,28 @@ plot(densityplot_murder)
 us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
 
 data(crime)
+View(crime)
+get_stadiamap()
+ggmap::ggmap(get_stadiamap())
+map <- get_stadiamap(us, zoom = 3, maptype = "stamen_terrain_background",legend="none")
+plot(map)
+
 head(crime)
 crime <- crime[complete.cases(crime), ]
-
-map <- get_stadiamap(us, zoom = 5, maptype = "stamen_terrain_background",legend="none")
-plot(map)
 sum(crime$offense == "murder", na.rm = TRUE)
-dato=filter(crime,offense=="murder", na.rm = TRUE)
-scatterplot_murder <- qmplot(x=lon,y=lat,data=filter(crime,offense=="murder"),legend="none",color=I("darkred"))
+dato=filter(crime,offense=="murder")
+scatterplot_murder <- qmplot(x=lon,y=lat,data=crime,legend="none",color=I("darkred"))
 plot(scatterplot_murder)
-View(crime)
+densityplot_murder <- qmplot(x=longitude, y=latitude,data = data_eeuu, 
+                             geom = "blank", maptype = "stamen_toner_background", 
+                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                                                                                 geom = "polygon",alpha = .5,
+                                                                                 color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                                                    high = "red")
+densityplot_murder <- qmplot(x=lon, y=lat,data = crime, 
+                             geom = "blank", maptype = "stamen_toner_background", 
+                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                                                                                geom = "polygon",alpha = .5,
+                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                                                   high = "red")
+plot(densityplot_murder)
