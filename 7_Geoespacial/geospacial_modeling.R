@@ -28,10 +28,16 @@ data <- data[!duplicated(data[c("artist_name", "track_name")]), ]
 # Seleccionar las columnas necesarias
 data <- data[, c("artist_name", "track_name", "latitude", "longitude", "energy")]
 
+mode_function <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 
 data <- data %>%
   group_by(latitude, longitude) %>%
-  summarize(across(everything(), mean, na.rm = TRUE), .groups = 'drop')
+  summarize(across(where(is.numeric), mean, na.rm = TRUE),
+            across(where(is.factor), mode_function),
+            .groups = 'drop')
 
 ###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
