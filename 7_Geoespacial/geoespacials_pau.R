@@ -1,6 +1,6 @@
 # DESCRIPTIVA ------------------------------------------------------------------
 
-load("./7_Geoespacial/2024_top40_countries.RData")
+load("./7_Geoespacial/2024_top5_countries.RData")
 
 names(data2024)
 #install.packages(c("ggplot2", "sf", "leaflet", "tidygeocoder"))
@@ -58,9 +58,6 @@ frames <- tm_shape(data2024_sf) +
 tmap_animation(frames, filename = "./7_Geoespacial/paugifpopularity.gif", delay = 2)
 
 # Create leaflet map
-leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(data = data2024, ~lon, ~lat, popup = ~name)
 
 
 
@@ -69,6 +66,11 @@ top_songs <- data2024 %>%
   group_by(country) %>%
   filter(daily_rank == 1) %>%
   ungroup()
+
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = top_songs, ~lon, ~lat, popup = ~name)
+
 
 top_songs <- na.omit(top_songs)
 
@@ -96,7 +98,11 @@ ggplot(data = world) +
   labs(title = "Heatmap of Song Popularity by Region", fill = "Average Popularity") +
   theme_minimal()
 
-leaflet(data2024) %>%
+
+last_day <- data2024[data2024$snapshot_date=="2024-05-22",]
+
+
+leaflet(last_day) %>%
   addTiles() %>%
   addCircleMarkers(~lon, ~lat, popup = ~paste("Song:", name, "<br>",
                                               "Artist:", artists, "<br>",

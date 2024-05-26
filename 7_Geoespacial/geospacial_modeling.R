@@ -2,11 +2,10 @@
 ## MODELADO CON DATOS GEOESPACIALES ##
 ######################################
 
-# Descarregar paquets necessàris
-
-list.of.packages = c("geoR", "sm", "sp", "gstat", "npsp", "geohashTools",
-                     "rgdal", "ggmap", "ggplot2", "dplyr", "gridExtra", "maps", 
-                     "rnaturalearth", "rnaturalearthdata", "osmdata") 
+# Descargar paquetes necesarios
+list.of.packages <- c("geoR", "sm", "sp", "gstat", "npsp", "geohashTools",
+                      "rgdal", "ggmap", "ggplot2", "dplyr", "gridExtra", "maps", 
+                      "rnaturalearth", "rnaturalearthdata", "osmdata", "sf", "raster", "dplyr") 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages) > 0) {
   install.packages(new.packages)
@@ -14,33 +13,25 @@ if(length(new.packages) > 0) {
 lapply(list.of.packages, require, character.only = T)
 rm(list.of.packages, new.packages)
 
-install.packages("rgdal")
-library("rgdal")
-library("sp")
-library("sf")
-
-library(sf)
-library(ggplot2)
+# Asegurarnos de cargar dplyr
 library(dplyr)
 
-# Carreguem el dataset amb les coordenades (latitude i longitude)
-
+# Cargar el dataset con coordenadas
 load('./7_Geoespacial/data_coordenades.RData')
-View(data)
-# Treiem les files amb (artistes, cançons) repetides
+
+# Verificar que data es un data.frame
+data <- as.data.frame(data)
+
+# Eliminar duplicados
+data <- data[!duplicated(data[c("artist_name", "track_name")]), ]
+
+# Seleccionar las columnas necesarias
+data <- data[, c("artist_name", "track_name", "latitude", "longitude", "energy")]
+
 
 data <- data %>%
-  distinct(artist_name, .keep_all = TRUE)
-View(data)
-
-# 1. Eliminar duplicados para cada combinación única de artist_name y year_week
-data <- data %>%
-  distinct(artist_name, year_week, .keep_all = TRUE)
-
-# 2. Calcular la media de artist_followers para cada artist_name
-data <- data %>%
-  group_by(artist_name, latitude, longitude) %>%
-  summarize(artist_followers = mean(artist_followers, na.rm = TRUE))
+  group_by(latitude, longitude) %>%
+  summarize(across(everything(), mean, na.rm = TRUE), .groups = 'drop')
 
 ###### MODELADO Datos Tipo I : Geoestadística (Variogramas & Kriging)
 
@@ -55,141 +46,81 @@ points(data, col = 'red', pch = 20)
 #  VARIOGRAMA  #
 #################
 
-hist(data$artist_followers, breaks = 16) 
-data$logartist_followers <- log10(data$artist_followers +1)
-hist(data$logartist_followers, breaks = 16)
+hist(data$energy, breaks = 16) 
 
-# Quantitat de parelles de punts
-n <- length(data$logartist_followers)
-n * (n - 1)/2
-
+# Convertir datos a SpatialPointsDataFrame
 coordinates(data) <- ~longitude + latitude
-head(coordinates(data))
+proj4string(data) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 
-# Coordenades dels dos primers punts
-coord1 <- coordinates(data)[1, ]
-coord2 <- coordinates(data)[2, ]
-
-# Calcular la distancia entre els dos primers punts
-sep <- dist(rbind(coord1, coord2))
-print(sep) # distancia
-
-# Calcular la semivariança entre els valores d'artist_followers
-gamma <- 0.5 * (data$logartist_followers[1] - data$logartist_followers[2])^2
-print(gamma)
-
-# Distancies entre els punts de la nostra base de dades
-distances <- spDists(as.matrix(coordinates(data)), longlat = TRUE)
-hist(distances, breaks = 50, main = "Histogram of Distances", xlab = "Distance (km)")
-
-
-### TRIEM ELS PARÀMETRES CUTOFF I WIDTH
-
-# CUTOFF =  distancia máxima que se considera al calcular el variograma
-# WIDTH = mida intervals en els que s'agrupen les parelles de punts
-
-ve <- variogram(logartist_followers ~ 1, data, cutoff = 5000, width=300)
+# Crear el variograma experimental
+ve <- variogram(energy ~ 1, data, cutoff = 10000, width = 500)
 print(ve)
-plot(ve)
+plot(ve, main = "Variograma Experimental de Energy")
 
-plot(ve, plot.numbers = T, asp=1)
-show.vgms()
+# Ajustar varios modelos de variograma
+model_sph <- vgm(psill = 0.01, model = "Sph", range = 5000, nugget = 0.02)
+model_exp <- vgm(psill = 0.01, model = "Exp", range = 5000, nugget = 0.02)
+model_gau <- vgm(psill = 0.01, model = "Gau", range = 5000, nugget = 0.02)
 
-# Ajustar diversos models de variograma
+# Ajustar los modelos
+va_sph <- fit.variogram(ve, model_sph)
+va_exp <- fit.variogram(ve, model_exp)
+va_gau <- fit.variogram(ve, model_gau)
 
-#psill = sill - nugget = 1 - 0.5
+# Imprimir los modelos ajustados
+print(va_sph)
+print(va_exp)
+print(va_gau)
 
-# Esfèric
-model_sph <- vgm(psill = 0.2, model = "Sph", range = 3000, nugget = 0.4)
-
-# Exponencial
-model_exp <- vgm(psill = 0.2, model = "Exp", range = 3000, nugget = 0.4)
-
-# Gaussià
-model_gau <- vgm(psill = 0.2, model = "Gau", range = 3000, nugget = 0.4)
-
-# Graficar el variograma empíric amb els models ajustats
-plot(ve, model = model_sph, main = "Ajust del Model Esfèric")
-plot(ve, model = model_exp, main = "Ajust del Model Exponencial")
-plot(ve, model = model_gau, main = "Ajust del Model Gaussià")
-
-#Ajust automàtic
-#fit.variogram: ajusta el modelo de variograma a un variograma empírico.
-
-va <- fit.variogram(ve, model_sph) 
-va
-plot(ve, pl = T, model = va)
+# Graficar los modelos ajustados
+plot(ve, model = va_sph, main = "Ajust del Model Esfèric")
+plot(ve, model = va_exp, main = "Ajust del Model Exponencial")
+plot(ve, model = va_gau, main = "Ajust del Model Gaussià")
 
 
 ##############################
-#  INTERPOLACIÓ AMB KRIGING  #
+#  INTERPOLACIÓN CON KRIGING  #
 ##############################
 
-# Predir valors en ubicacions no mostrejades basant-se en ubicacions mostrejades
-
-# Crear una cuadrícula para la interpolación
-r <- raster(ncol = 100, nrow = 100, 
-            xmn = min(data@coords[,1]), xmx = max(data@coords[,1]),
-            ymn = min(data@coords[,2]), ymx = max(data@coords[,2]))
+# Crear una cuadrícula para la interpolación usando la extensión del shapefile
+extent_shape <- st_bbox(world_cities)
+r <- raster(xmn = extent_shape["xmin"], xmx = extent_shape["xmax"], 
+            ymn = extent_shape["ymin"], ymx = extent_shape["ymax"], 
+            ncol = 100, nrow = 100)  # Ajusta la resolución según sea necesario
 values(r) <- 1:ncell(r)  # Asignar valores al raster
 grid <- as(r, "SpatialPixelsDataFrame")
 proj4string(grid) <- CRS(proj4string(data))
 
+# Verificar la superposición de la cuadrícula con los datos y el shapefile
+plot(grid, main = "Cuadrícula y Datos")
+plot(st_geometry(world_cities), add = TRUE)
+points(data, col = 'red', pch = 20)
 
-ok <- krige(logartist_followers ~ 1, locations = data, newdata = grid, model = model_sph)
-ok$pred <- 10^(ok$var1.pred)
+# Realizar la interpolación Kriging con nmax para limitar el número de vecinos
+ok <- krige(energy ~ 1, locations = data, newdata = grid, model = va_exp, nmax = 30)
 
+# Verificar los resultados
 summary(ok)
+
+# Convertir a data.frame para ggplot2
 ok_df <- as.data.frame(ok)
 head(ok_df)
 
 # Crear puntos para superponer en el gráfico
-pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$logartist_followers / max(data$logartist_followers))
+pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$energy / max(data$energy))
 
 # Visualizar los resultados de la interpolación
 spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-       main = "Interpolación Kriging de logartist_followers", sp.layout = list(pts.s))
+       main = "Interpolación Kriging de Energy", sp.layout = list(pts.s))
 
 # Visualización detallada con ggplot2
-library(ggplot2)
-ggplot(ok_df, aes(x = x1, y = x2, fill = pred)) +
+ggplot(ok_df, aes(x = x1, y = x2, fill = var1.pred)) +
   geom_tile() +
   scale_fill_gradientn(colors = rev(heat.colors(50))) +
-  geom_point(data = as.data.frame(data), aes(x = longitude, y = latitude, size = logartist_followers), color = "white") +
-  labs(title = "Interpolación Kriging de logartist_followers",
+  geom_point(data = as.data.frame(data), aes(x = longitude, y = latitude, size = energy), color = "white") +
+  labs(title = "Interpolación Kriging de Energy",
        x = "Longitude", y = "Latitude", fill = "Predicción") +
   theme_minimal()
-
-
-# Validació del Model (Opcional)
-ok.cv.a <- krige.cv(logartist_followers ~ 1, locations = data, model = model_exp)
-cor(ok.cv.a$var1.pred, ok.cv.a$observed)  # Correlació idealment propera a 1
-mean(ok.cv.a$residual)  # Promig dels residus idealment proper a 0
-sd(ok.cv.a$residual)  # Desviació estàndard dels residus idealment petita
-boxplot(ok.cv.a$residual, main = "Model en la variable cridat OK")
-mean(ok.cv.a$residual^2)  # MSPE (error quadràtic mitjà predictor), idealment petit
-sqrt(mean(ok.cv.a$residual^2))  # RMSE (error quadràtic mitjà arrel), idealment petit
-var(ok.cv.a$residual, na.rm = TRUE)  # Variància dels residus, idealment petita
-
-
-# MSPE (mean square predictor error), idealmente pequeño
-print(mean(ok.cv.a$residual^2))
-
-# Error medio cuadrático (RMSE) es una medida general. Idealmente pequeño
-print(sqrt(sum(ok.cv.a$residual^2) / length(ok.cv.a$residual)))
-print(var(ok.cv.a$residual, na.rm = TRUE)) # Idealmente pequeño
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
