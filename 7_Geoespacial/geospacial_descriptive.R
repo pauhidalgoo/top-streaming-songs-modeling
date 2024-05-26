@@ -61,6 +61,7 @@ ggplot(data = data_summarized) +
        fill = "Avg Followers") +
   theme_minimal()
 
+# Fer els ggsave per algun lloc que se m'ha oblidat
 #########################################
 # VISUALITZAR ARTIST_FOLLOWERS PER ANYS #
 #########################################
@@ -137,10 +138,10 @@ for (i in seq_along(plots)) {
 # Recordar que això s'ha de filtrar per cancons, sinó les contarà repetides
 
 generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
-
+data_per_cançons
 plot_genre_heatmap <- function(genre) {
   # Agrupem i sumem la variable per nacionalitat
-  data_grouped <- data %>%
+  data_grouped <- data_per_cançons %>%
     group_by(nationality) %>%
     summarize(
       count = sum(!!sym(genre), na.rm = TRUE),
@@ -627,7 +628,7 @@ scatterplot_murder <- qmplot(x=lon,y=lat,data=crime,legend="none",color=I("darkr
 plot(scatterplot_murder)
 densityplot_murder <- qmplot(x=longitude, y=latitude,data = data_eeuu, 
                              geom = "blank", maptype = "stamen_toner_background", 
-                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
+                             darken = .7) + stat_density_2d(aes(fill = ..level..), 
                                                                                  geom = "polygon",alpha = .5,
                                                                                  color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
                                                                                                                     high = "red")
@@ -638,3 +639,36 @@ densityplot_murder <- qmplot(x=lon, y=lat,data = crime,
                                                                                 color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
                                                                                                                    high = "red")
 plot(densityplot_murder)
+
+
+############# EUROPA
+
+# Ejemplo de cómo podrías filtrar los datos para incluir varios países europeos.
+# Esto dependerá de cómo está estructurada tu columna 'nationality' o similar.
+european_countries <- c("United Kingdom", "France", "Germany", "Spain", "Italy", "Netherlands", "Sweden","Norway")
+data_europa <- dplyr::filter(data, nationality %in% european_countries)
+dades_proba <- dplyr::filter(data, nationality == "United Kingdom")
+
+library(dplyr)
+
+# Asumiendo que tu dataframe se llama 'data' y tienes una columna 'artist_name' y otra 'city'
+unique_artists <- data %>%
+  distinct(track_name, .keep_all = TRUE)  # Esto retiene la primera aparición de cada artista
+dades_proba <- dplyr::filter(unique_artists, nationality == "United Kingdom")
+# Ahora cuenta cuántas veces aparece cada ciudad en este dataframe filtrado
+city_counts <- dades_proba %>%
+  group_by(city) %>%
+  summarise(count = n(), .groups = "drop")  # '.groups = "drop"' elimina el agrupamiento después de summarise
+
+
+#data_europa <- dplyr::filter(data, nationality == "United Kingdom")
+#çdata_europa <- dplyr::filter(data, city == "Glasgow")
+
+densityplot_europe <- qmplot(x=longitude, y=latitude,data = data_europa, 
+                             geom = "blank", maptype = "stamen_toner_background", 
+                             darken = .7) + stat_density_2d(aes(fill = ..level..), 
+                                                            geom = "polygon",alpha = .5,
+                                                            color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
+                                                                                               high = "red")
+
+plot(densityplot_europe)

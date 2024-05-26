@@ -86,3 +86,19 @@ View(data)
 
 data <- as.data.frame(data)
 save(data, file = "./7_Geoespacial/data_coordenades.RData")
+
+load("./7_Geoespacial/data_coordenades.RData")
+View(data)
+
+# Actualizar la nacionalidad, ciudad, latitud y longitud para el artista Camilo
+data <- data %>%
+  mutate(
+    nationality = ifelse(artist_name == "Camilo", "Colombia", nationality),
+    city = ifelse(artist_name == "Camilo", "Medellín", city),
+    latitude = ifelse(artist_name == "Camilo", 6.2443382, latitude),
+    longitude = ifelse(artist_name == "Camilo", -75.57355, longitude)
+  )
+
+
+data <- as.data.frame(data)
+save(data, file = "./7_Geoespacial/data_coordenades.RData")
