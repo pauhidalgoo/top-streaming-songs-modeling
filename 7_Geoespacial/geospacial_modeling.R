@@ -103,7 +103,7 @@ plot(st_geometry(world_cities), add = TRUE)
 points(data, col = 'red', pch = 20)
 
 # Realizar la interpolación Kriging con nmax para limitar el número de vecinos
-ok <- krige(energy ~ 1, locations = data, newdata = grid, model = va_exp, nmax = 30)
+ok <- krige(energy ~ 1, locations = data, newdata = grid, model = va_sph, nmax = 30)
 
 # Verificar los resultados
 summary(ok)
@@ -118,22 +118,6 @@ pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$energy /
 # Visualizar los resultados de la interpolación
 spplot(ok, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
        main = "Interpolación Kriging de Energy", sp.layout = list(pts.s))
-
-# Visualización detallada con ggplot2
-ggplot(ok_df, aes(x = x1, y = x2, fill = var1.pred)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = rev(heat.colors(50))) +
-  geom_point(data = as.data.frame(data), aes(x = longitude, y = latitude, size = energy), color = "white") +
-  labs(title = "Interpolación Kriging de Energy",
-       x = "Longitude", y = "Latitude", fill = "Predicción") +
-  theme_minimal()
-
-
-
-
-
-
-
 
 
 
@@ -299,97 +283,3 @@ spersp(xx, yy, ko.wls$predict, theta=-60, phi=40)
 #https://kevintshoemaker.github.io/NRES-746/sppm.html
 #https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
 
-
-
-
-
-#### EXAMPLE with a transactional report of crimes in USA
-### MODELLING DENSITY and INTENSITY
-
-
-# Crear un objeto sf para tus datos
-data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326)
-
-# Crear el mapa de fondo y añadir tus datos
-ggplot() +
-  geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuja el shapefile
-  stat_density2d(aes(x = longitude, y = latitude, fill = ..level..), 
-                 alpha = .5, geom = "polygon", data = data) + 
-  scale_fill_viridis_c() + 
-  coord_sf() + 
-  theme_minimal() +
-  labs(title = "Mapa con Puntos de Datos", x = "Longitude", y = "Latitude") +
-  theme(legend.position = 'none')
-
-library(ggplot2)
-head(data)
-# treure NA
-ggplot(data, aes(x = longitude, y = latitude)) + 
-  coord_equal() + 
-  xlab('Longitude') + 
-  ylab('Latitude') + 
-  stat_density2d(aes(fill = ..level..), alpha = .5,
-                 geom = "polygon", data = data) + 
-  scale_fill_viridis_c() + 
-  theme(legend.position = 'none')
-
-
-# plot a ggmap basemap
-## us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-## map <- get_stamenmap(us, zoom = 5, maptype = "toner-lite",legend="none")
-## plot(map)
-## scatterplot_murder <- qmplot(x=lon,y=lat,data=filter(crime,offense=="murder"),legend="none",color=I("darkred"))
-## plot(scatterplot_murder)
-install.packages("ggplot2")
-install.packages("sf")
-install.packages("viridis")
-install.packages("rnaturalearth")
-install.packages("rnaturalearthdata")
-
-library(ggplot2)
-library(sf)
-library(viridis)
-library(rnaturalearth)
-library(rnaturalearthdata)
-
-data(crime)
-us <- map_data("state")
-murder_data <- filter(crime, offense == "murder")
-# Crear el mapa base con ggplot2
-us_map <- ggplot() +
-  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
-  coord_fixed(1.3) +
-  theme_void()
-
-scatterplot_murder <- us_map +
-  geom_point(data = murder_data, aes(x = lon, y = lat), color = "darkred", size = 1, alpha = 0.6) +
-  theme(legend.position = "none")
-print(scatterplot_murder)
-
-### Comments about distribution patterns
-## The experiment above could be repeated by using other levels for "offense")
-
-# create other types of plots with the ggmap package
-densityplot_murder <- qmplot(x=lon, y=lat,data = filter(crime,offense=="murder"), 
-                             geom = "blank", maptype = "toner-background", 
-                             darken = .7, egend = "topright") + stat_density_2d(aes(fill = ..level..), 
-                                                                                geom = "polygon",alpha = .5,
-                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
-                                                                                                                   high = "red")
-plot(densityplot_murder)
-####
-#### Repeat the analysis by putting a third dimension --> to use date data
-#### to filter temporal patterns and compare month by month in order to
-#### find out if there are relationships between time and space.
-
-###Proceed with Google maps if you want to improve the visualizations
-# remove any rows with missing data
-crime <- crime[complete.cases(crime), ]
-# look at the structure of the crime data
-str(crime)
-# load a basemap
-basemap <- get_map(location = "Houston, TX", zoom = 9)
-#Register to Google API
-# and use same code and also examples in https://cran.r-project.org/web/packages/pointdensityP/pointdensityP.pdf
-
-####################################################
