@@ -111,3 +111,44 @@ leaflet(last_day) %>%
                    fillOpacity = 0.7) %>%
   addLegend("bottomright", colors = c("red", "blue"), labels = c("Explicit", "Non-Explicit"),
             title = "Song Type")
+
+
+load('./7_Geoespacial/mean_new_data.RData')
+
+mean_new_data$popularity
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = mean_new_data, ~lon, ~lat, popup = ~country)
+
+
+new_world <- left_join(world_cities, mean_new_data, by = c("iso_3166_1_" = "country"))
+
+tm_shape(new_world) +
+  tm_borders() +
+  tm_fill("instrumentalness", palette = "Blues", style = "quantile") +
+  tm_layout(main.title = "Average Spotify Popularity by Country", frame=FALSE, legend.outside = TRUE)
+
+ggplot() +
+  geom_sf(data = new_world, color = "black", mapping= aes(fill=energy)) +
+  theme_minimal() +
+  labs(title = "Mapa del món")
+
+ggplot(data = new_world) +
+  geom_sf(aes(fill = energy), color = "grey") +
+  scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+  labs(title = "Mapa de Calor de Energy per País",
+       fill = "Avg Energy") +
+  theme_minimal()
+
+
+?aes
+
+?tm_layout
+
+
+?leaflet
+m <- leaflet() %>% addTiles()
+m 
+
+
+
