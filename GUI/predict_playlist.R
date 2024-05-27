@@ -1,7 +1,3 @@
-
-# BASICALLY A COPY OF Latent Semantic Baiges
-
-
 library(tm)
 library(lsa)
 library(LSAfun)
@@ -20,9 +16,9 @@ interpret_request <- function(request) {
     "hip_hop" = "hip hop|rap",
     "rock" = "rock",
     "electro" = "electro|electrónica|electronic",
-    "christmas" = "christmas",
-    "cinema" = "cinema",
-    "latino" = "latino|reggaetón|reggaeton"
+    "christmas" = "christmas|navidad|navideñas",
+    "cinema" = "cinema|cine",
+    "latino" = "latino|latinas|reggaetón|reggaeton"
   )
   
   for (genre in names(genre_keywords)) {
