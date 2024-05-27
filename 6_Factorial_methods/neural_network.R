@@ -43,7 +43,7 @@ target_name <- "explicit"
 
 # Define parameters for the execution
 load_acm_data <- FALSE
-balance_method <- "smote" 
+balance_method <- "weights" 
 # Possible values: "oversampling", "undersampling", weights", "smote"
 
 # ------------------------------------------------------------------------------
@@ -152,6 +152,7 @@ cat("Train target class values:\n", table(train_labels))
 cat("Test target class values:\n", table(test_labels))
 target_class_weights <- as.list(rep(1, length(unique(train_labels))))
 
+
 # If balance method is weights, use the calculated class weights
 if (balance_method == "weights") {
   target_class_counts <- table(train_labels)
@@ -172,7 +173,7 @@ if (balance_method == "weights") {
   cat("Train target class values after oversampling:\n", table(train_labels), "\n")
   
 } else if (balance_method == "smote"){
-  df <- as.data.frame(cbind(train_data, train_labels), method = "over")
+  df <- as.data.frame(cbind(train_data, train_labels))
   df$train_labels <- as.factor(df$train_labels)
   # Calculate class distribution
   class_distribution <- table(df$train_labels)
@@ -185,12 +186,11 @@ if (balance_method == "weights") {
   
   # Calculate perc.over to balance the minority class to the majority class size
   perc_over <- ((majority_count - minority_count) / minority_count) * 100
-  oversampled_data <- SMOTE(train_labels ~ ., df, perc_over = 50, perc.under = 300)
+  oversampled_data <- SMOTE(train_labels ~ ., df, perc_over = 80, perc.under = 150)
   oversampled_data$train_labels <- as.numeric(oversampled_data$train_labels) -1
   train_data <- as.matrix(oversampled_data[, -ncol(oversampled_data)])
   train_labels <- oversampled_data[, ncol(oversampled_data)]
-  cat("Train target class values after oversampling:\n", table(train_labels),"\n")
-  
+
   # Print the class distribution after oversampling
   cat("Train target class values after SMOTE:\n", table(train_labels), "\n")
   
@@ -233,13 +233,11 @@ create_optimizer <- function(simple) {
 
 # ---------- Main model ----------
 model <- keras_model_sequential() %>%
-  layer_dense(units = 64, activation = activation_function, input_shape = c(ncol(train_data))) %>%
+  layer_dense(units = 128, activation = activation_function, input_shape = c(ncol(train_data))) %>%
   layer_activity_regularization(l2 = 0.01) %>%
-  layer_dense(units = 32, activation = activation_function) %>%
+  layer_dense(units = 128, activation = activation_function) %>%
   layer_activity_regularization(l2 = 0.01) %>%
-  layer_dense(units = 16, activation = activation_function) %>%
-  layer_activity_regularization(l2 = 0.01) %>%
-  layer_dense(units = 8, activation = activation_function) %>%
+  layer_dense(units = 64, activation = activation_function) %>%
   layer_activity_regularization(l2 = 0.01) %>%
   layer_dense(units = 1, activation = 'sigmoid')
 

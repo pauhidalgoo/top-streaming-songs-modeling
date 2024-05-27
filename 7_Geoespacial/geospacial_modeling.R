@@ -100,45 +100,56 @@ cat("Error medio (ME):", me, "\n")
 cat("Raíz del error cuadrático medio (RMSE):", rmse, "\n")
 cat("Error cuadrático medio de los z-scores (MSRE):", msre, "\n")
 
+
 ##############################
-#  INTERPOLACIÓN CON KRIGING  #
+#  INTERPOLACIÓ AMB KRIGING  #
 ##############################
 
-# Crear una cuadrícula para la interpolación usando la extensión del shapefile
-extent_shape <- st_bbox(world_cities)
-r <- raster(xmn = extent_shape["xmin"], xmx = extent_shape["xmax"], 
-            ymn = extent_shape["ymin"], ymx = extent_shape["ymax"], 
-            ncol = 100, nrow = 100)  # Ajusta la resolución según sea necesario
-values(r) <- 1:ncell(r)  # Asignar valores al raster
-grid <- as(r, "SpatialPixelsDataFrame")
-proj4string(grid) <- CRS(proj4string(data))
+# Crear una cuadrícula global y filtrar puntos en tierra
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
-# Verificar la superposición de la cuadrícula con los datos y el shapefile
-plot(grid, main = "Cuadrícula y Datos")
-plot(st_geometry(world_cities), add = TRUE)
-points(data, col = 'red', pch = 20)
+lon_range <- c(-174, 174)
+lat_range <- c(-84, 84)
+resolution <- 0.5  # Ajustar resolución según sea necesario
 
-# Realizar la interpolación Kriging con nmax para limitar el número de vecinos
-ok <- krige(energy ~ 1, locations = data, newdata = grid, model = va_sph, nmax = 30)
+# Crear rejillas de longitud y latitud
+lon_grid <- seq(lon_range[1], lon_range[2], by = resolution)
+lat_grid <- seq(lat_range[1], lat_range[2], by = resolution)
 
-# Convertir el resultado de kriging a raster para aplicar la máscara
-ok_raster <- raster(ok, layer = "var1.pred")
+# Crear una cuadrícula que cubra todo el mundo
+grid <- expand.grid(lon = lon_grid, lat = lat_grid)
+grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
+grid_land <- st_join(grid_sf, world, join = st_within)
 
-# Aplicar la máscara del shapefile
-masked_ok <- mask(ok_raster, st_as_sf(world_cities))
+# Filtrar puntos que no están sobre tierra (valores NA)
+grid_land <- grid_land[!is.na(grid_land$admin), ]
+
+# Convertir de nuevo a objeto sp para kriging
+grid_land_sp <- as(grid_land, "Spatial")
+gridded(grid_land_sp) <- TRUE
+
+grid <- grid_land_sp
+
+# Establecer coordenadas y CRS para los datos y la cuadrícula
+gridded(grid) <- TRUE
+proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
+
+# Realizar la interpolación Kriging
+formula <- energy ~ 1
+df <- data
+final_model <- va_sph
+kriged <- krige(formula, locations = df, newdata = grid, model = final_model)
+
+# Ajustar los valores predichos dentro de un rango
+rangemin <- min(kriged$var1.pred, na.rm = TRUE)
+rangemax <- max(kriged$var1.pred, na.rm = TRUE)
+kriged$var1.pred <- pmax(pmin(kriged$var1.pred, rangemax), rangemin)
 
 # Convertir a data.frame para ggplot2
-ok_df <- as.data.frame(masked_ok, xy = TRUE)
-names(ok_df) <- c("x", "y", "var1.pred")
+kriged_df <- as.data.frame(kriged)
 
-# Convertir a SpatialPixelsDataFrame para spplot
-masked_ok_sp <- as(masked_ok, "SpatialPixelsDataFrame")
-
-# Crear puntos para superponer en el gráfico
-pts.s <- list("sp.points", data, col = "white", pch = 1, cex = 4 * data$energy / max(data$energy))
-
-# Visualizar los resultados de la interpolación con spplot
-spplot(masked_ok_sp, "var1.pred", asp = 1, col.regions = rev(heat.colors(50)),
-       main = "Interpolación Kriging de Energy", sp.layout = list(pts.s, 
-                                                                  list("sp.polygons", as(world_cities, "Spatial"), col = "black")))
+# Visualización con spplot
+spplot(kriged["var1.pred"], main = "Interpolació Kriging d'Energy",
+       col.regions = rev(heat.colors(50)),
+       sp.layout = list(list("sp.polygons", as(world, "Spatial"), col = "black")))
 

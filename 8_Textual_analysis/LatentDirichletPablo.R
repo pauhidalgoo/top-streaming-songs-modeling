@@ -115,7 +115,8 @@ topic_names <- c("alegria gen", "malsonant", "castellà", "amor 1", "amor 2", "n
 
 #-------------------------------------------------------------------------------
 
-# Profiling Por Género
+# Profiling Por Género y Explicit:
+
 gammas <- posterior(ap_lda)$topics
 topics_prof <- as.data.frame(gammas)
 
@@ -123,58 +124,89 @@ document_topics <- topics_prof %>%
   mutate(predominant_topic = apply(gammas, 1, which.max))
 
 
-unique_tracks$LDA_topic <- as.factor(document_topics$predominant_topic)
+unique_tracks$LDA_topic <- factor(document_topics$predominant_topic, labels = c("alegria", "malsonant", "castellà", 
+                                                                                   "amor 1", "amor 2", "nostàlgia"))
 
 # Función para crear gráficos de barras
-create_bar_plot <- function(data, topic_col, categoric_col) {
+create_bar_plot_bin <- function(data, topic_col, categoric_col) {
   ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
     geom_bar(position = "fill") +
-    labs(y = "Proportion", fill = categoric_col) +
+    labs(y = "Proporció", x="", fill = categoric_col) +
     scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#cf2a25", "#d46c06", "#205633"))
 }
 
 # Lista de las variables binarias
-binary_vars <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino", "explicit", "gender")#, "collab", "explicit")
+binary_vars <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino", "explicit")#, "gender")#, "collab", "explicit")
 
 # Crear gráficos para cada variable binaria
 plots <- lapply(binary_vars, function(var) {
-  create_bar_plot(unique_tracks, "LDA_topic", var)
+  create_bar_plot_bin(unique_tracks, "LDA_topic", var)
 })
 
-# Mostrar los gráficos
-
-
+# Guardar los gráficos
 png(file=paste0(PATH_PLOTS, "/profiling_genres.png"),
     width=1920, height=1580, units="px", res=200)
 do.call(grid.arrange, c(plots, ncol = 2))
-
 dev.off()
 
+# Profiling para las variables numéricas más destacadas
 numeric_vars <- c("artist_popularity", "artist_followers", "danceability", "energy", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams")
 
 
+create_box_plot <- function(data, topic_col, numeric_var){
+  ggplot(data, aes_string(x = topic_col, y = numeric_var)) +
+  geom_boxplot() +
+  labs(x = "Tòpics", y =  numeric_var) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))}
+
+plots_num <- lapply(numeric_vars, function(var) {
+  create_box_plot(unique_tracks, "LDA_topic", var)
+})
+
+png(file=paste0(PATH_PLOTS, "/profiling_nums.png"),
+    width=1920, height=1580, units="px", res=130)
+do.call(grid.arrange, c(plots_num, ncol = 3))
+dev.off()
 
 
 
+create_bar_plot <- function(data, topic_col, categoric_col) {
+  ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
+    geom_bar(position = position_dodge(), width = 0.7) +
+    labs(y = "Proporció", x = "Topics", fill = categoric_col) +
+    scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#d46c06", "#205633", "#67b1ff","#cf2555")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Profiling para las variables categóricas restantes
+unique_tracks$artist_num <- as.factor(unique_tracks$artist_num)
+categoric_vars <- c("artist_num",  "time_signature", "gender")
+bin_vars_2 <- c("collab", "major_mode","is_group")
+
+plots_cat <- lapply(categoric_vars, function(var) {
+  create_bar_plot(unique_tracks, "LDA_topic", var)
+})
+
+png(file=paste0(PATH_PLOTS, "/profiling_cats_2.png"),
+    width=1920, height=500, units="px", res=130)
+do.call(grid.arrange, c(plots_cat, ncol = 3))
+dev.off()
 
 
+plots_bin2 <- lapply(bin_vars_2, function(var) {
+  create_bar_plot_bin(unique_tracks, "LDA_topic", var)
+})
 
+png(file=paste0(PATH_PLOTS, "/profiling_bins_2.png"),
+    width=1920, height=500, units="px", res=130)
+do.call(grid.arrange, c(plots_bin2, ncol = 3))
+dev.off()
 
-
-class_colors <- c("#1db954", "#ff7b24", "#df75ff")
-modality_colors <- c("#1db954", "#191414", "#3229da", "#c325cf", "#cf2a25", "#d46c06", "#205633", "#444444", "#67b1ff", "#8b329c" ,"#cf2555", "#d4ab06")
-
-
-barplot <- ggplot(data=unique_tracks , aes(LDA_topic, y=Freq, fill=Modalitat)) + 
-  geom_bar(stat = "identity", position=position_dodge()) +
-  scale_fill_manual(values=paleta_modalidades) +
-  ylab("Freqüència") +
-  ggtitle(title_barplot) + 
-  theme(plot.title = element_text(hjust = 0.5))
 
 
 #-------------------------------------------------------------------------------
-
+# REPRESENTACION DE EL ESPACIO DE LAS PALABRAS
 # Obtener las probabilidades de las palabras en cada tema
 betas <- t(posterior(ap_lda)$terms)
 betas
@@ -188,68 +220,125 @@ mds_result <- cmdscale(dist_matrix, k = 2)
 mds_df <- as.data.frame(mds_result)
 colnames(mds_df) <- c("Dim1", "Dim2")
 mds_df$word <- rownames(betas)
+mds_df$topic <- apply(betas, 1, function(row) {
+  colnames(betas)[which.max(row)]
+})
 
-# Plotear las palabras utilizando ggplot2
+mds_df$topic <- factor(as.numeric(mds_df$topic), labels = topic_names)
+
+
+png(file=paste0(PATH_PLOTS, "/MDS_paraules_full.png"),
+    width=1720, height=1720, units="px", res=140)
 ggplot(mds_df, aes(x = Dim1, y = Dim2, label = word)) +
   geom_point(color = "blue") +
   geom_text(vjust = 1, hjust = 1) +
-  ggtitle("MDS Plot of Words based on LDA Topics") +
-  xlab("Dimension 1") +
-  ylab("Dimension 2") +
+  ggtitle("MDS de les paraules en funció dels tòpics LDA") +
+  xlab("Dimensió 1") +
+  ylab("Dimensió 2") +
   theme_minimal()
+dev.off()
 
+png(file=paste0(PATH_PLOTS, "/MDS_paraules_zoom.png"),
+    width=1920, height=1920, units="px", res=140)
 ggplot(mds_df, aes(x = Dim1, y = Dim2, label = word)) +
   geom_point(color = "blue") +
   geom_text(vjust = 1, hjust = 1) +
-  ggtitle("MDS Plot of Words based on LDA Topics") +
-  xlab("Dimension 1") +
-  ylab("Dimension 2") +
+  ggtitle("Zoom del MDS de les paraules en funció dels tòpics LDA") +
+  xlab("Dimensió 1") +
+  ylab("Dimensió 2") +
   xlim(c(-0.03,0.0)) + 
-  ylim(c(-0.02, 0.01))
+  ylim(c(-0.02, 0.01)) +
   theme_minimal()
-
-
+dev.off()
   
+png(file=paste0(PATH_PLOTS, "/MDS_paraules_topic.png"),
+    width=1920, height=1920, units="px", res=140)
+ggplot(mds_df, aes(x = Dim1, y = Dim2, color = topic)) +
+    geom_point(size=1.3) +
+    ggtitle("MDS Plot of Words based on LDA Topics") +
+    xlab("Dimensió 1") +
+    ylab("Dimensió 2") +
+    xlim(c(-0.03,0.0)) + 
+    ylim(c(-0.02, 0.01)) +
+    theme_minimal()
+dev.off()
 
 
+# REPRESENTACION DE EL ESPACIO DE LOS DOCUMENTOS
 gammas <- posterior(ap_lda)$topics
-gammas
+
 doc_names <- as.character(unique_tracks$track_name)
 
 #ddd <- data.frame(gammas)
 
 dist_mat <- dist(gammas)
-View(dist_mat)
-mds_result <- cmdscale(dist_mat, k = 2)
 
-mds_df <- as.data.frame(mds_result)
-colnames(mds_df) <- c("Dim1", "Dim2")
-mds_df$word <- unique_tracks$track_name
+mds_result_docs <- cmdscale(dist_mat, k = 2)
+
+mds_docs_df <- as.data.frame(mds_result_docs)
+colnames(mds_docs_df) <- c("Dim1", "Dim2")
+mds_docs_df$track_name <- unique_tracks$track_name
 
 
-mds_red <- mds_df %>% sample_frac(0.1)
-# Plotear las palabras utilizando ggplot2
-ggplot(mds_red, aes(x = Dim1, y = Dim2, label = word)) +
+library(ggrepel)
+
+set.seed(42)
+mds_red <- mds_docs_df %>% sample_frac(0.1)
+
+
+png(file=paste0(PATH_PLOTS, "/MDS_docs_10percnt.png"),
+    width=1920, height=1920, units="px", res=120)
+ggplot(mds_red, aes(x = Dim1, y = Dim2, label = track_name)) +
   geom_point(color = "blue") +
-  geom_text(vjust = 1, hjust = 1) +
+  geom_text_repel(aes(label = track_name), 
+                  max.overlaps = Inf,
+                  box.padding = 0.35, 
+                  point.padding = 0.3, 
+                  segment.color = 'grey50') +
   ggtitle("MDS Plot of Words based on LDA Topics") +
   xlab("Dimension 1") +
   ylab("Dimension 2") +
   theme_minimal()
+dev.off()
+
+variables_cat <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino", "explicit", "collab")#, "explicit")
+
+for (cat_var in variables_cat){
+  mds_docs_df[, cat_var] <- unique_tracks[, cat_var]
+}
+mds_docs_df$topic <- unique_tracks$LDA_topic
+
+create_mds_filter_plot <- function(data, var){
+  ggplot(data, aes_string(x = "Dim1", y = "Dim2", color = var)) +
+    geom_point(size=1.4) +
+    ggtitle(paste("Representació de les cançons segons ", var)) +
+    xlab("Dimensió 1") +
+    ylab("Dimensió 2") +
+    theme_minimal() +
+    scale_color_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#d46c06", "#205633", "#67b1ff","#cf2555"))
+    
+}
+
+plots_mds_doc_genre <- lapply(variables_cat, function(var) {
+  create_mds_filter_plot(mds_docs_df, var)
+})
+
+png(file=paste0(PATH_PLOTS, "/MDS_docs_filtered.png"),
+    width=1920, height=1920, units="px", res=120)
+do.call(grid.arrange, c(plots_mds_doc_genre, ncol = 3))
+dev.off()
+plots_mds_doc_genre
 
 
-mds_df_genres <- mds_df
-mds_df_genres$gender <- unique_tracks$latino
-
-ggplot(mds_df_genres, aes(x = Dim1, y = Dim2, color = gender)) +
-  geom_point() +
-  ggtitle("MDS Plot of Words based on LDA Topics") +
-  xlab("Dimension 1") +
-  ylab("Dimension 2") +
-  theme_minimal()
-
-
-
+png(file=paste0(PATH_PLOTS, "/MDS_docs_by_topic.png"),
+    width=1700, height=1700, units="px", res=130)
+ggplot(mds_docs_df, aes(x = Dim1, y = Dim2, color = topic)) +
+  geom_point(size=2) +
+  ggtitle(paste("Representació de les cançons segons el topic")) +
+  xlab("Dimensió 1") +
+  ylab("Dimensió 2") +
+  theme_minimal() 
+dev.off()
 #-------------------------------------------------------------------------------
 # Time Series con distintos topics según el topic por año
 
