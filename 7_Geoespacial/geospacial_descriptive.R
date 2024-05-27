@@ -27,7 +27,7 @@ data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326, agr =
 # Visualitzem els llocs on tenim dades (ubicació de cada artista)
 ggplot() +
   geom_sf(data = world_cities, fill = "white", color = "black") +  # Dibuixem el shapefile
-  geom_sf(data = data_sf, color = "darkgreen", size = 0.5) +  # Afegim els punts
+  geom_sf(data = data_sf, color = "red", size = 0.5) +  # Afegim els punts
   theme_minimal() +
   labs(title = "Mapa amb els punts de dades")
 
@@ -225,11 +225,6 @@ for (i in seq_along(plots)) {
 }
 
 
-
-
-
-
-
 generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
 plot_genre_heatmap <- function(genre) {
   # Agrupem i sumem la variable per nacionalitat
@@ -315,15 +310,17 @@ data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 432
 data_joined <- st_join(world_cities, data_sf, join = st_intersects)
 
 # Crear el mapa
-ggplot(data = data_joined) +
+ploteee <- ggplot(data = data_joined) +
   geom_sf(aes(fill = most_popular_genre), color = "black") +  # Pinta cada país con el color del género más popular
   scale_fill_manual(values = genre_colors, na.value = "grey") +  # Usa la paleta de colores definida
-  labs(title = "Género Musical Más Popular por País", fill = "Género") +
+  labs(title = "Gènere Més Popular per País", fill = "Gènere") +
   theme_minimal()
 
+ggsave(filename = paste("genere_mes_popular.png", sep = ""),
+       plot = ploteee, width = 10, height = 8)
 ##############################
 
-# 1. Porcentaje de Canciones de un Género por País
+# 1. Porcentaje de Canciones de un Género por Paísp
 
 generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro", "collab")
 
@@ -344,10 +341,12 @@ for (genre in generos) {
   
   p <- ggplot(data = data_joined) +
     geom_sf(aes(fill = genre_percentage), color = "black") +
-    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar", name = "Percentage of Songs") +
-    labs(title = paste("Percentage of", genre, "Music by Country"), fill = "Percentage of Songs") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar", name = "Percentatge de cançons") +
+    labs(title = paste("Percentatge de ", genre, "per País"), fill = "Percentatge de cançons") +
     theme_minimal()
   
+  ggsave(filename = paste("popularity_", genre, ".png", sep = ""),
+         plot = p, width = 10, height = 8)
   print(p)
 }
 

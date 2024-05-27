@@ -161,10 +161,6 @@ explicit_percentage_by_country <- filtered_data %>%
 
 world <- left_join(world_cities, explicit_percentage_by_country, by = c("iso_3166_1_" = "country"))
 
-tm_map <- tm_shape(world) +
-  tm_borders() +
-  tm_fill(percent_explicit, palette = "Blues", style = "quantile") +
-  tm_layout(title = paste("Average Spotify", "names[i]", "by Country"))
 # Asegúrate que 'world_cities' y 'explicit_percentage_by_country' estén correctamente definidos y unidos
 world <- left_join(world_cities, explicit_percentage_by_country, by = c("iso_3166_1_" = "country"))
 
@@ -172,9 +168,31 @@ world <- left_join(world_cities, explicit_percentage_by_country, by = c("iso_316
 tm_map <- tm_shape(world) +
   tm_borders() +
   tm_fill("percent_explicit", palette = "Blues", style = "quantile") +  # Corregido: nombre de columna entre comillas
-  tm_layout(title = "Average Spotify Explicit Content by Country")  # Corregido: título simplificado sin 'names[i]'
+  tm_layout(legend.position = c("left", "bottom"))
+#tm_layout(title = "Average Spotify Explicit Content by Country")  # Corregido: título simplificado sin 'names[i]'
 
 print(tm_map)
+
+
+###########aaaaaaaaa
+
+library(tmap)
+library(ggplot2)
+
+# Configura tmap para usar el modo plot (basado en ggplot2)
+tmap_mode("plot")
+
+# Crea el mapa
+tm_map <- tm_shape(world) +
+  tm_borders() +
+  tm_fill("percent_explicit", palette = "Blues", style = "quantile") +
+  tm_layout(legend.position = c("left", "bottom"))
+
+# Muestra el mapa (opcional, para verificar su apariencia antes de guardar)
+map_ggplot <- tmap_arrange(tm_map)
+
+# Guardar el mapa con ggsave
+ggsave("mapa_guardado.png", map_ggplot, width = 10, height = 8, dpi = 300)
 
 ### Mapa pero amb la logica
 
@@ -192,14 +210,26 @@ majority_explicit_by_country <- filtered_data %>%
 world <- left_join(world_cities, majority_explicit_by_country, by = c("iso_3166_1_" = "country"))
 
 # AQUEST ÉS EL BO DE EXPLICIT
+
+
+tm_map <- tm_shape(world) +
+  tm_borders() +
+  tm_fill("majority_explicit", palette = c("red", "lightgreen"), style = "cat" +
+            labels = c("No", "Yes"), title = "Contingut Explicit")
+# Imprimir el mapa
+print(tm_map)
+
+# Opcional: Guardar el mapa como PNG
+tmap_save(tm_map, filename = paste("map_explicites_logit.png"))
 # Crear el mapa con tmap
+
+######### ES AQUEST
 tm_map <- tm_shape(world) +
   tm_borders() +
   tm_fill("majority_explicit", palette = c("red", "lightgreen"), style = "cat", 
           labels = c("No", "Yes"), title = "Explicit Content") +
-  tm_layout(title = "Countries with Majority Explicit Songs")
-
-print(tm_map)
+  tm_layout(legend.position = c("left", "bottom"),main.title = "Països amb la majoria de cançons explícites")
+# tm_layout(title = "Countries with Majority Explicit Songs")
 
 #### VARIABLES NUMÈRIQUES
 
@@ -227,13 +257,12 @@ for (i in seq_along(variables)) {
   tm_map <- tm_shape(world) +
     tm_borders() +
     tm_fill(variables[i], palette = "Blues", style = "quantile") +
-    tm_layout(title = paste("Average Spotify", names[i], "by Country"))
-  
+    tm_layout(main.title = paste("Mitjana de", names[i], "per País"), legend.position = c("left", "bottom"))
   # Imprimir el mapa
   print(tm_map)
   
   # Opcional: Guardar el mapa como PNG
-  #tmap_save(tm_map, filename = paste("map_", names[i], ".png"))
+  tmap_save(tm_map, filename = paste("map_", names[i], ".png"))
 }
 
 ############### MEAN NEW DATA
