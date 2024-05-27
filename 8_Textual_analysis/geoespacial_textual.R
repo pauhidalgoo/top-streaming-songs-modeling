@@ -12,6 +12,7 @@ library(gridExtra)
 
 
 load('./7_Geoespacial/data_coordenades.RData')
+PATH_PLOTS <- "./Media/Geotextual"
 
 # Verificar que data es un data.frame
 data <- as.data.frame(data)
@@ -69,6 +70,28 @@ td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(bounds=list(global
 
 sum(is.na(t(td.mat)))
 ap_lda <- LDA(t(td.mat), k = 6, control = list(seed = 42))
+
+ap_topics <- tidy(ap_lda, matrix = "beta")
+
+# Selecció de les top 10 paraules segons les betes
+ap_top_terms <- ap_topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+# Creació del plot amb les top 10 paraules per tòpic
+png(file=paste0(PATH_PLOTS, "/lda_topics_geotext.png"),
+    width=1920, height=1080, units="px", res=200)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+dev.off()
+
 
 
 
