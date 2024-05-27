@@ -13,7 +13,7 @@ if(length(new.packages) > 0) {
 lapply(list.of.packages, require, character.only = T)
 rm(list.of.packages, new.packages)
 
-# Asegurarnos de cargar dplyr
+library(paletteer)
 library(dplyr)
 
 # Cargar el dataset con coordenadas
@@ -85,7 +85,7 @@ plot(ve, model = va_gau, main = "Ajust del Model Gaussià")
 
 
 #########################
-#  VALIDACIÓN DEL MODELO  #
+#  VALIDACIÓ DEL MODEL  #
 #########################
 
 # Realizar validación cruzada con leave-one-out (LOOCV)
@@ -153,3 +153,20 @@ spplot(kriged["var1.pred"], main = "Interpolació Kriging d'Energy",
        col.regions = rev(heat.colors(50)),
        sp.layout = list(list("sp.polygons", as(world, "Spatial"), col = "black")))
 
+# Convertir datos originales a sf
+df_sf <- st_as_sf(df, coords = c("lon", "lat"), crs = 4326)
+
+variable_name <- "energy"
+
+# Plot con ggplot2
+ggplot() +
+  geom_tile(data = kriged_df, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(rangemin, rangemax), name = paste("Predicted", variable_name)) +
+  theme_minimal() +
+  ggtitle(paste("Interpolació Kriging d'Energy")) +
+  coord_sf(xlim = lon_range, ylim = lat_range) +
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Energy") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        title = element_text(face = "bold", size = 15),
+        legend.title = element_text(size = 10))
