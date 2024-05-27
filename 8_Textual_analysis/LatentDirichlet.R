@@ -376,11 +376,8 @@ release_date_topics <- release_date_topics %>%
 
 #release_date_topics$predominant_topic <- as.factor(count_data$LDA_topic)
 release_date_topics <- release_date_topics[release_date_topics[,"year_season"]>2015,]
-releas_data_topics <-
-  
-  
-  
-  all_year_season <- unique(release_date_topics$year_season)
+
+all_year_season <- unique(release_date_topics$year_season)
 all_seasons <- unique(release_date_topics$season)
 all_topics <- unique(release_date_topics$LDA_topic)
 
@@ -410,46 +407,65 @@ ggplot(data=release_date_topics_complete, aes(x=paste(year_season, season, sep="
   scale_color_manual(values = my_colors) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_wrap(~LDA_topic, ncol = 2)
+  facet_wrap(~LDA_topic, ncol = 2, scales = "free_x") +
+  theme(panel.spacing.x = unit(1, "lines")) 
 dev.off()
 
 #-------------------------------------------------------------------------------
 # Time Series amb Tòpics per estació
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
-
+data
 weekly_data <- data %>% select(track_name, year_week, month_week)
 weekly_data$track_name <- as.factor(weekly_data$track_name)
 
-songs_to_topics <- dc_cpy %>% select(document, predominant_topic)
-names(songs_to_topics) <- c("track_name", "predominant_topic")
+songs_to_topics <- unique_tracks %>% select(track_name, LDA_topic)
+#names(songs_to_topics) <- c("track_name", "predominant_topic")
 
-merged_data <- weekly_data %>%
+weekly_data_merged <- weekly_data %>%
   left_join(songs_to_topics, by = "track_name")
 
-merged_data$year_week <- as.numeric(as.character(merged_data$year_week))
-merged_data$month_week <- as.numeric(as.character(merged_data$month_week))
+names(weekly_data_merged)[names(weekly_data_merged) == "predominant_topic"] <- "LDA_topic"
 
-merged_data <- merged_data %>% 
+weekly_data_merged$year_week <- as.numeric(as.character(weekly_data_merged$year_week))
+weekly_data_merged$month_week <- as.numeric(as.character(weekly_data_merged$month_week))
+
+weekly_data_merged <- weekly_data_merged %>% 
   mutate(
     year_season = ifelse(month_week %in% c(12), year_week + 1, year_week)
   )
 
-merged_data <- merged_data %>%  mutate(season = case_when(
+weekly_data_merged <- weekly_data_merged %>%  mutate(season = case_when(
   month_week %in% c(1, 2, 12) ~ "1",
   month_week %in% c(3, 4, 5) ~ "2",
   month_week %in% c(6, 7, 8) ~ "3",
   month_week %in% c(9,10,11) ~ "4"
 ))
 
-count_data <- merged_data %>%
-  dplyr::count(year_season, season, predominant_topic, name = "count")
+weekly_data_merged <- weekly_data_merged %>%
+  dplyr::count(year_season, season, LDA_topic, name = "count")
 
-count_data$predominant_topic <- factor(count_data$predominant_topic, labels = topic_names)
+
+all_year_season <- unique(weekly_data_merged$year_season)
+all_seasons <- unique(weekly_data_merged$season)
+all_topics <- unique(weekly_data_merged$LDA_topic)
+
+all_combinations <- expand.grid(year_season = all_year_season, season = all_seasons, LDA_topic = all_topics)
+
+
+weekly_data_merged_complete <- all_combinations %>%
+  left_join(weekly_data_merged, by = c("year_season", "season", "LDA_topic"))
+
+weekly_data_merged_complete <- weekly_data_merged_complete %>%
+  filter(!(season %in% c("3", "4") & year_season == 2021))
+
+weekly_data_merged_complete[is.na(weekly_data_merged_complete)] <- 0
+
+weekly_data_merged_complete$LDA_topic <- factor(weekly_data_merged_complete$LDA_topic, labels = topic_names)
 
 my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#eebb44", "#bcbd22")
 
-ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+ggplot(data=weekly_data_merged_complete, aes(x=paste(year_season, season, sep="-"), y=count, group=LDA_topic, color = LDA_topic)) +
   geom_line(size=0.6) +
   theme_minimal() +
   scale_color_manual(values = my_colors) 
@@ -458,12 +474,12 @@ ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, grou
 # Plot separado por tópico predominante
 png(file=paste0(PATH_PLOTS, "/topics_temporal_setmana.png"),
     width=1700, height=1100, units="px", res=130)
-ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
-  xlab("Data en la que es van trobar al top40") +
+ggplot(data=weekly_data_merged_complete, aes(x=paste(year_season, season, sep="-"), y=count, group=LDA_topic, color = LDA_topic)) +
+  xlab("Data en la que les cançons es van trobar al top40") +
   geom_line(size=0.6) +
   scale_color_manual(values = my_colors) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_wrap(~predominant_topic, ncol = 2)
+  facet_wrap(~LDA_topic, ncol = 2, scales = "free_x") +
+  theme(panel.spacing.x = unit(1, "lines")) 
 dev.off()
-

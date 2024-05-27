@@ -1,5 +1,8 @@
-load('./7_Geoespacial/mean_new_data.RData')
 
+
+
+load('./7_Geoespacial/mean_new_data.RData')
+library(rnaturalearth)
 mean_new_data <- na.omit(mean_new_data) # Borrem el global
 
 
@@ -167,6 +170,27 @@ coords <- bind_cols(allkrige, coords)
 coordinates(coords) <- ~coords.x1 + coords.x2
 allkrige <- coords
 save(allkrige, file="GUI/allkrigeresults.RData")
+
+load("7_Geoespacial/artists_with_topics.RData")
+
+krige_variables <- function(variables) {
+  kriged_results <- lapply(variables, function(var) {
+    # Perform kriging for each variable
+    krige_output <- perform_kriging(data, var, rangemin = 0, rangemax = 1)
+    krige_output$var1.pred
+  })
+  kriged_df <- as.data.frame(do.call(cbind, kriged_results))
+  colnames(kriged_df) <- variables
+  kriged_df
+}
+
+data$lat <- data$latitude
+data$lon <- data$longitude
+topics_krige <- krige_variables(c( "topic1", "topic2", "topic3", "topic4", "topic5","topic6"))
+
+
+
+
 
 allkrige[coords$coo]
 
