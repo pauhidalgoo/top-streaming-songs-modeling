@@ -77,5 +77,11 @@ ui <- navbarPage(
                leafletOutput("map")
              )
            )
+  ),
+  tabPanel("Song geospatial",
+           leafletOutput("new_map"),
+           uiOutput("kriged_song")
   )
+  
+  
 )

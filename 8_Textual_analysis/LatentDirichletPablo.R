@@ -21,9 +21,6 @@ uncleaned_corpus
 #-------------------------------------------------------------------------------
 # PREPROCESAMENT DEL TEXT
 
-#stopwords en castellano
-
-
 
 preprocess <- function(input_corpus){
   texto <- readLines("./8_Textual_Analysis/gh-stopwords-json-es.txt")
@@ -48,6 +45,7 @@ preprocess <- function(input_corpus){
   old_clean_corpus <- clean_corpus
   # Customize your own list of words for removal
   clean_corpus <- tm_map(clean_corpus, removeWords, c("yeah", "ere", "yeh", "ahn"))
+  #stopwords en castellano
   stopwords_es <- stopwords(language= "es")
   clean_corpus <- tm_map(clean_corpus, removeWords, stopwords_es)
   clean_corpus <- tm_map(clean_corpus, removeWords, palabras_es)
@@ -60,10 +58,12 @@ corpus <- preprocess(uncleaned_corpus)
 
 
 #-------------------------------------------------------------------------------
+# MODELO LDA
+#-------------------------------------------------------------------------------
 
 # Creación  de la TermDocMatrix (3% de frecuencia)
 td.mat <- as.matrix(TermDocumentMatrix(corpus, control = list(bounds=list(global = c(3, Inf)))))
-
+dimnames(td.mat)
 
 # Finetunning para escoger el número de topics
 result <- ldatuning::FindTopicsNumber(
@@ -75,32 +75,29 @@ result <- ldatuning::FindTopicsNumber(
   verbose = TRUE
 )
 
+# Gràfic amb el finetunning del model
 png(file=paste0(PATH_PLOTS, "/lda_finetunning.png"),
     width=1920, height=1080, units="px", res=130)
-
 FindTopicsNumber_plot(result)
-# Se ve que el 6 o 8 serían buenas métricas
 dev.off()
 
+# Es veu que k=6, k=8 podrien ser bones mètriques
 
-
+#-------------------------------------------------------------------------------
 # MODELO LDA TRAS ESCOGER LA K
 ap_lda <- LDA(t(td.mat), k = 6, control = list(seed = 42))
-ap_lda
-#Word-topic probabilities
 
+# Obtenció de les betes, importància d'una paraula per cadascun dels tòpics
 ap_topics <- tidy(ap_lda, matrix = "beta")
-ap_topics
 
-dimnames(td.mat)
-
+# Selecció de les top 10 paraules segons les betes
 ap_top_terms <- ap_topics %>%
   group_by(topic) %>%
   slice_max(beta, n = 10) %>% 
   ungroup() %>%
   arrange(topic, -beta)
 
-
+# Creació del plot amb les top 10 paraules per tòpic
 png(file=paste0(PATH_PLOTS, "/lda_topics6.png"),
     width=1920, height=1080, units="px", res=200)
 
@@ -111,23 +108,26 @@ ap_top_terms %>%
   facet_wrap(~ topic, scales = "free") +
   scale_y_reordered()
 dev.off()
-topic_names <- c("alegria gen", "malsonant", "castellà", "amor 1", "amor 2", "nostàlgia")
+
+# Anomenació dels tòpics
+topic_names <- c("alegria", "malsonant", "castellà", "amor 1", "amor 2", "nostàlgia")
+
 
 #-------------------------------------------------------------------------------
+# Profiling dels Tòpics del LDA (k=6)
+#-------------------------------------------------------------------------------
 
-# Profiling Por Género y Explicit:
-
+# Obtenció de les gammas per escollir el tòpic principal per cada cançó
 gammas <- posterior(ap_lda)$topics
 topics_prof <- as.data.frame(gammas)
 
 document_topics <- topics_prof %>%
   mutate(predominant_topic = apply(gammas, 1, which.max))
 
+# Afegir la nova columna a la base de dades
+unique_tracks$LDA_topic <- factor(document_topics$predominant_topic, labels = topic_names)
 
-unique_tracks$LDA_topic <- factor(document_topics$predominant_topic, labels = c("alegria", "malsonant", "castellà", 
-                                                                                   "amor 1", "amor 2", "nostàlgia"))
-
-# Función para crear gráficos de barras
+# Funcions definides per crear els diferents gràfics de profiling
 create_bar_plot_bin <- function(data, topic_col, categoric_col) {
   ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
     geom_bar(position = "fill") +
@@ -135,29 +135,38 @@ create_bar_plot_bin <- function(data, topic_col, categoric_col) {
     scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#cf2a25", "#d46c06", "#205633"))
 }
 
-# Lista de las variables binarias
+create_box_plot <- function(data, topic_col, numeric_var){
+  ggplot(data, aes_string(x = topic_col, y = numeric_var)) +
+    geom_boxplot() +
+    labs(x = "Tòpics", y =  numeric_var) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))}
+
+create_bar_plot <- function(data, topic_col, categoric_col) {
+  ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
+    geom_bar(position = position_dodge(), width = 0.7) +
+    labs(y = "Proporció", x = "Topics", fill = categoric_col) +
+    scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#d46c06", "#205633", "#67b1ff","#cf2555")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# Llista de variables binàries
 binary_vars <- c("pop", "hip_hop", "rock", "electro", "christmas", "cinema", "latino", "explicit")#, "gender")#, "collab", "explicit")
 
-# Crear gráficos para cada variable binaria
-plots <- lapply(binary_vars, function(var) {
+# Crear gráfics per cada variable binaria
+plots_bin <- lapply(binary_vars, function(var) {
   create_bar_plot_bin(unique_tracks, "LDA_topic", var)
 })
 
-# Guardar los gráficos
+# Guardar els gràfics per les variables binàries
 png(file=paste0(PATH_PLOTS, "/profiling_genres.png"),
     width=1920, height=1580, units="px", res=200)
-do.call(grid.arrange, c(plots, ncol = 2))
+do.call(grid.arrange, c(plots_bin, ncol = 2))
 dev.off()
 
-# Profiling para las variables numéricas más destacadas
+
+# Profiling per les variables numériques més destacades
 numeric_vars <- c("artist_popularity", "artist_followers", "danceability", "energy", "loudness", "speechiness", "acousticness", "liveness", "valence", "tempo", "duration", "streams")
-
-
-create_box_plot <- function(data, topic_col, numeric_var){
-  ggplot(data, aes_string(x = topic_col, y = numeric_var)) +
-  geom_boxplot() +
-  labs(x = "Tòpics", y =  numeric_var) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))}
 
 plots_num <- lapply(numeric_vars, function(var) {
   create_box_plot(unique_tracks, "LDA_topic", var)
@@ -169,20 +178,9 @@ do.call(grid.arrange, c(plots_num, ncol = 3))
 dev.off()
 
 
-
-create_bar_plot <- function(data, topic_col, categoric_col) {
-  ggplot(data, aes_string(x = topic_col, fill = categoric_col)) +
-    geom_bar(position = position_dodge(), width = 0.7) +
-    labs(y = "Proporció", x = "Topics", fill = categoric_col) +
-    scale_fill_manual(values = c("#cf2a25", "#1db954", "#c325cf", "#d46c06", "#205633", "#67b1ff","#cf2555")) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-}
-
-# Profiling para las variables categóricas restantes
+# Profiling per les variables categòriques restants
 unique_tracks$artist_num <- as.factor(unique_tracks$artist_num)
 categoric_vars <- c("artist_num",  "time_signature", "gender")
-bin_vars_2 <- c("collab", "major_mode","is_group")
 
 plots_cat <- lapply(categoric_vars, function(var) {
   create_bar_plot(unique_tracks, "LDA_topic", var)
@@ -194,6 +192,9 @@ do.call(grid.arrange, c(plots_cat, ncol = 3))
 dev.off()
 
 
+# Profiling per les variables binàries restants
+bin_vars_2 <- c("collab", "major_mode","is_group")
+
 plots_bin2 <- lapply(bin_vars_2, function(var) {
   create_bar_plot_bin(unique_tracks, "LDA_topic", var)
 })
@@ -204,9 +205,10 @@ do.call(grid.arrange, c(plots_bin2, ncol = 3))
 dev.off()
 
 
-
 #-------------------------------------------------------------------------------
 # REPRESENTACION DE EL ESPACIO DE LAS PALABRAS
+#-------------------------------------------------------------------------------
+
 # Obtener las probabilidades de las palabras en cada tema
 betas <- t(posterior(ap_lda)$terms)
 betas
@@ -264,7 +266,10 @@ ggplot(mds_df, aes(x = Dim1, y = Dim2, color = topic)) +
 dev.off()
 
 
+#-------------------------------------------------------------------------------
 # REPRESENTACION DE EL ESPACIO DE LOS DOCUMENTOS
+#-------------------------------------------------------------------------------
+
 gammas <- posterior(ap_lda)$topics
 
 doc_names <- as.character(unique_tracks$track_name)
@@ -339,8 +344,11 @@ ggplot(mds_docs_df, aes(x = Dim1, y = Dim2, color = topic)) +
   ylab("Dimensió 2") +
   theme_minimal() 
 dev.off()
+
+
 #-------------------------------------------------------------------------------
-# Time Series con distintos topics según el topic por año
+# Time Series amb Tòpics per any
+#-------------------------------------------------------------------------------
 
 library(topicmodels)
 
@@ -407,7 +415,7 @@ ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, grou
 
 
 #-------------------------------------------------------------------------------
-# Estudio según año/mes/época en la que fueron populares los tópicos
+# Time Series amb Tòpics per estació
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
 weekly_data <- data %>% select(track_name, year_week, month_week)

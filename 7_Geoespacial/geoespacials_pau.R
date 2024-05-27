@@ -100,7 +100,51 @@ leaflet(last_day) %>%
   addLegend("bottomright", colors = c("red", "blue"), labels = c("Explicit", "Non-Explicit"),
             title = "Song Type")
 
+<<<<<<< HEAD
 ############### DATA 2024 ###############
+=======
+<<<<<<< HEAD
+
+load('./7_Geoespacial/mean_new_data.RData')
+
+mean_new_data$popularity
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = mean_new_data, ~lon, ~lat, popup = ~country)
+
+
+new_world <- left_join(world_cities, mean_new_data, by = c("iso_3166_1_" = "country"))
+
+tm_shape(new_world) +
+  tm_borders() +
+  tm_fill("instrumentalness", palette = "Blues", style = "quantile") +
+  tm_layout(main.title = "Average Spotify Popularity by Country", frame=FALSE, legend.outside = TRUE)
+
+ggplot() +
+  geom_sf(data = new_world, color = "black", mapping= aes(fill=energy)) +
+  theme_minimal() +
+  labs(title = "Mapa del món")
+
+ggplot(data = new_world) +
+  geom_sf(aes(fill = energy), color = "grey") +
+  scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+  labs(title = "Mapa de Calor de Energy per País",
+       fill = "Avg Energy") +
+  theme_minimal()
+
+
+?aes
+
+?tm_layout
+
+
+?leaflet
+m <- leaflet() %>% addTiles()
+m 
+
+=======
+############### DATA 2024
+>>>>>>> 2d64e171e5c953c707f6ec290c270747a9c7f3be
 
 ### IS_EXPLICIT
 
@@ -249,5 +293,6 @@ for (i in seq_along(variables)) {
   # Opcional: Guardar el mapa como PNG
   #tmap_save(tm_map, filename = paste("map_", names[i], ".png"))
 }
+>>>>>>> 078c10fc41b95958798a0ff1f574f4a91196211c
 
 
