@@ -55,7 +55,6 @@ plot(world_cities$geometry)
 points(data2024, col = 'red', pch = 20)
 
 summary_data <- na.omit(summary_data) # Borrem el global
-
 names(summary_data)
 # variograma i kriging ----------------------------------------------------
 perform_kriging <- function(df, variable_name, rangemax, rangemin, continent = NULL, data_name = "data") {
@@ -222,11 +221,22 @@ load('./7_Geoespacial/mean_new_data.RData')
 
 mean_new_data <- na.omit(mean_new_data) # Borrem el global
 
+df <- mean_new_data
 #names(mean_new_data)
+df_sf <- st_as_sf(df, coords = c("lon", "lat"), crs = 4326)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+ggplot() +
+  geom_sf(data = world, fill = "lightgray") +  # Plot the world map
+  geom_point(data = df, aes(x = lon, y = lat, color = continent), size = 2) +  # Plot the points
+  theme_minimal() +  # Clean theme
+  labs(title = "World Map with Points", x = "Longitude", y = "Latitude") +
+  scale_color_manual(values = c("Africa" = "red", "Europe" = "blue", "Asia" = "green", "North America" = "purple", "South America" = "orange", "Australia" = "yellow", "Antarctica" = "black")) +  # Customize colors
+  theme(legend.position = "bottom")
+
 
 df <- mean_new_data
-k <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1)
-# cutoff: 5000
+k_energy <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1)# cutoff: 5000
 # width: 300
 
 # psill: 0.0025
@@ -240,19 +250,19 @@ k <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1)
 # psill: 0.003
 # range: 3000
 # nugget: 0.0005 i auto
-coordinates(k) <- ~coords.x1 + coords.x2
+coordinates(k_energy) <- ~coords.x1 + coords.x2
 
-spplot(k["var1.pred"], main = paste("Kriged", "Energy"))
+spplot(k_energy["var1.pred"], main = paste("Kriged", "Energy"))
 
-k <- as.data.frame((k))
+k_energy <- as.data.frame((k_energy))
 lon_range <- c(-174, 174)
 lat_range <- c(-84, 84)
 
-png(file=paste0(PATH_PLOTS, "/energy_interpolation.png"),
+png(file=paste0(PATH_PLOTS, "/energy_interpolation_2.png"),
     width=1920, height=1080, units="px", res=130)
 ggplot() +
-  geom_tile(data = k, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
-  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k$var1.pred), max(k$var1.pred)), name = paste("Predicted", "Energy")) +
+  geom_tile(data = k_energy, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_energy$var1.pred), max(k_energy$var1.pred)), name = paste("Predicted", "Energy")) +
   theme_minimal() +
   ggtitle(paste("Kriged", "energy", "")) +
   coord_sf(xlim = lon_range, ylim = lat_range)+ 
@@ -275,19 +285,19 @@ perform_kriging(df, "danceability", rangemin = 0, rangemax = 1, continent="Europ
 
 
 df <- mean_new_data
-k <- perform_kriging(df, "popularity", rangemin = 0, rangemax = 100)
+k_pop <- perform_kriging(df, "popularity", rangemin = 0, rangemax = 100)
 # 6000, 400
 
 # 50, 2000, 7
-k <- as.data.frame((k))
+k_pop <- as.data.frame((k_pop))
 lon_range <- c(-174, 174)
 lat_range <- c(-84, 84)
 
 png(file=paste0(PATH_PLOTS, "/popularity_interpolation.png"),
     width=1920, height=1080, units="px", res=130)
 ggplot() +
-  geom_tile(data = k, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
-  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k$var1.pred), max(k$var1.pred)), name = paste("Predicted", "Energy")) +
+  geom_tile(data = k_pop, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_pop$var1.pred), max(k_pop$var1.pred)), name = paste("Predicted", "Energy")) +
   theme_minimal() +
   ggtitle(paste("Kriged", "popularity", "")) +
   coord_sf(xlim = lon_range, ylim = lat_range)+ 
@@ -297,6 +307,30 @@ ggplot() +
         title = element_text(face="bold", size = 15),
         legend.title = element_text( size = 10))
 dev.off()
+lon_range <- c(-38, 70)
+lat_range <- c(24, 74)
+
+png(file=paste0(PATH_PLOTS, "/popularity_interpolation_europe.png"),
+    width=1920, height=1080, units="px", res=130)
+ggplot() +
+  geom_tile(data = k_pop, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_pop$var1.pred), max(k_pop$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "popularity", " in Europe")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Popularity")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text( size = 10))
+dev.off()
+
+
+
+
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = mean_new_data, ~lon, ~lat, popup = ~country)
 
 
 
@@ -329,6 +363,27 @@ ggplot() +
         title = element_text(face="bold", size = 15),
         legend.title = element_text(size = 10))
 dev.off()
+
+k <- perform_kriging(mean_new_data, "acousticness", rangemin = 0, rangemax = 1, continent="Europe")
+# 2000 250 6e-04 700 5e-04 Wav
+k$coords.x1
+k$var1.pred
+k <- as.data.frame((k))
+lon_range <- c(-48, 110)
+lat_range <- c(24, 84)
+
+ggplot() +
+  geom_tile(data = k, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k$var1.pred), max(k$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "acousticness", "")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Acousticness")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text(size = 10))
+
 
 
 

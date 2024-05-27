@@ -7,7 +7,7 @@ source("./GUI/global.R")
 source("./GUI/predict_playlist.R")
 source("./GUI/predict_genre.R")
 source("./GUI/geospatial_example.R")
-
+source("./GUI/geospatial_predict.R")
 # Define UI
 source("./GUI/ui.R")
 
