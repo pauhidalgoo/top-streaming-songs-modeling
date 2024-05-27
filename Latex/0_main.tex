@@ -7,6 +7,10 @@
 \usepackage{float}
 \usepackage{amsmath}
 \usepackage{fancyhdr} % Required for making headers and footers
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
 
 %Composición
 \usepackage[
@@ -106,24 +110,36 @@
 
 \setcounter{page}{2}
 \rhead{\includegraphics[scale=0.25]{Images/Logo UPC BCNTech Negre Transparent.png}}
-\lhead{\textbf{Grau en Intel·ligència Artificial\\[3pt]PMAAD - D3}\vspace{5pt}}
+\lhead{\textbf{Grau en Intel·ligència Artificial\\[3pt]PMAAD - D4}\vspace{5pt}}
 \pagestyle{fancy}
 
 
 \newpage
 \tableofcontents
 
-\include{1_introduccio}
+%\include{1_introduccio}
 
-\include{2_descriptivaraw}
+%\include{2_descriptivaraw}
 
-\include{3_preprocessing}
+%\include{3_preprocessing}
 
-\include{4_clustering}
+%\include{4_clustering}
 
-\include{5_profiling}
+%\include{5_profiling}
 
-\include{5_2_TLP}
+%\include{5_2_TLP}
+
+\include{6_factorial_methods}
+
+%\include{7_geoespacial}
+
+%\include{8_textual_Analysis}
+
+%\include{9_interficie}
+
+
+
+\include{conclusions}
 
 \newpage
 \printbibliography
