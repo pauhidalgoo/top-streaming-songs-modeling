@@ -136,7 +136,7 @@ for (i in seq_along(plots)) {
 #########################################################
 
 data_grouped <- data %>%
-  group_by(artist_name) %>% 
+  group_by(track_name) %>% 
   summarize(
     energy = mean(energy, na.rm = TRUE),
     longitude = mean(longitude, na.rm = TRUE),  
@@ -167,11 +167,77 @@ ggplot(data = data_summarized) +
 #### NOMBRE DE CANÇONS QUE HI HA DE CADA GÈNERE A CADA PAÍS
 
 # Recordar que això s'ha de filtrar per cancons, sinó les contarà repetides
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(viridis)
 
 generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
-data_per_cançons
+
+plot_genre_heatmap <- function(genre) {
+  # Filtrar les dades per gènere
+  data_filtered <- data %>%
+    filter(genre == genre) %>%
+    group_by(track_name) %>%
+    summarize(longitude = mean(longitude, na.rm = TRUE),
+              latitude = mean(latitude, na.rm = TRUE),
+              nationality = first(nationality),
+              .groups = "drop")
+  
+  # Agrupem per nacionalitat i comptem el nombre de cançons
+  data_grouped <- data_filtered %>%
+    group_by(nationality) %>%
+    summarize(
+      count = n(),  # Comptem el nombre de cançons
+      longitude = mean(longitude, na.rm = TRUE),
+      latitude = mean(latitude, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Convertim a sf object
+  data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+  
+  # Unió geospacial
+  data_joined <- st_join(world_cities, data_sf, join = st_intersects)
+  
+  # Per país (name)
+  data_summarized <- data_joined %>%
+    group_by(name) %>%
+    summarize(sum_genre = sum(count), .groups = "drop")
+  
+  # Dibuixem el mapa de calor
+  ggplot(data = data_summarized) +
+    geom_sf(aes(fill = sum_genre), color = "grey") +
+    scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+    labs(title = paste("Mapa de Calor del número de canciones de", genre),
+         fill = paste("Sum", genre)) +
+    theme_minimal()
+}
+
+plots <- lapply(generos, plot_genre_heatmap)
+
+for (i in seq_along(plots)) {
+  print(plots[[i]])  # Mostrar el plot
+  
+  # Guardar el plot
+  ggsave(filename = paste("heatmap_", generos[i], ".png", sep = ""),
+         plot = plots[[i]], width = 10, height = 8)
+}
+
+
+
+
+
+
+
+generos <- c("pop", "hip_hop", "rock", "christmas", "cinema", "latino", "electro")
 plot_genre_heatmap <- function(genre) {
   # Agrupem i sumem la variable per nacionalitat
+  data_per_cançons <- data %>%
+    group_by(track_name) %>%
+    summarize(genre = mean(genre, na.rm = TRUE), longitude = mean(longitude, na.rm = TRUE),
+              latitude = mean(latitude, na.rm = TRUE), nationality = first(nationality))
+  
   data_grouped <- data_per_cançons %>%
     group_by(nationality) %>%
     summarize(
