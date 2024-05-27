@@ -21,6 +21,7 @@ library(tmap)
 library(gifski)
 library(tidyverse)
 library(maps)
+library(ggmap)
 
 list.of.packages = c("geoR", "sm", "sp", "gstat", "npsp", "geohashTools",
                      "rgdal", "ggmap", "ggplot2", "dplyr", "gridExtra", "maps", 
@@ -505,10 +506,10 @@ for (i in seq_along(variables)) {
 }
 
 ################## 
-
 # Visualitzem els punts però només d'Estats Units
+##################
+
 us <- map_data("state")
-data_eeuu <- dplyr::filter(data, nationality == "United States")
 
 us_map <- ggplot() +
   geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
@@ -519,15 +520,6 @@ scatterplot_murder <- us_map +
   geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "darkred", size = 1, alpha = 0.6) +
   theme(legend.position = "none")
 print(scatterplot_murder)
-
-# create other types of plots with the ggmap package
-#densityplot_murder <- qmplot(x=longitude, y=latitude,data = filter(data,nationality=="United States"), 
-                             # geom = "blank",  
-                             # darken = .7, egend = "topright") + stat_density_2d(aes(fill = ..level..), 
-                                                                                geom = "polygon",alpha = .5,
-                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
-                                                                                                                   high = "red")
-#plot(densityplot_murder)
 
 atlCan <- get_stadiamap(bbox = c(left   = -125.0, 
                                  bottom = 24.5,
@@ -537,65 +529,12 @@ atlCan <- get_stadiamap(bbox = c(left   = -125.0,
 
 ggmap::ggmap(atlCan)
 
-hola <- qmplot(longitude, latitude, data = data_eeuu, geom = "blank", maptype = "toner-background", 
-               darken = .7, legend = "topright")
+# Visualitzarem les dades de per parts, començant amb els estats units ja que
+# és on hi ha més dades
 
-plot(hola)
-densityplot_murder <- qmplot(x=longitude, y=latitude,data_eeuu, 
-                             geom = "blank", maptype = "toner-background", 
-                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
-                                                                                 geom = "polygon",alpha = .5,
-                                                                                 color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
-                                                                                                                    high = "red")
-plot(densityplot_murder)
-get_stadiamap()
-ggmap::ggmap(get_stadiamap())
-hola <- qmplot(longitude, latitude, data = data_eeuu, geom = "blank", maptype = "terrain", 
-               darken = .7, legend = "topright")
+data_eeuu <- dplyr::filter(data, nationality == "United States")
+data_eeuu <- data_eeuu[!is.na(data_eeuu$longitude) & !is.na(data_eeuu$latitude),]
 
-scatterplot_murder <- us_map + ggplot(data_eeuu, aes(x = longitude, y = latitude)) +
-  geom_blank() +
-  stat_density2d(aes(fill = after_stat(level)), geom = "polygon", alpha = 0.5) +
-  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
-
-scatterplot_murder <- us_map +
-  geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "darkred", size = 1, alpha = 0.6) +
-  theme(legend.position = "none")
-
-# Cargar los datos del mapa
-us <- map_data("state")
-
-us_map <- ggplot() +
-  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
-  coord_fixed(1.3) +
-  theme_void()
-
-# Crear el mapa base con ggplot2
-us_map <- ggplot(data = us, aes(x = long, y = lat, group = group)) +
-  geom_polygon(fill = "white", color = "black") +  # Define las características del polígono
-  coord_fixed(1.3) +  # Fijar la proporción de aspecto para el mapa de USA
-  theme_void()  # Remover elementos adicionales como texto y etiquetas de los ejes
-
-# Agregar la densidad de los datos sobre el mapa
-scatterplot_murder <- us_map + 
-  geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(level)), alpha = 0.5) +
-  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
-
-us_map <- ggplot(data = us, aes(x = long, y = lat, group = group)) +
-  geom_polygon(fill = "white", color = "black") +
-  coord_fixed(1.3) +
-  theme_void()
-
-# Agregar la densidad de los datos sobre el mapa
-scatterplot_murder <-ggplot() + geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(density)), alpha = 0.5)+
-  scale_fill_gradient2(low = "blue", mid = "green", high = "red")
-
-# Mostrar el gráfico
-print(scatterplot_murder)
-
-########## VAAA AMB EL PUTU MAPA
-
-library(ggmap)
 min_longitude <- min(data_eeuu$longitude, na.rm = TRUE)
 max_longitude <- max(data_eeuu$longitude, na.rm = TRUE)
 min_latitude <- min(data_eeuu$latitude, na.rm = TRUE)
@@ -606,116 +545,39 @@ bbox <- c(left = min_longitude, bottom = min_latitude, right = max_longitude, to
 atlCan <- get_stadiamap(bbox = bbox, 
                         zoom = 6, maptype = "stamen_terrain_background")
 base_map <- ggmap(atlCan)
-base_map
-
-library(ggplot2)
-data_eeuu <- data_eeuu[!is.na(data_eeuu$longitude) & !is.na(data_eeuu$latitude),]
-
-enhanced_map <- base_map + 
-  geom_density_2d_filled(data = data_eeuu, aes(x = longitude, y = latitude, fill = after_stat(level)), alpha = 0.5) +
-  scale_fill_gradient2(low = "blue", mid = "green", high = "red") +
-  labs(fill = "Density Level")
-
-enhanced_map <- base_map + 
-  stat_density_2d(geom = "polygon", contour = TRUE,
-                  aes(fill = after_stat(level)), colour = "black",
-                  bins = 5)+
-  geom_point()+
-  scale_fill_distiller(palette = "Blues", direction = 1) +
-  theme_classic()
 
 verification_map <- base_map + 
   geom_point(data = data_eeuu, aes(x = longitude, y = latitude), color = "red", size = 1)
-# Asumiendo que base_map es tu mapa base generado previamente
-enhanced_map <- base_map + 
-  geom_density_2d_filled(
-    data = data_eeuu, 
-    aes(x = longitude, y = latitude, fill = after_stat(density)),  # Usando density
-    alpha = 0.5
-  ) +
-  scale_fill_gradient2(low = "blue", mid = "green", high = "red") +
-  labs(fill = "Density Level")
-
-# Mostrar el mapa con los puntos
 print(verification_map)
-# Mostrar el gráfico mejorado
-print(enhanced_map)
 
-
-########us <- map_data("state")
-murder_data <- filter(crime, offense == "murder")
-# Crear el mapa base con ggplot2
-us_map <- ggplot() +
-  geom_polygon(data = us, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
-  coord_fixed(1.3) +
-  theme_void()
-
-scatterplot_murder <- us_map +
-  geom_point(data = murder_data, aes(x = lon, y = lat), color = "darkred", size = 1, alpha = 0.6) +
-  theme(legend.position = "none")
-print(scatterplot_murder)
-
-### Comments about distribution patterns
-## The experiment above could be repeated by using other levels for "offense")
-
-# create other types of plots with the ggmap package
-densityplot_murder <- qmplot(x=lon, y=lat,data = filter(crime,offense=="murder"), 
-                             geom = "blank", maptype = "toner-background", 
-                             darken = .7, egend = "topright") + stat_density_2d(aes(fill = ..level..), 
-                                                                                geom = "polygon",alpha = .5,
-                                                                                color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
-                                                                                                                   high = "red")
-plot(densityplot_murder)
-# plot a ggmap basemap
+# Mapa de estats units
 us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-
-data(crime)
-View(crime)
-get_stadiamap()
-ggmap::ggmap(get_stadiamap())
 map <- get_stadiamap(us, zoom = 3, maptype = "stamen_terrain_background",legend="none")
 plot(map)
 
-head(crime)
-crime <- crime[complete.cases(crime), ]
-sum(crime$offense == "murder", na.rm = TRUE)
-dato=filter(crime,offense=="murder")
-scatterplot_murder <- qmplot(x=lon,y=lat,data=crime,legend="none",color=I("darkred"))
-plot(scatterplot_murder)
+# Visualització de la densitat de cançons a Estats Units
 densityplot_murder <- qmplot(x=longitude, y=latitude,data = data_eeuu, 
                              geom = "blank", maptype = "stamen_toner_background", 
                              darken = .7) + stat_density_2d(aes(fill = ..level..), 
                                                             geom = "polygon",alpha = .5,
                                                             color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
                                                                                                high = "red")
-densityplot_murder <- qmplot(x=lon, y=lat,data = crime, 
-                             geom = "blank", maptype = "stamen_toner_background", 
-                             darken = .7, legend = "topright") + stat_density_2d(aes(fill = ..level..), 
-                                                                                 geom = "polygon",alpha = .5,
-                                                                                 color = NA) + scale_fill_gradient2(low = "blue",mid = "green", 
-                                                                                                                    high = "red")
 plot(densityplot_murder)
 
-############# EUROPA
 
-# Ejemplo de cómo podrías filtrar los datos para incluir varios países europeos.
-# Esto dependerá de cómo está estructurada tu columna 'nationality' o similar.
+# Visualització de la densitat de les cançons a Europa
+
 european_countries <- c("United Kingdom", "France", "Germany", "Spain", "Italy", "Netherlands", "Sweden","Norway")
 data_europa <- dplyr::filter(data, nationality %in% european_countries)
 dades_proba <- dplyr::filter(data, nationality == "United Kingdom")
 
-# Asumiendo que tu dataframe se llama 'data' y tienes una columna 'artist_name' y otra 'city'
 unique_artists <- data %>%
-  distinct(track_name, .keep_all = TRUE)  # Esto retiene la primera aparición de cada artista
+  distinct(track_name, .keep_all = TRUE)  
 dades_proba <- dplyr::filter(unique_artists, nationality == "United Kingdom")
-# Ahora cuenta cuántas veces aparece cada ciudad en este dataframe filtrado
+
 city_counts <- dades_proba %>%
   group_by(city) %>%
-  summarise(count = n(), .groups = "drop")  # '.groups = "drop"' elimina el agrupamiento después de summarise
-
-
-#data_europa <- dplyr::filter(data, nationality == "United Kingdom")
-#çdata_europa <- dplyr::filter(data, city == "Glasgow")
+  summarise(count = n(), .groups = "drop") 
 
 densityplot_europe <- qmplot(x=longitude, y=latitude,data = data_europa, 
                              geom = "blank", maptype = "stamen_toner_background", 
