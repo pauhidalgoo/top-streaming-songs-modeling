@@ -62,6 +62,8 @@ ggplot(data = data_summarized) +
   theme_minimal()
 
 # Fer els ggsave per algun lloc que se m'ha oblidat
+
+
 #########################################
 # VISUALITZAR ARTIST_FOLLOWERS PER ANYS #
 #########################################
@@ -128,6 +130,35 @@ for (i in seq_along(plots)) {
   #ggsave(filename = paste("heatmap_", unique_years[i], ".png", sep = ""),
   #plot = plots[[i]], width = 10, height = 8)
 }
+
+#########################################################
+######################## ENERGY ########################
+#########################################################
+
+data_grouped <- data %>%
+  group_by(artist_name) %>% 
+  summarize(
+    energy = mean(energy, na.rm = TRUE),
+    longitude = mean(longitude, na.rm = TRUE),  
+    latitude = mean(latitude, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+data_sf <- st_as_sf(data_grouped, coords = c("longitude", "latitude"), crs = 4326, agr = "constant")
+
+data_joined <- st_join(world_cities, data_sf, join = st_intersects)
+
+data_summarized <- data_joined %>%
+  group_by(name) %>%
+  summarize(avg_energy = mean(energy), .groups = "drop")
+
+# Creem un mapa de calor segons els followers dels artistes
+ggplot(data = data_summarized) +
+  geom_sf(aes(fill = avg_energy), color = "grey") +
+  scale_fill_viridis_c(option = "C", na.value = "grey", guide = "colorbar") +
+  labs(title = "Mapa de Calor de Energy per País",
+       fill = "Avg Energy") +
+  theme_minimal()
 
 #########################################################
 ######################## GÈNERES ########################
