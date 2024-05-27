@@ -110,6 +110,29 @@ MCA2_indByVarsAlbum<-fviz_mca_ind(res.mca1,
                                   palette = c("#1db954", "#ff7b24","#df75ff","blue","purple"),
                                   addEllipses = TRUE, ellipse.type = "confidence",
                                   ggtheme = theme_minimal())  + labs(title="Individus segons els valors d'Album_Type")
+#   - gender
+MCA2_indByGender<-fviz_mca_ind(res.mca1, 
+                                  label = "none", # hide individual labels
+                                  habillage = c("gender"), # color by groups 
+                                  palette = c("#1db954", "#ff7b24","#df75ff", "#d62728", "#67b1ff"),
+                                  addEllipses = TRUE, ellipse.type = "confidence",
+                                  ggtheme = theme_minimal())  + labs(title="Individus segons els valors d'gènere del artista")
+
+#   - is_group
+MCA2_indByIsGroup<-fviz_mca_ind(res.mca1, 
+                               label = "none", # hide individual labels
+                               habillage = c("is_group"), # color by groups 
+                               palette = c("#1db954", "#ff7b24","#df75ff", "#d62728", "#67b1ff"),
+                               addEllipses = TRUE, ellipse.type = "confidence",
+                               ggtheme = theme_minimal())  + labs(title="Individus segons els valors de si l'artista és un  grup o no")
+
+#   - electro
+MCA2_indByElectro<-fviz_mca_ind(res.mca1, 
+                                label = "none", # hide individual labels
+                                habillage = c("electro"), # color by groups 
+                                palette = c("#1db954", "#ff7b24","#df75ff", "#d62728", "#67b1ff"),
+                                addEllipses = TRUE, ellipse.type = "confidence",
+                                ggtheme = theme_minimal())  + labs(title="Individus segons els valors d'electro")
 
 
 ggsave("ACM1_indByVarsPop.png", plot=MCA2_indByVarsPop, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
@@ -118,6 +141,10 @@ ggsave("ACM1_indByVarsLatino.png", plot=MCA2_indByVarsLatino, bg="white", path =
 ggsave("ACM1_indByVarsChristmas.png", plot=MCA2_indByVarsChristmas, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("ACM1_indByVarsRock.png", plot=MCA2_indByVarsRock, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
 ggsave("ACM1_indByVarsAlbum.png", plot=MCA2_indByVarsAlbum, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+ggsave("ACM1_indByGender.png", plot=MCA2_indByGender, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+ggsave("ACM1_indByIsGroup.png", plot=MCA2_indByIsGroup, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+ggsave("ACM1_indByElectro.png", plot=MCA2_indByElectro, bg="white", path = PATH_PLOTS,dpi=120, width=1400,height=800, units = "px")
+
 #-------------------------------------------------------------------------------
 
 
