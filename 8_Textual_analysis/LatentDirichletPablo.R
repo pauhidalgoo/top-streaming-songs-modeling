@@ -8,6 +8,7 @@ library(ggplot2)
 library(dplyr)
 library(tidytext)
 library(gridExtra)
+library(ggrepel)
 
 
 load("./2_Descriptive_analysis/unique_tracks.RData")
@@ -285,11 +286,8 @@ colnames(mds_docs_df) <- c("Dim1", "Dim2")
 mds_docs_df$track_name <- unique_tracks$track_name
 
 
-library(ggrepel)
-
 set.seed(42)
 mds_red <- mds_docs_df %>% sample_frac(0.1)
-
 
 png(file=paste0(PATH_PLOTS, "/MDS_docs_10percnt.png"),
     width=1920, height=1920, units="px", res=120)
@@ -334,7 +332,6 @@ do.call(grid.arrange, c(plots_mds_doc_genre, ncol = 3))
 dev.off()
 plots_mds_doc_genre
 
-
 png(file=paste0(PATH_PLOTS, "/MDS_docs_by_topic.png"),
     width=1700, height=1700, units="px", res=130)
 ggplot(mds_docs_df, aes(x = Dim1, y = Dim2, color = topic)) +
@@ -350,34 +347,22 @@ dev.off()
 # Time Series amb Tòpics per any
 #-------------------------------------------------------------------------------
 
-library(topicmodels)
-
 # Obtener los topics para cada uno de los documentos, seleccionando el más probable para
 # cada uno de los documentos
 
-posterior_probs <- posterior(ap_lda)$topics
-posterior_df <- as.data.frame(posterior_probs)
-posterior_df$document <- track_names
+# Por fecha de salida
 
-document_topics <- posterior_df %>%
-  mutate(predominant_topic = apply(posterior_probs, 1, which.max))
+release_date_topics <- unique_tracks[,c("LDA_topic", "track_name", "year_release", "month_release")]
 
-document_topics$predominant_topic <- as.integer(document_topics$predominant_topic)
-document_topics$year_release <- as.numeric(as.character(unique_tracks$year_release))
-document_topics$month_release <- as.numeric(as.character(unique_tracks$month_release))
+release_date_topics$year_release <- as.numeric(as.character(release_date_topics$year_release))
+release_date_topics$month_release <- as.numeric(as.character(release_date_topics$month_release))
 
-View(document_topics)
-
-dc_cpy <- document_topics
-
-
-
-dc_cpy <- dc_cpy %>% 
+release_date_topics <- release_date_topics %>% 
   mutate(
   year_season = ifelse(month_release %in% c(12), year_release + 1, year_release)
   )
 
-dc_cpy <- dc_cpy %>%  mutate(season = case_when(
+release_date_topics <- release_date_topics %>%  mutate(season = case_when(
   month_release %in% c(1, 2, 12) ~ "1",
   month_release %in% c(3, 4, 5) ~ "2",
   month_release %in% c(6, 7, 8) ~ "3",
@@ -385,39 +370,54 @@ dc_cpy <- dc_cpy %>%  mutate(season = case_when(
 ))
 
 
-
-
 # Paso 1: Contar la cantidad de productos por año y tópico
-count_data <- dc_cpy %>%
-  dplyr::count(year_season, season, predominant_topic, name = "count")
+release_date_topics <- release_date_topics %>%
+  dplyr::count(year_season, season, LDA_topic, name = "count")
 
-count_data$predominant_topic <- as.factor(count_data$predominant_topic)
+#release_date_topics$predominant_topic <- as.factor(count_data$LDA_topic)
+release_date_topics <- release_date_topics[release_date_topics[,"year_season"]>2015,]
+releas_data_topics <-
 
-count_data <- count_data[count_data[,"year_season"]>2015,]
 
+
+all_year_season <- unique(release_date_topics$year_season)
+all_seasons <- unique(release_date_topics$season)
+all_topics <- unique(release_date_topics$LDA_topic)
+
+all_combinations <- expand.grid(year_season = all_year_season, season = all_seasons, LDA_topic = all_topics)
+
+
+release_date_topics_complete <- all_combinations %>%
+  left_join(release_date_topics, by = c("year_season", "season", "LDA_topic")) %>%
+  replace_na(list(count = 0))
+
+release_date_topics_complete <- release_date_topics_complete %>%
+  filter(!(season %in% c("3", "4") & year_season == 2021))
 
 my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#eebb44", "#bcbd22")
 
-
-ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+ggplot(data=release_date_topics_complete, aes(x=paste(year_season, season, sep="-"), y=count, group=LDA_topic, color = LDA_topic)) +
   geom_line(size=0.6) +
-  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_color_manual(values = my_colors) 
 
 # Plot separado por tópico predominante
-ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+png(file=paste0(PATH_PLOTS, "/topics_temporal_sortida.png"),
+    width=1700, height=1100, units="px", res=130)
+ggplot(data=release_date_topics_complete, aes(x=paste(year_season, season, sep="-"), y=count, group=LDA_topic, color = LDA_topic)) +
+  xlab("Data de llençament") +
   geom_line(size=0.6) +
-  theme_minimal() +
   scale_color_manual(values = my_colors) +
-  facet_wrap(~predominant_topic, ncol = 2)
-
-#, color=predominant_topic)
-
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~LDA_topic, ncol = 2)
+dev.off()
 
 #-------------------------------------------------------------------------------
 # Time Series amb Tòpics per estació
 
 load("./3_Preprocessing/data_knn_imputed_unknown.RData")
+
 weekly_data <- data %>% select(track_name, year_week, month_week)
 weekly_data$track_name <- as.factor(weekly_data$track_name)
 
@@ -442,16 +442,12 @@ merged_data <- merged_data %>%  mutate(season = case_when(
   month_week %in% c(9,10,11) ~ "4"
 ))
 
-
-
 count_data <- merged_data %>%
   dplyr::count(year_season, season, predominant_topic, name = "count")
 
-count_data$predominant_topic <- as.factor(count_data$predominant_topic)
-
+count_data$predominant_topic <- factor(count_data$predominant_topic, labels = topic_names)
 
 my_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#eebb44", "#bcbd22")
-
 
 ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
   geom_line(size=0.6) +
@@ -459,80 +455,15 @@ ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, grou
   scale_color_manual(values = my_colors) 
 
 
-
-
-
-
-
-
-lyrics_pop <- unique_tracks[unique_tracks[,"hip_hop"]==TRUE,]
-
-lyrics_pop 
-
-uncleaned_pop<- Corpus(VectorSource(lyrics_pop$lyrics))
-
-
-
-cleaned_pop <- preprocess(uncleaned_pop)
-
-td.mat <- as.matrix(TermDocumentMatrix(cleaned_pop, control = list(global = c(5, Inf))))
-
-
-term_frequencies <- rowSums(td.mat)
-term_frequencies_df <- data.frame(term = names(term_frequencies), frequency = term_frequencies)
-
-
-
-
-
-dd
-n=20
-library(dplyr)
-top_terms <- term_frequencies_df %>%
-  arrange(desc(frequency)) %>%
-  top_n(n = n)
-top_terms
-
-
-
-# Paso 3: Combinar las palabras más frecuentes con las palabras del modelo LDA y encontrar los tópicos
-
-# Filtrar los términos más frecuentes que están en los tópicos del modelo LDA
-common_terms <- ap_topics %>%
-  filter(term %in% top_terms$term)
-
-# Imprimir los términos más frecuentes y sus tópicos
-print(common_terms)
-
-
-
-
-years<-as.integer(unique_tracks$year_release)
-ap_lda
-td.mat
-
-length(topics)
-length(years)
-
-as.data.frame(years, topics)
-
-
-2000:2021
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Plot separado por tópico predominante
+png(file=paste0(PATH_PLOTS, "/topics_temporal_setmana.png"),
+    width=1700, height=1100, units="px", res=130)
+ggplot(data=count_data, aes(x=paste(year_season, season, sep="-"), y=count, group=predominant_topic, color = predominant_topic)) +
+  xlab("Data en la que es van trobar al top40") +
+  geom_line(size=0.6) +
+  scale_color_manual(values = my_colors) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~predominant_topic, ncol = 2)
+dev.off()
 
