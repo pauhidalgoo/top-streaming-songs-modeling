@@ -256,10 +256,10 @@ for (varcat_name in colnames(data_categorical)){
 ################################################################################
 
 # Retallem el dataset de variables categòriques perquè només hi hagi les que ens aporten més informació en els primers components principals
-new_data_categorical <- subset(data_categorical, select = -c(album_type, electro, explicit, major_mode, month_release, month_week, pop, rank_group, weekday_release, key, hip_hop, is_group))
+new_data_categorical <- subset(data_categorical, select = -c(album_type, cinema, electro, explicit, gender, hip_hop, is_group, key, major_mode, month_release, month_week, pop, rank_group, rock, week_index, weekday_release, year_week))
 dim(new_data_categorical)
 
-custom_colors <- c(custom_green, custom_orange, custom_purple, custom_darkgreen, custom_yellow, custom_red, custom_blue)
+custom_colors <- c(custom_green, custom_orange, custom_darkgreen, custom_yellow, custom_purple, custom_red, custom_blue)
 color_mapping <- setNames(custom_colors, colnames(new_data_categorical))
 
 
@@ -302,12 +302,12 @@ p <- ggplot() +
   geom_text(data = df_phi, aes(x = x_scaled/new_scaled_division, y = y_scaled/new_scaled_division, label = Variable), fontface = "bold", size = 3.25, hjust = 0.75, vjust = 2, color = "grey50") +
   
   # Categories
-  geom_text(data = df_all_text, aes(x = x, y = y, label = label, color = category), fontface = "bold", size = 5) +
+  geom_text(data = df_all_text, aes(x = x, y = y, label = label, color = category), fontface = "bold", size = 3) +
   scale_color_manual(values = color_mapping) +	
   
   labs(
     x = label_x, y = label_y,
-    title = "Relació de les variables amb els 2 primers Components Principals",
+    title = "Relació de variables categòriques amb els 2 primers Components Principals",
     subtitle = "Mitjanes de les categories de cada variable categòrica"
   )
 

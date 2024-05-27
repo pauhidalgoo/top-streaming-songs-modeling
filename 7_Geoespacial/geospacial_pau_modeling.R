@@ -13,6 +13,7 @@ library(leaflet)
 # Carreguem el dataset amb les coordenades (latitude i longitude)
 
 load('./7_Geoespacial/2024_top5_countries.RData')
+PATH_PLOTS = paste(getwd(),"./Media/Geoespacial_new",sep="")
 
 # Treiem les files amb (artistes, cançons) repetides
 
@@ -53,43 +54,59 @@ world_cities <- read_sf(dsn = "./7_Geoespacial", layer = "countries_map")
 plot(world_cities$geometry)
 points(data2024, col = 'red', pch = 20)
 
-leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(data = summary_data, ~lon, ~lat, popup = ~country)
-
 summary_data <- na.omit(summary_data) # Borrem el global
-
 names(summary_data)
 # variograma i kriging ----------------------------------------------------
-perform_kriging <- function(df, variable_name, rangemax, rangemin) {
-  # Load necessary libraries
-
+perform_kriging <- function(df, variable_name, rangemax, rangemin, continent = NULL, data_name = "data") {
   
+  # Països i informació de continents
   world <- ne_countries(scale = "medium", returnclass = "sf")
+
+  # Filtrem les dades per continent si cal
+  if (!is.null(continent)) {
+    if (continent == "Europe") {
+      european_countries <- c("Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", 
+                              "Belgium", "Bosnia and Herzegovina", "Bulgaria", "Croatia", "Cyprus", 
+                              "Czechia", "Denmark", "Estonia", "Finland", "France", "Georgia", 
+                              "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy", 
+                              "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", 
+                              "Luxembourg", "Malta", "Moldova", "Monaco", "Montenegro", "Netherlands", 
+                              "North Macedonia", "Norway", "Poland", "Portugal", "Romania", 
+                              "San Marino", "Serbia", "Slovakia", "Slovenia", "Spain", 
+                              "Sweden", "Switzerland", "Turkey", "Ukraine", "United Kingdom", 
+                              "Vatican City")
+      overseas_territories <- c("French Guiana", "Guadeloupe", "Martinique", "Réunion", "Mayotte")
+      world <- world[world$name %in% european_countries, ]
+      world <- world[!world$name %in% overseas_territories, ]
+      df <- df[df$continent == continent,]
+    }else{
+      world <- world[world$continent == continent, ]
+      df <- df[df$continent == continent,]
+    }
+  }
   
   lon_range <- c(-174, 174)
   lat_range <- c(-84, 84)
-  resolution <- 0.5  # Adjust resolution as needed
+  resolution <- 0.5
   
-  # Create longitude and latitude grids
   lon_grid <- seq(lon_range[1], lon_range[2], by = resolution)
   lat_grid <- seq(lat_range[1], lat_range[2], by = resolution)
   
-  # Create a grid covering the entire world
+  # Creem le grid
   grid <- expand.grid(lon = lon_grid, lat = lat_grid)
   grid_sf <- st_as_sf(grid, coords = c("lon", "lat"), crs = 4326)
   grid_land <- st_join(grid_sf, world, join = st_within)
   
-  # Filter out points that are not over land (NA values)
+  # Filtrem els punts que no estan a sobre el mapa (oceà)
   grid_land <- grid_land[!is.na(grid_land$admin), ]
   
-  # Convert back to sp object for kriging
+  # Reconvertim a spatial per fer el kriging
   grid_land_sp <- as(grid_land, "Spatial")
   gridded(grid_land_sp) <- TRUE
   
   grid <- grid_land_sp
   
-  # Step 3: Variogram estimation
+  # Variograma
   coordinates(df) <- ~lon + lat
   proj4string(df) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
   
@@ -123,25 +140,37 @@ perform_kriging <- function(df, variable_name, rangemax, rangemin) {
     }
   }
   
-  # Step 4: Variogram modeling
+  # Variograma "automàtic"
   v_model <- fit.variogram(v, model = variogram_model)
-  
-  # Display the variogram model
   print(plot(v, model = v_model, main = "Ajust del Model automàtic"))
   
-  # Ask user which variogram model to use
+  # Pregunta quin vols
   use_fitted <- tolower(readline(prompt = "Do you want to use the fitted variogram model? (yes/no): "))
   if (use_fitted == "yes") {
     final_model <- v_model
+    print(v_model)
   } else {
     final_model <- variogram_model
   }
   
-  # Set coordinates and CRS for data and grid
+  # Mateix tipus de coordenades
   gridded(grid) <- TRUE
   proj4string(grid) <- CRS("+proj=longlat +datum=WGS84")
   
-  # Step 5: Kriging interpolation
+  
+  # Validació
+  kriging_cv <- krige.cv(formula, df, model = final_model, nfold = nrow(data), verbose = FALSE)
+  
+  me <- mean(kriging_cv$residual)
+  rmse <- sqrt(mean(kriging_cv$residual^2))
+  msre <- mean(kriging_cv$zscore^2)
+  
+  cat("Error medio (ME):", me, "\n")
+  cat("Raíz del error cuadrático medio (RMSE):", rmse, "\n")
+  cat("Error cuadrático medio de los z-scores (MSRE):", msre, "\n")
+  
+  
+  # Interpol·lació
   kriged <- krige(formula, locations = df, newdata = grid, model = final_model)
   
   plot(kriged)
@@ -154,19 +183,24 @@ perform_kriging <- function(df, variable_name, rangemax, rangemin) {
   
   kriged_df <- as.data.frame(kriged)
   
-  # Convert original data points to an sf object
   df_sf <- st_as_sf(df, coords = c("lon", "lat"), crs = 4326)
   
-  # Plot using ggplot2
-  ggplot() +
+  # Plot amb ggplot2
+  a <- ggplot() +
     geom_tile(data = kriged_df, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
     scale_fill_gradient(low = "blue", high = "red", limits = c(rangemin, rangemax), name = paste("Predicted", variable_name)) +
     geom_sf(data = df_sf, color = "black", size = 2) +
     theme_minimal() +
     ggtitle(paste("Kriged", variable_name, "with Original Data Points")) +
     coord_sf(xlim = lon_range, ylim = lat_range)
+  print(a)
+  
+  print(paste0("Values used: cutoff - ", cutoff, ", width - ", width, ", psill - ", psill, ", range - ", range, ", nugget - ", nugget))
+  kriged_df
 }
-df <- summary_data  # Your dataset
+# Tan sols de l'últim dia, no usat 
+
+df <- summary_data
 perform_kriging(df, "mean_danceability", rangemin = 0, rangemax = 1)
 
 df <- summary_data 
@@ -176,10 +210,8 @@ names(df)
 df <- summary_data 
 perform_kriging(df, "mean_valence", rangemin = 0, rangemax = 1)
 
-
-
-coordinates(df) <- ~lon + lat
-proj4string(df) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
+#coordinates(df) <- ~lon + lat
+#proj4string(df) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 
 
 
@@ -187,17 +219,222 @@ proj4string(df) <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 # És millor
 load('./7_Geoespacial/mean_new_data.RData')
 
-leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(data = mean_new_data, ~lon, ~lat, popup = ~country)
-
 mean_new_data <- na.omit(mean_new_data) # Borrem el global
 
-names(mean_new_data)
+df <- mean_new_data
+#names(mean_new_data)
+df_sf <- st_as_sf(df, coords = c("lon", "lat"), crs = 4326)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+ggplot() +
+  geom_sf(data = world, fill = "lightgray") +  # Plot the world map
+  geom_point(data = df, aes(x = lon, y = lat, color = continent), size = 2) +  # Plot the points
+  theme_minimal() +  # Clean theme
+  labs(title = "World Map with Points", x = "Longitude", y = "Latitude") +
+  scale_color_manual(values = c("Africa" = "red", "Europe" = "blue", "Asia" = "green", "North America" = "purple", "South America" = "orange", "Australia" = "yellow", "Antarctica" = "black")) +  # Customize colors
+  theme(legend.position = "bottom")
+
+
+df <- mean_new_data
+k_energy <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1)# cutoff: 5000
+# width: 300
+
+# psill: 0.0025
+# range: 2200
+# nugget: 0.0002
+
+# o bé
+
+# cutoff: 10000
+# width: 500
+# psill: 0.003
+# range: 3000
+# nugget: 0.0005 i auto
+coordinates(k_energy) <- ~coords.x1 + coords.x2
+
+spplot(k_energy["var1.pred"], main = paste("Kriged", "Energy"))
+
+k_energy <- as.data.frame((k_energy))
+lon_range <- c(-174, 174)
+lat_range <- c(-84, 84)
+
+png(file=paste0(PATH_PLOTS, "/energy_interpolation_2.png"),
+    width=1920, height=1080, units="px", res=130)
+ggplot() +
+  geom_tile(data = k_energy, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_energy$var1.pred), max(k_energy$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "energy", "")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Energy")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text( size = 10))
+dev.off()
+
 
 df <- mean_new_data
 perform_kriging(df, "valence", rangemin = 0, rangemax = 1)
 
 df <- mean_new_data
-perform_kriging(df, "popularity", rangemin = 0, rangemax = 100)
+perform_kriging(df, "energy", rangemin = 0, rangemax = 1, continent="Europe")
+
+df <- mean_new_data
+perform_kriging(df, "danceability", rangemin = 0, rangemax = 1, continent="Europe")
+
+
+df <- mean_new_data
+k_pop <- perform_kriging(df, "popularity", rangemin = 0, rangemax = 100)
+# 6000, 400
+
+# 50, 2000, 7
+k_pop <- as.data.frame((k_pop))
+lon_range <- c(-174, 174)
+lat_range <- c(-84, 84)
+
+png(file=paste0(PATH_PLOTS, "/popularity_interpolation.png"),
+    width=1920, height=1080, units="px", res=130)
+ggplot() +
+  geom_tile(data = k_pop, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_pop$var1.pred), max(k_pop$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "popularity", "")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Popularity")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text( size = 10))
+dev.off()
+lon_range <- c(-38, 70)
+lat_range <- c(24, 74)
+
+png(file=paste0(PATH_PLOTS, "/popularity_interpolation_europe.png"),
+    width=1920, height=1080, units="px", res=130)
+ggplot() +
+  geom_tile(data = k_pop, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k_pop$var1.pred), max(k_pop$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "popularity", " in Europe")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Popularity")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text( size = 10))
+dev.off()
+
+
+
+
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = mean_new_data, ~lon, ~lat, popup = ~country)
+
+
+
+world_data_new <- data.frame(country = world$iso_a2_eh, continent = world$continent)
+
+new_get_continent <- function(nationality) {
+  continent <- world_data_new$continent[match(nationality, world_data_new$country)]
+  return(continent)
+}
+
+mean_new_data$continent <- sapply(mean_new_data$country, new_get_continent)
+k <- perform_kriging(mean_new_data, "valence", rangemin = 0, rangemax = 1, continent="Europe")
+# 2000 250 6e-04 700 5e-04 Wav
+
+k <- as.data.frame((k))
+lon_range <- c(-48, 110)
+lat_range <- c(24, 84)
+
+png(file=paste0(PATH_PLOTS, "/valence_interpolation.png"),
+    width=1920, height=1080, units="px", res=130)
+ggplot() +
+  geom_tile(data = k, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k$var1.pred), max(k$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "valence", "")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Valence")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text(size = 10))
+dev.off()
+
+k <- perform_kriging(mean_new_data, "acousticness", rangemin = 0, rangemax = 1, continent="Europe")
+# 2000 250 6e-04 700 5e-04 Wav
+k$coords.x1
+k$var1.pred
+k <- as.data.frame((k))
+lon_range <- c(-48, 110)
+lat_range <- c(24, 84)
+
+ggplot() +
+  geom_tile(data = k, aes(x = coords.x1, y = coords.x2, fill = var1.pred)) +
+  scale_fill_gradient(low = "blue", high = "red", limits = c(min(k$var1.pred), max(k$var1.pred)), name = paste("Predicted", "Energy")) +
+  theme_minimal() +
+  ggtitle(paste("Kriged", "acousticness", "")) +
+  coord_sf(xlim = lon_range, ylim = lat_range)+ 
+  paletteer::scale_fill_paletteer_c("viridis::magma", name="Acousticness")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        title = element_text(face="bold", size = 15),
+        legend.title = element_text(size = 10))
+
+
+
+
+# DAdes nostres ----------------------------------------------------------------
+load('./7_Geoespacial/data_coordenades.RData')
+
+# Verificar que data es un data.frame
+data <- as.data.frame(data)
+
+# Eliminar duplicados
+data <- data[!duplicated(data[c("artist_name", "track_name")]), ]
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+world_data <- data.frame(country = world$admin, continent = world$continent)
+
+get_continent <- function(nationality) {
+  continent <- world_data$continent[match(nationality, world_data$country)]
+  return(continent)
+}
+
+data[data$nationality=="United States",]$nationality <- "United States of America"
+data[data$nationality=="PuertoRico",]$nationality <- "Puerto Rico"
+# Add continent column to data
+data$continent <- sapply(data$nationality, get_continent)
+
+data$continent <- as.factor(data$continent)
+
+# Seleccionar las columnas necesarias
+data <- data[, c("artist_name", "track_name", "latitude", "continent", "longitude", "energy")]
+
+
+mode_function <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+data <- data %>%
+  group_by(latitude, longitude) %>%
+  summarize(across(where(is.numeric), mean, na.rm = TRUE),
+            across(where(is.factor), mode_function),
+            .groups = 'drop')
+
+names(data)
+df <- data
+df$lon <- df$longitude
+df$lat <- df$latitude
+
+
+k <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1, continent="North America")
+11010
+
+k <- perform_kriging(df, "energy", rangemin = 0, rangemax = 1, continent="Europe")
+700
 
