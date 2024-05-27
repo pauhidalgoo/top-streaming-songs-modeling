@@ -29,9 +29,9 @@ interpret_request <- function(request) {
   }
   
   # Detect danceability
-  if (grepl("very danceable|muy bailable", request, ignore.case = TRUE)) {
+  if (grepl("very danceable|muy bailable|muy bailables", request, ignore.case = TRUE)) {
     filters$danceability <- 0.8
-  } else if (grepl("danceable|bailable", request, ignore.case = TRUE)) {
+  } else if (grepl("danceable|bailable|bailables", request, ignore.case = TRUE)) {
     filters$danceability <- 0.65
   }
   
