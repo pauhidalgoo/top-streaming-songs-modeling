@@ -192,6 +192,7 @@ png(file=paste0(PATH_PLOTS, "/profiling_cats_2.png"),
 do.call(grid.arrange, c(plots_cat, ncol = 3))
 dev.off()
 
+do.call(grid.arrange, c(plots_cat, ncol = 3))
 
 # Profiling per les variables binàries restants
 bin_vars_2 <- c("collab", "major_mode","is_group")
