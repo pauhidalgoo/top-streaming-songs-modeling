@@ -91,8 +91,6 @@ server <- function(input, output, session) {
     input$spotify
     # ...but not for anything else
     req(input$spotify)
-    req(input$playlist_name)
-    req(input$user_id)
     playlist_data <- readRDS("./GUI/playlist_ids.rds")
     isolate({
       withProgress({
