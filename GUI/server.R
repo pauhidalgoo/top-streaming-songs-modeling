@@ -161,7 +161,7 @@ server <- function(input, output, session) {
   output$new_map <- renderLeaflet({
     leaflet(as.data.frame(allkrige)) %>% 
       addTiles() %>% 
-      addCircleMarkers(data = coords, 
+      addCircleMarkers(data = allkrige, 
                        lng = ~allkrige$coords.x1, lat = ~allkrige$coords.x2,
                        layerId = ~paste(allkrige$coords.x1, allkrige$coords.x2, sep="_"),
                        
@@ -175,11 +175,12 @@ server <- function(input, output, session) {
     clicked_point <- allkrige[coords$coords.x1 == coords_click[1] & coords$coords.x2 == coords_click[2], ]
     
     selected_song <- find_similar_song(clicked_point, images_unique)
-    
     output$kriged_song <- renderUI({
-      selected_track <- images_unique[images_unique$track_name == selected_song, ]
+      selected_track <- df_filled[df_filled$track_name == selected_song, ]
+      print(selected_track)
       img_path <- selected_track$album_img
-      if (!is.null(img_path) && img_path != " ") {
+      print(img_path)
+      if (!is.null(img_path)) {
         img_tag <- tags$img(src = img_path, width = "50%")
       } else {
         img_tag <- tags$img(src = "./GUI/error.png", width = "50%")
