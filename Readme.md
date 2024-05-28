@@ -43,40 +43,40 @@ Additionally, to get more information this data has been expanded using the Geni
 For geospatial analysis we also used information from [top-spotify-songs-in-73-countries-daily-updated](https://www.kaggle.com/datasets/asaniczka/top-spotify-songs-in-73-countries-daily-updated) which is made available under the ODC Attribution License.
 
 ## File structure
+The file and folder structure is the following:
 
-
-  ├── 1_Dataset_creation
-  ├── 2_Descriptive_analysis
-  ├── 3_Preprocessing
-  ├── 4_Clustering
-  ├── 5_Profiling
-  ├── 6_Factorial_methods
-  ├── 7_Geoespacial
-  ├── 8_Textual_analysis
-  │   ├── Data_creation
-  │   ├── Descriptive_sentiment
-  │   └── Music_genres
-  ├── backup
-  ├── GUI
-  ├── Latex
-  ├── Media
-  │   ├── ACM
-  │   ├── ACM2
-  │   ├── ACP
-  │   ├── Clustering
-  │   ├── Descriptive
-  │   ├── Geodescriptive
-  │   ├── Geoespacial_new
-  │   ├── Geotextual
-  │   ├── Neural_Network
-  │   ├── Preprocessing
-  │   ├── Textual_Analysis
-  │   └── TLP
-  ├── data.RData
-  ├── final_d3_data.RData
-  ├── PMAAD_GIA.Rproj
-  ├── Readme.md
-  └── ultra_updated_data.RData
+    ├── 1_Dataset_creation
+    ├── 2_Descriptive_analysis
+    ├── 3_Preprocessing
+    ├── 4_Clustering
+    ├── 5_Profiling
+    ├── 6_Factorial_methods
+    ├── 7_Geoespacial
+    ├── 8_Textual_analysis
+    │   ├── Data_creation
+    │   ├── Descriptive_sentiment
+    │   └── Music_genres
+    ├── backup
+    ├── GUI
+    ├── Latex
+    ├── Media
+    │   ├── ACM
+    │   ├── ACM2
+    │   ├── ACP
+    │   ├── Clustering
+    │   ├── Descriptive
+    │   ├── Geodescriptive
+    │   ├── Geoespacial_new
+    │   ├── Geotextual
+    │   ├── Neural_Network
+    │   ├── Preprocessing
+    │   ├── Textual_Analysis
+    │   └── TLP
+    ├── data.RData
+    ├── final_d3_data.RData
+    ├── PMAAD_GIA.Rproj
+    ├── Readme.md
+    └── ultra_updated_data.RData
 
 ### Description of folders
 
