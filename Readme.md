@@ -1,11 +1,11 @@
-# SPOTIFY TOP 40 MODELING AND ANALYSIS
+# TOP 40 SONGS MODELING AND ANALYSIS
 
 > This repo contains the work done in the PMAAD course of the Artificial Intelligence Degree
 
 
 ## Table of Contents
 
-- [SPOTIFY TOP 40 MODELING AND ANALYSIS](#spotify-top-40-modeling-and-analysis)
+- [TOP 40 SONGS MODELING AND ANALYSIS](#top-40-songs-modeling-and-analysis)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Data sources](#data-sources)
