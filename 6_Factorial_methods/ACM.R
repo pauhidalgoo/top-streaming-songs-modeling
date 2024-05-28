@@ -217,11 +217,11 @@ acm2_var_cos2 <- ggplot(cat_vars_coords_df, aes(x=dim1, y=dim2, fill=cos2_vars))
 
 acm2_var_cos2
 
-'''
-MCA2_biplot <- fviz_mca_biplot(res.mca2, repel=TRUE, col.ind="cos2",label=c("var"), invisible="quali.sup",
-                gradient.cols=c("#ff7b24","#df75ff", "blue"), col.var=("#2d6d62"),
-                ylim=c(-1.5,5), xlim=c(-1.5,1.5))
-'''
+
+#MCA2_biplot <- fviz_mca_biplot(res.mca2, repel=TRUE, col.ind="cos2",label=c("var"), invisible="quali.sup",
+#                gradient.cols=c("#ff7b24","#df75ff", "blue"), col.var=("#2d6d62"),
+#                ylim=c(-1.5,5), xlim=c(-1.5,1.5))
+
 MCA2_biplot <- ggplot(cat_vars_coords_df, aes(x=dim1, y=dim2)) +
   scale_colour_gradient2(low="#ff7b24",mid="#df75ff", high="blue", midpoint = 0.3) +
   geom_point(data=ind_coords_df, aes(x=dim1, y=dim2, colour=cos2)) +
