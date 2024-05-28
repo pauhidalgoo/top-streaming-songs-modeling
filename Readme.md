@@ -150,7 +150,7 @@ We can visualize some of the results obtained.
 For example, with TimeSeries clustering we got 5 clusters with different types of streaming evolutions.
 
 <p align="center">
-  <img width="460" height="250" src="https://github.com/pauhidalgoo/PMAAD_GIA/blob/main/Media/Clustering/TieSeriesClustering/streams_cada_mes_per_cluster_amb_mitjana.png?raw=true">
+  <img width="460" height="250" src="https://github.com/pauhidalgoo/PMAAD_GIA/blob/main/Media/Clustering/TimeSeriesClustering/streams_cada_mes_per_cluster_amb_mitjana.png?raw=true">
 </p>
 
 With the Neural network, we got this confusion matrix
@@ -174,7 +174,7 @@ In the geospatial modeling, we fitted some variograms and used kriging to obtain
 We can also observe some examples of the GUI, like the playlist section
 
 <p align="center">
-  <img width="460" height="250" src="https://github.com/pauhidalgoo/PMAAD_GIA/blob/main/Media/GUI_playlist.png?raw=true">
+  <img width="460" height="350" src="https://github.com/pauhidalgoo/PMAAD_GIA/blob/main/Media/GUI_playlist.png?raw=true">
 </p>
 
 As you can see, there's a lot of different work done, so this Readme isn't enough to provide the complete description. For that, go to `D4_report.pdf`
