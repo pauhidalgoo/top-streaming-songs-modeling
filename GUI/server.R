@@ -170,7 +170,7 @@ server <- function(input, output, session) {
   observeEvent(input$new_map_marker_click, {
     click <- input$new_map_marker_click
     coords_click <- as.numeric(unlist(strsplit(click$id, "_")))
-    clicked_point <- allkrige[coords$coords.x1 == coords_click[1] & coords$coords.x2 == coords_click[2], ]
+    clicked_point <- allkrige[allkrige$coords.x1 == coords_click[1] & allkrige$coords.x2 == coords_click[2], ]
     
     selected_song <- find_similar_song(clicked_point, images_unique)
     output$kriged_song <- renderUI({
